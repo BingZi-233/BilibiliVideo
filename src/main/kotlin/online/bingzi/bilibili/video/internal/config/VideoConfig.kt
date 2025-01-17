@@ -16,7 +16,7 @@ object VideoConfig {
      * Config
      * 配置文件
      */
-    @Config(value = "video.yml", autoReload = true)
+    @Config(value = "video.yml")
     lateinit var config: Configuration
         private set
 

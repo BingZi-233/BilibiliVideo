@@ -1,5 +1,6 @@
 package online.bingzi.bilibili.video.internal.helper
 
+import online.bingzi.bilibili.video.internal.config.SettingConfig
 import org.bukkit.Bukkit
 import org.bukkit.entity.Player
 import org.bukkit.inventory.meta.MapMeta
@@ -14,10 +15,7 @@ import taboolib.library.reflex.Reflex.Companion.invokeMethod
 import taboolib.library.reflex.Reflex.Companion.setProperty
 import taboolib.library.reflex.Reflex.Companion.unsafeInstance
 import taboolib.library.xseries.XMaterial
-import taboolib.module.nms.MinecraftVersion
-import taboolib.module.nms.nmsClass
-import taboolib.module.nms.obcClass
-import taboolib.module.nms.sendPacket
+import taboolib.module.nms.*
 import taboolib.platform.util.ItemBuilder
 import taboolib.platform.util.buildItem
 import taboolib.platform.util.modifyMeta
@@ -202,7 +200,8 @@ class NMSMap(val image: BufferedImage, var hand: Hand = Hand.MAIN, val builder: 
         val classMapData: Class<*> by unsafeLazy {
             try {
                 // 尝试找Spigot的WorldMap.b
-                Class.forName("net.minecraft.world.level.saveddata.maps.WorldMap\$b")
+                val worldMap = if (MinecraftVersion.isEqual(MinecraftVersion.V1_21)) "c" else "b"
+                Class.forName("net.minecraft.world.level.saveddata.maps.WorldMap\$$worldMap")
             } catch (e: ClassNotFoundException) {
                 // 没有找到Spigot的WorldMap.b，尝试找Paper的MapItemSavedData.MapPatch
                 Class.forName("net.minecraft.world.level.saveddata.maps.MapItemSavedData\$MapPatch")
@@ -261,7 +260,7 @@ class NMSMap(val image: BufferedImage, var hand: Hand = Hand.MAIN, val builder: 
                 container.getProperty<Int>("windowId")
             }!!
             val nmsItem = classCraftItemStack.invokeMethod<Any>("asNMSCopy", mapItem, isStatic = true)
-            player.sendPacket(classPacketPlayOutSetSlot.unsafeInstance().also {
+            val itemPacket = classPacketPlayOutSetSlot.unsafeInstance().also {
                 if (MinecraftVersion.isUniversal) {
                     it.setProperty("containerId", windowsId)
                     it.setProperty("stateId", 1)
@@ -272,7 +271,12 @@ class NMSMap(val image: BufferedImage, var hand: Hand = Hand.MAIN, val builder: 
                     it.setProperty("b", getMainHandSlot(player))
                     it.setProperty("c", nmsItem)
                 }
-            })
+            }
+            if (SettingConfig.sendMapAsync) {
+                player.sendPacket(itemPacket)
+            } else {
+                player.sendPacketBlocking(itemPacket)
+            }
             val buffer = mapView.invokeMethod<Any>("render", player)!!.getProperty<ByteArray>("buffer")
             val packet = classPacketPlayOutMap.unsafeInstance()
             when {
@@ -361,7 +365,11 @@ class NMSMap(val image: BufferedImage, var hand: Hand = Hand.MAIN, val builder: 
                     packet.setProperty("h", buffer)
                 }
             }
-            player.sendPacket(packet)
+            if (SettingConfig.sendMapAsync) {
+                player.sendPacket(packet)
+            } else {
+                player.sendPacketBlocking(packet)
+            }
         }
     }
 

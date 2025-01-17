@@ -9,6 +9,8 @@ cooldown: 60
 # 若无法正常获取地图，请设置为false关闭虚拟化
 virtualization: true
 
+sendMapAsync: false
+
 chainOperations:
   - COINS
   - LIKE

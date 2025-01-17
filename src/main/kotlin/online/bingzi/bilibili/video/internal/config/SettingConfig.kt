@@ -16,7 +16,7 @@ object SettingConfig {
      * Config
      * 配置文件
      */
-    @Config(value = "setting.yml", autoReload = true)
+    @Config(value = "setting.yml")
     lateinit var config: Configuration
         private set
 
@@ -33,6 +33,8 @@ object SettingConfig {
      * 是否虚拟化地图
      */
     var virtualization: Boolean = true
+
+    var sendMapAsync: Boolean = true
 
     @Awake(LifeCycle.ENABLE)
     fun registerAutoReload() {
@@ -52,5 +54,7 @@ object SettingConfig {
         debugStatus = config.getBoolean("debug")
         // 虚拟化地图
         virtualization = config.getBoolean("virtualization")
+        // 异步地图发包
+        sendMapAsync = config.getBoolean("sendMapAsync")
     }
 }

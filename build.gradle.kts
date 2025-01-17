@@ -3,7 +3,7 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
     java
-    id("io.izzel.taboolib") version "2.0.19"
+    id("io.izzel.taboolib") version "2.0.22"
     id("org.jetbrains.kotlin.jvm") version "1.9.23"
 }
 
@@ -35,7 +35,7 @@ taboolib {
         install(BukkitHook)
     }
     version {
-        taboolib = "6.2.0-beta26"
+        taboolib = "6.2.2"
     }
     relocate("com.google.zxing", "online.bingzi.libs.zxing")
     relocate("com.google.gson", "online.bingzi.libs.gson")
@@ -57,6 +57,8 @@ dependencies {
     compileOnly("ink.ptms:nms-all:1.0.0")
     compileOnly("ink.ptms.core:v12004:12004:mapped")
     compileOnly("ink.ptms.core:v12004:v12004:universal")
+    compileOnly("ink.ptms.core:v12103:12103:mapped")
+    compileOnly("ink.ptms.core:v12103:v12103:universal")
     compileOnly(kotlin("stdlib"))
     compileOnly(fileTree("libs"))
 }
