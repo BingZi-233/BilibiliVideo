@@ -8,28 +8,35 @@ import retrofit2.http.*
  * Bilibili api drive
  * 哔哩哔哩API驱动
  *
- * @constructor Create empty Bilibili api drive
+ * 该接口定义了与哔哩哔哩视频网站交互的API，提供了获取用户信息、点赞、投币、收藏和关注等功能。
  */
 interface BilibiliApiDrive {
     companion object {
         /**
          * Buvid3
-         * 预制的Buvid3默认值
+         * 预制的Buvid3默认值，用于请求头中标识用户会话
          */
         private const val BUVID3 = "buvid3=BUVID3"
     }
 
+    /**
+     * 获取用户信息
+     *
+     * @param sessData 用户的会话数据，类型为String，代表用户的登录状态。
+     * @return 返回一个Call对象，包含BilibiliResult<UserInfoData>，表示用户信息的结果。
+     */
     @GET("web-interface/nav")
     fun getUserInfo(
         @Header("Cookie") sessData: String,
     ): Call<BilibiliResult<UserInfoData>>
 
     /**
-     * Action like triple
+     * 点赞操作
      *
-     * @param bvid
-     * @param csrf
-     * @return
+     * @param bvid 视频的唯一标识符，类型为String。
+     * @param csrf 跨站请求伪造令牌，类型为String，用于安全验证。
+     * @param sessData 用户的会话数据，类型为String，代表用户的登录状态。
+     * @return 返回一个Call对象，包含BilibiliResult<TripleData>，表示点赞操作的结果。
      */
     @FormUrlEncoded
     @Headers("Content-Type: application/x-www-form-urlencoded")
@@ -41,11 +48,11 @@ interface BilibiliApiDrive {
     ): Call<BilibiliResult<TripleData>>
 
     /**
-     * Has like
-     * 是否被点赞
+     * 检查视频是否被点赞
      *
-     * @param sessData
-     * @param bvid
+     * @param bvid 视频的唯一标识符，类型为String。
+     * @param sessData 用户的会话数据，类型为String，代表用户的登录状态。
+     * @return 返回一个Call对象，包含BilibiliResult<Int>，表示点赞状态，1表示已点赞，0表示未点赞。
      */
     @GET("web-interface/archive/has/like")
     fun hasLike(
@@ -54,11 +61,11 @@ interface BilibiliApiDrive {
     ): Call<BilibiliResult<Int>>
 
     /**
-     * Has coins
-     * 是否被投币
+     * 检查视频是否被投币
      *
-     * @param sessData
-     * @param bvid
+     * @param bvid 视频的唯一标识符，类型为String。
+     * @param sessData 用户的会话数据，类型为String，代表用户的登录状态。
+     * @return 返回一个Call对象，包含BilibiliResult<CoinsData>，表示投币状态及相关数据。
      */
     @GET("web-interface/archive/coins")
     fun hasCoins(
@@ -67,11 +74,11 @@ interface BilibiliApiDrive {
     ): Call<BilibiliResult<CoinsData>>
 
     /**
-     * Has favoured
-     * 是否被收藏
+     * 检查视频是否被收藏
      *
-     * @param sessData
-     * @param bvid
+     * @param bvid 视频的唯一标识符，类型为String。
+     * @param sessData 用户的会话数据，类型为String，代表用户的登录状态。
+     * @return 返回一个Call对象，包含BilibiliResult<FavouredData>，表示收藏状态及相关数据。
      */
     @GET("v2/fav/video/favoured")
     fun hasFavoured(
@@ -80,12 +87,11 @@ interface BilibiliApiDrive {
     ): Call<BilibiliResult<FavouredData>>
 
     /**
-     * Has following
-     * 是否关注
+     * 检查用户是否关注了视频作者
      *
-     * @param sessData
-     * @param bvid
-     * @return
+     * @param bvid 视频的唯一标识符，类型为String。
+     * @param sessData 用户的会话数据，类型为String，代表用户的登录状态。
+     * @return 返回一个Call对象，包含BilibiliResult<FollowingData>，表示关注状态及相关数据。
      */
     @GET("web-interface/view/detail")
     fun hasFollowing(

@@ -9,36 +9,47 @@ import org.bukkit.event.player.PlayerQuitEvent
 import taboolib.common.platform.event.SubscribeEvent
 
 /**
- * Player listener
- * 玩家时间监听器
- *
- * @constructor Create empty Player listener
+ * PlayerListener类
+ * 玩家事件监听器，用于处理与玩家相关的事件，例如玩家退出游戏时的处理逻辑。
  */
 object PlayerListener {
     /**
-     * On player quit event
-     * 玩家退出事件
+     * 处理玩家退出事件
+     * 当玩家退出游戏时，执行相关的清理和数据保存操作。
      *
-     * @param event PlayerQuitEvent
+     * @param event 玩家退出事件对象，包含与玩家退出相关的信息。
      */
     @SubscribeEvent
     fun onPlayerQuitEvent(event: PlayerQuitEvent) {
+        // 获取退出的玩家对象
         val player = event.player
-        // 清除玩家冷却
+
+        // 清除玩家的冷却状态
         baffleCache.reset(player.name)
-        // 保存玩家Cookie数据
-        cookieCache.get(player.uniqueId)?.let {
-            it.sessData?.let { it1 -> player.setDataContainer("SESSDATA", it1) }
-            it.biliJct?.let { it1 -> player.setDataContainer("bili_jct", it1) }
-            it.dedeUserID?.let { it1 -> player.setDataContainer("DedeUserID", it1) }
-            it.dedeUserIDCkMd5?.let { it1 -> player.setDataContainer("DedeUserID__ckMd5", it1) }
-            it.sid?.let { it1 -> player.setDataContainer("sid", it1) }
+
+        // 保存玩家的Cookie数据
+        // 从Cookie缓存中获取与玩家唯一ID对应的Cookie数据，如果存在则进行保存操作
+        cookieCache.get(player.uniqueId)?.let { cookieData ->
+            // 如果sessData存在，则保存到玩家的数据容器中
+            cookieData.sessData?.let { sessData -> player.setDataContainer("SESSDATA", sessData) }
+            // 如果biliJct存在，则保存到玩家的数据容器中
+            cookieData.biliJct?.let { biliJct -> player.setDataContainer("bili_jct", biliJct) }
+            // 如果dedeUserID存在，则保存到玩家的数据容器中
+            cookieData.dedeUserID?.let { dedeUserID -> player.setDataContainer("DedeUserID", dedeUserID) }
+            // 如果dedeUserIDCkMd5存在，则保存到玩家的数据容器中
+            cookieData.dedeUserIDCkMd5?.let { dedeUserIDCkMd5 -> player.setDataContainer("DedeUserID__ckMd5", dedeUserIDCkMd5) }
+            // 如果sid存在，则保存到玩家的数据容器中
+            cookieData.sid?.let { sid -> player.setDataContainer("sid", sid) }
         }
-        // 驱逐Cookie缓存
+
+        // 驱逐与该玩家唯一ID对应的Cookie缓存
         cookieCache.invalidate(player.uniqueId)
-        // 驱逐Mid缓存
+
+        // 驱逐与该玩家唯一ID对应的Mid缓存
         midCache.invalidate(player.uniqueId)
-        // 驱逐BV缓存
+
+        // 驱逐与该玩家唯一ID对应的所有BV缓存
+        // 过滤出与玩家唯一ID相关的所有BV缓存进行驱逐
         bvCache.invalidateAll(bvCache.asMap().keys.filter { it.first == player.uniqueId })
     }
 }

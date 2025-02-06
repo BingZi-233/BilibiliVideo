@@ -21,18 +21,20 @@ import taboolib.platform.util.buildItem
 import taboolib.platform.util.modifyMeta
 import java.awt.image.BufferedImage
 import java.io.File
-import java.lang.reflect.Array
 import java.net.URL
 import java.util.*
 import java.util.concurrent.CompletableFuture
 import javax.imageio.ImageIO
 
 /**
- * 创建地图画（堵塞）
+ * 创建地图画的扩展函数（堵塞方式）
  *
- * @param url 图像地址
- * @param width 图像宽度
- * @param height 图像高度
+ * @param url 图像地址，字符串格式
+ * @param hand 地图的手持方向，默认为主手（MAIN）
+ * @param width 图像宽度，默认为128
+ * @param height 图像高度，默认为128
+ * @param builder 自定义物品构建器的扩展函数
+ * @return 返回创建的NMSMap对象
  */
 fun buildMap(
     url: String,
@@ -41,15 +43,19 @@ fun buildMap(
     height: Int = 128,
     builder: ItemBuilder.() -> Unit = {}
 ): NMSMap {
+    // 使用URL打开输入流并读取图像，之后缩放到指定大小
     return NMSMap(URL(url).openStream().use { ImageIO.read(it) }.zoomed(width, height), hand, builder)
 }
 
 /**
- * 创建地图画（异步）
+ * 创建地图画的扩展函数（异步方式）
  *
- * @param url 图像地址
- * @param width 图像宽度
- * @param height 图像高度
+ * @param url 图像地址，URL格式
+ * @param hand 地图的手持方向，默认为主手（MAIN）
+ * @param width 图像宽度，默认为128
+ * @param height 图像高度，默认为128
+ * @param builder 自定义物品构建器的扩展函数
+ * @return 返回一个CompletableFuture，最终结果为创建的NMSMap对象
  */
 fun buildMap(
     url: URL,
@@ -58,17 +64,21 @@ fun buildMap(
     height: Int = 128,
     builder: ItemBuilder.() -> Unit = {}
 ): CompletableFuture<NMSMap> {
+    // 通过CompletableFuture异步处理图像读取和地图创建
     return CompletableFuture.supplyAsync {
         NMSMap(url.openStream().use { ImageIO.read(it) }.zoomed(width, height), hand, builder)
     }
 }
 
 /**
- * 创建地图画（堵塞）
+ * 创建地图画的扩展函数（堵塞方式）
  *
- * @param file 图像文件
- * @param width 图像宽度
- * @param height 图像高度
+ * @param file 图像文件，File格式
+ * @param hand 地图的手持方向，默认为主手（MAIN）
+ * @param width 图像宽度，默认为128
+ * @param height 图像高度，默认为128
+ * @param builder 自定义物品构建器的扩展函数
+ * @return 返回创建的NMSMap对象
  */
 fun buildMap(
     file: File,
@@ -77,15 +87,19 @@ fun buildMap(
     height: Int = 128,
     builder: ItemBuilder.() -> Unit = {}
 ): NMSMap {
+    // 读取图像文件并缩放到指定大小
     return NMSMap(ImageIO.read(file).zoomed(width, height), hand, builder)
 }
 
 /**
- * 创建地图画（堵塞）
+ * 创建地图画的扩展函数（堵塞方式）
  *
- * @param image 图像对象
- * @param width 图像宽度
- * @param height 图像高度
+ * @param image 图像对象，BufferedImage格式
+ * @param hand 地图的手持方向，默认为主手（MAIN）
+ * @param width 图像宽度，默认为128
+ * @param height 图像高度，默认为128
+ * @param builder 自定义物品构建器的扩展函数
+ * @return 返回创建的NMSMap对象
  */
 fun buildMap(
     image: BufferedImage,
@@ -94,15 +108,18 @@ fun buildMap(
     height: Int = 128,
     builder: ItemBuilder.() -> Unit = {}
 ): NMSMap {
+    // 缩放图像并创建NMSMap对象
     return NMSMap(image.zoomed(width, height), hand, builder)
 }
 
 /**
- * 打开地图画（异步）
+ * 玩家发送地图画的扩展函数（异步方式）
  *
- * @param url 图像地址
- * @param width 图像宽度
- * @param height 图像高度
+ * @param url 图像地址，字符串格式
+ * @param hand 地图的手持方向，默认为主手（MAIN）
+ * @param width 图像宽度，默认为128
+ * @param height 图像高度，默认为128
+ * @param builder 自定义物品构建器的扩展函数
  */
 fun Player.sendMap(
     url: String,
@@ -111,15 +128,18 @@ fun Player.sendMap(
     height: Int = 128,
     builder: ItemBuilder.() -> Unit = {}
 ) {
+    // 异步构建地图并发送给玩家
     buildMap(URL(url), hand, width, height, builder).thenAccept { it.sendTo(this) }
 }
 
 /**
- * 打开地图画（异步）
+ * 玩家发送地图画的扩展函数（异步方式）
  *
- * @param url 图像地址
- * @param width 图像宽度
- * @param height 图像高度
+ * @param url 图像地址，URL格式
+ * @param hand 地图的手持方向，默认为主手（MAIN）
+ * @param width 图像宽度，默认为128
+ * @param height 图像高度，默认为128
+ * @param builder 自定义物品构建器的扩展函数
  */
 fun Player.sendMap(
     url: URL,
@@ -128,15 +148,18 @@ fun Player.sendMap(
     height: Int = 128,
     builder: ItemBuilder.() -> Unit = {}
 ) {
+    // 异步构建地图并发送给玩家
     buildMap(url, hand, width, height, builder).thenAccept { it.sendTo(this) }
 }
 
 /**
- * 打开地图画（异步）
+ * 玩家发送地图画的扩展函数（异步方式）
  *
- * @param file 图像文件
- * @param width 图像宽度
- * @param height 图像高度
+ * @param file 图像文件，File格式
+ * @param hand 地图的手持方向，默认为主手（MAIN）
+ * @param width 图像宽度，默认为128
+ * @param height 图像高度，默认为128
+ * @param builder 自定义物品构建器的扩展函数
  */
 fun Player.sendMap(
     file: File,
@@ -145,15 +168,18 @@ fun Player.sendMap(
     height: Int = 128,
     builder: ItemBuilder.() -> Unit = {}
 ) {
+    // 构建地图并直接发送给玩家
     buildMap(file, hand, width, height, builder).sendTo(this)
 }
 
 /**
- * 打开地图画（异步）
+ * 玩家发送地图画的扩展函数（异步方式）
  *
- * @param image 图像对象
- * @param width 图像宽度
- * @param height 图像高度
+ * @param image 图像对象，BufferedImage格式
+ * @param hand 地图的手持方向，默认为主手（MAIN）
+ * @param width 图像宽度，默认为128
+ * @param height 图像高度，默认为128
+ * @param builder 自定义物品构建器的扩展函数
  */
 fun Player.sendMap(
     image: BufferedImage,
@@ -162,40 +188,52 @@ fun Player.sendMap(
     height: Int = 128,
     builder: ItemBuilder.() -> Unit = {}
 ) {
+    // 构建地图并直接发送给玩家
     buildMap(image, hand, width, height, builder).sendTo(this)
 }
 
 /**
- * 调整图片分辨率
+ * 调整图片分辨率的扩展函数
+ *
  * 地图最佳显示分辨率为128*128
+ *
+ * @param width 目标宽度，默认为128
+ * @param height 目标高度，默认为128
+ * @return 返回缩放后的BufferedImage对象
  */
 fun BufferedImage.zoomed(width: Int = 128, height: Int = 128): BufferedImage {
+    // 创建一个新的BufferedImage对象以保存缩放后的图像
     val tag = BufferedImage(width, height, BufferedImage.TYPE_INT_RGB)
+    // 绘制原图到新图像上，完成缩放
     tag.graphics.drawImage(this, 0, 0, width, height, null)
     return tag
 }
 
 /**
- * 地图发包工具
- * 支持 1.8 - 1.17.1
- * @author xbaimiao, sky
+ * NMSMap类用于处理地图的创建和发送
+ *
+ * @param image 地图的图像数据，BufferedImage格式
+ * @param hand 地图的手持方向，默认为主手（MAIN）
+ * @param builder 自定义物品构建器的扩展函数
  */
 class NMSMap(val image: BufferedImage, var hand: Hand = Hand.MAIN, val builder: ItemBuilder.() -> Unit = {}) {
 
+    /**
+     * 地图的手持方向枚举
+     */
     enum class Hand {
-
         MAIN, OFF
     }
 
     companion object {
-
+        // NMS类的引用
         val classPacketPlayOutSetSlot = nmsClass("PacketPlayOutSetSlot")
         val classPacketPlayOutMap = nmsClass("PacketPlayOutMap")
         val classCraftItemStack = obcClass("inventory.CraftItemStack")
         val classMapIcon by unsafeLazy { nmsClass("MapIcon") }
 
         /**
-         * 鸣谢 [YsGqHY](https://github.com/YsGqHY) 提供的包寻找方法
+         * 提供用于寻找地图数据类的引用
          */
         val classMapData: Class<*> by unsafeLazy {
             try {
@@ -208,29 +246,34 @@ class NMSMap(val image: BufferedImage, var hand: Hand = Hand.MAIN, val builder: 
             }
         }
 
-        // 高版本把MapId改成了，这个东西主要是对1.20+的兼容
+        // 高版本兼容性处理
         val classMapId: Class<*> by unsafeLazy { Class.forName("net.minecraft.world.level.saveddata.maps.MapId") }
     }
 
+    // 地图渲染器，用于将图像绘制到地图上
     val mapRenderer = object : MapRenderer() {
 
         var rendered = false
 
         override fun render(mapView: MapView, mapCanvas: MapCanvas, player: Player) {
+            // 确保只渲染一次
             if (rendered) {
                 return
             }
+            // 绘制图像到地图画布上
             mapCanvas.drawImage(0, 0, image)
             rendered = true
         }
     }
 
+    // 创建地图视图
     val mapView by unsafeLazy {
         val mapView = Bukkit.createMap(Bukkit.getWorlds()[0])
         mapView.addRenderer(mapRenderer)
         mapView
     }
 
+    // 创建地图物品
     val mapItem by unsafeLazy {
         val map = if (MinecraftVersion.isHigherOrEqual(MinecraftVersion.V1_13)) {
             buildItem(XMaterial.FILLED_MAP, builder)
@@ -247,19 +290,28 @@ class NMSMap(val image: BufferedImage, var hand: Hand = Hand.MAIN, val builder: 
         }
     }
 
+    /**
+     * 将地图发送给指定玩家
+     *
+     * @param player 接收地图的玩家
+     */
     fun sendTo(player: Player) {
         submit(delay = 3) {
+            // 获取玩家的容器信息
             val container = if (MinecraftVersion.isUniversal) {
                 player.getProperty<Any>("entity/inventoryMenu")
             } else {
                 player.getProperty<Any>("entity/defaultContainer")
             }!!
+            // 获取窗口ID
             val windowsId = if (MinecraftVersion.isUniversal) {
                 container.getProperty<Int>("containerId")
             } else {
                 container.getProperty<Int>("windowId")
             }!!
+            // 构造NMS物品
             val nmsItem = classCraftItemStack.invokeMethod<Any>("asNMSCopy", mapItem, isStatic = true)
+            // 创建并设置发送的包
             val itemPacket = classPacketPlayOutSetSlot.unsafeInstance().also {
                 if (MinecraftVersion.isUniversal) {
                     it.setProperty("containerId", windowsId)
@@ -272,21 +324,21 @@ class NMSMap(val image: BufferedImage, var hand: Hand = Hand.MAIN, val builder: 
                     it.setProperty("c", nmsItem)
                 }
             }
+            // 根据配置选择异步或同步发送包
             if (SettingConfig.sendMapAsync) {
                 player.sendPacket(itemPacket)
             } else {
                 player.sendPacketBlocking(itemPacket)
             }
+            // 获取地图渲染的字节数组
             val buffer = mapView.invokeMethod<Any>("render", player)!!.getProperty<ByteArray>("buffer")
             val packet = classPacketPlayOutMap.unsafeInstance()
             when {
-                // 1.21+
+                // 1.21版本及以上的处理
                 MinecraftVersion.isHigherOrEqual(MinecraftVersion.V1_21) -> {
-                    // 1.21+这里被改成了MapId对象
                     packet.setProperty("mapId", classMapId.invokeConstructor(mapView.id))
                     packet.setProperty("scale", mapView.scale.value)
                     packet.setProperty("locked", false)
-                    // 1.21+这里被Optional包裹了
                     packet.setProperty("decorations", Optional.empty<List<Any>>())
                     packet.setProperty("colorPatch", Optional.of(classMapData.unsafeInstance().also {
                         it.setProperty("startX", 0)
@@ -296,7 +348,7 @@ class NMSMap(val image: BufferedImage, var hand: Hand = Hand.MAIN, val builder: 
                         it.setProperty("mapColors", buffer)
                     }))
                 }
-                // 1.20+
+                // 1.20版本及以上的处理
                 MinecraftVersion.isHigherOrEqual(MinecraftVersion.V1_20) -> {
                     packet.setProperty("mapId", mapView.id)
                     packet.setProperty("scale", mapView.scale.value)
@@ -310,7 +362,7 @@ class NMSMap(val image: BufferedImage, var hand: Hand = Hand.MAIN, val builder: 
                         it.setProperty("mapColors", buffer)
                     })
                 }
-                // 1.17+
+                // 1.17版本及以上的处理
                 MinecraftVersion.isUniversal -> {
                     packet.setProperty("mapId", (mapItem.itemMeta as MapMeta).mapId)
                     packet.setProperty("scale", mapView.scale.value)
@@ -324,7 +376,7 @@ class NMSMap(val image: BufferedImage, var hand: Hand = Hand.MAIN, val builder: 
                         it.setProperty("mapColors", buffer)
                     })
                 }
-                // 1.14+
+                // 1.14版本及以上的处理
                 MinecraftVersion.isHigherOrEqual(MinecraftVersion.V1_14) -> {
                     packet.setProperty("a", (mapItem.itemMeta as MapMeta).mapId)
                     packet.setProperty("b", mapView.scale.value)
@@ -337,7 +389,7 @@ class NMSMap(val image: BufferedImage, var hand: Hand = Hand.MAIN, val builder: 
                     packet.setProperty("i", 128)
                     packet.setProperty("j", buffer)
                 }
-                // 1.12+
+                // 1.12版本及以上的处理
                 MinecraftVersion.isHigherOrEqual(MinecraftVersion.V1_12) -> {
                     if (MinecraftVersion.isHigherOrEqual(MinecraftVersion.V1_13)) {
                         packet.setProperty("a", (mapItem.itemMeta as MapMeta).mapId)
@@ -353,7 +405,7 @@ class NMSMap(val image: BufferedImage, var hand: Hand = Hand.MAIN, val builder: 
                     packet.setProperty("h", 128)
                     packet.setProperty("i", buffer)
                 }
-                // 1.12-
+                // 1.12版本及以下的处理
                 else -> {
                     packet.setProperty("a", mapView.id)
                     packet.setProperty("b", mapView.scale.value)
@@ -365,6 +417,7 @@ class NMSMap(val image: BufferedImage, var hand: Hand = Hand.MAIN, val builder: 
                     packet.setProperty("h", buffer)
                 }
             }
+            // 根据配置选择异步或同步发送包
             if (SettingConfig.sendMapAsync) {
                 player.sendPacket(packet)
             } else {
@@ -373,7 +426,14 @@ class NMSMap(val image: BufferedImage, var hand: Hand = Hand.MAIN, val builder: 
         }
     }
 
+    /**
+     * 获取玩家主手或副手的槽位
+     *
+     * @param player 玩家对象
+     * @return 返回主手或副手的槽位索引
+     */
     private fun getMainHandSlot(player: Player): Int {
+        // 判断手持方向并返回对应槽位
         if (hand == Hand.OFF) {
             return 45
         }
