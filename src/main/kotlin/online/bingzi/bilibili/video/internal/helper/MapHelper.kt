@@ -382,7 +382,7 @@ class NMSMap(val image: BufferedImage, var hand: Hand = Hand.MAIN, val builder: 
                     packet.setProperty("b", mapView.scale.value)
                     packet.setProperty("c", false)
                     packet.setProperty("d", false)
-                    packet.setProperty("e", Array.newInstance(classMapIcon, 0))
+                    packet.setProperty("e", ArrayList<Any>())
                     packet.setProperty("f", 0)
                     packet.setProperty("g", 0)
                     packet.setProperty("h", 128)
@@ -398,7 +398,7 @@ class NMSMap(val image: BufferedImage, var hand: Hand = Hand.MAIN, val builder: 
                     }
                     packet.setProperty("b", mapView.scale.value)
                     packet.setProperty("c", false)
-                    packet.setProperty("d", Array.newInstance(classMapIcon, 0))
+                    packet.setProperty("d", ArrayList<Any>())
                     packet.setProperty("e", 0)
                     packet.setProperty("f", 0)
                     packet.setProperty("g", 128)
@@ -409,7 +409,7 @@ class NMSMap(val image: BufferedImage, var hand: Hand = Hand.MAIN, val builder: 
                 else -> {
                     packet.setProperty("a", mapView.id)
                     packet.setProperty("b", mapView.scale.value)
-                    packet.setProperty("c", Array.newInstance(classMapIcon, 0))
+                    packet.setProperty("c", ArrayList<Any>())
                     packet.setProperty("d", 0)
                     packet.setProperty("e", 0)
                     packet.setProperty("f", 128)
