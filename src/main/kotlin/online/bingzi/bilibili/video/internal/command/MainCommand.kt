@@ -153,7 +153,7 @@ object MainCommand {
                         return@execute // 退出执行
                     }
                     submit(async = true) { // 异步操作
-                        NetworkEngine.getTripleStatus(sender, context["bv"]) // 获取视频状态
+                        NetworkEngine.getTripleStatusShow(sender, context["bv"]) // 获取视频状态
                     }
                 }
             }

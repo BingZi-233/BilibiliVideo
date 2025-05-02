@@ -35,7 +35,7 @@ taboolib {
         install(BukkitHook)
     }
     version {
-        taboolib = "6.2.2"
+        taboolib = "6.2.3-8cc2f66"
     }
     relocate("com.google.zxing", "online.bingzi.libs.zxing")
     relocate("com.google.gson", "online.bingzi.libs.gson")

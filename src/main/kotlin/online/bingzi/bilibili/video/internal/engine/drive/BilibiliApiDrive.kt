@@ -1,5 +1,6 @@
 package online.bingzi.bilibili.video.internal.engine.drive
 
+import online.bingzi.bilibili.video.internal.cache.buvid3Cache
 import online.bingzi.bilibili.video.internal.entity.*
 import retrofit2.Call
 import retrofit2.http.*
@@ -11,13 +12,6 @@ import retrofit2.http.*
  * 该接口定义了与哔哩哔哩视频网站交互的API，提供了获取用户信息、点赞、投币、收藏和关注等功能。
  */
 interface BilibiliApiDrive {
-    companion object {
-        /**
-         * Buvid3
-         * 预制的Buvid3默认值，用于请求头中标识用户会话
-         */
-        private const val BUVID3 = "buvid3=BUVID3"
-    }
 
     /**
      * 获取用户信息
@@ -57,7 +51,8 @@ interface BilibiliApiDrive {
     @GET("web-interface/archive/has/like")
     fun hasLike(
         @Query("bvid") bvid: String,
-        @Header("Cookie") sessData: String
+        @Header("Cookie") sessData: String,
+        @Header("Cookie") buvid3: String = buvid3Cache
     ): Call<BilibiliResult<Int>>
 
     /**
@@ -70,7 +65,8 @@ interface BilibiliApiDrive {
     @GET("web-interface/archive/coins")
     fun hasCoins(
         @Query("bvid") bvid: String,
-        @Header("Cookie") sessData: String
+        @Header("Cookie") sessData: String,
+        @Header("Cookie") buvid3: String = buvid3Cache
     ): Call<BilibiliResult<CoinsData>>
 
     /**
@@ -83,7 +79,8 @@ interface BilibiliApiDrive {
     @GET("v2/fav/video/favoured")
     fun hasFavoured(
         @Query("aid") bvid: String,
-        @Header("Cookie") sessData: String
+        @Header("Cookie") sessData: String,
+        @Header("Cookie") buvid3: String = buvid3Cache
     ): Call<BilibiliResult<FavouredData>>
 
     /**
@@ -97,5 +94,16 @@ interface BilibiliApiDrive {
     fun hasFollowing(
         @Query("bvid") bvid: String,
         @Header("Cookie") sessData: String,
+        @Header("Cookie") buvid3: String = buvid3Cache
     ): Call<BilibiliResult<FollowingData>>
+
+    /**
+     * Get buvid3
+     * <p>
+     * 获取Buvid3
+     *
+     * @return [Buvid3Data]
+     */
+    @GET("x/web-frontend/getbuvid")
+    fun getBuvid3(): Call<BilibiliResult<Buvid3Data>>
 }
