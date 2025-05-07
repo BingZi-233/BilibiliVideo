@@ -17,6 +17,7 @@ taboolib {
         }
         dependencies {
             name("PlaceholderAPI").with("bukkit").optional(true)
+            name("ImageFrame")
         }
         links {
             name("homepage").url("https://github.com/BingZi-233/BilibiliVideo")
@@ -45,6 +46,10 @@ taboolib {
 repositories {
     mavenCentral()
     maven("https://repo.dmulloy2.net/repository/public/")
+    maven {
+        name = "loohp-repo"
+        url = uri("https://repo.loohpjames.com/repository")
+    }
 }
 
 dependencies {
@@ -61,6 +66,7 @@ dependencies {
     compileOnly("ink.ptms.core:v12103:v12103:universal")
     compileOnly(kotlin("stdlib"))
     compileOnly(fileTree("libs"))
+    compileOnly("com.loohp:ImageFrame:1.8.2.0")
 }
 
 tasks.withType<JavaCompile> {
