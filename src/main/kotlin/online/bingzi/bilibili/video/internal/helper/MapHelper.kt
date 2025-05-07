@@ -1,7 +1,5 @@
 package online.bingzi.bilibili.video.internal.helper
 
-import com.loohp.imageframe.nms.NMS
-import com.loohp.imageframe.nms.NMSWrapper
 import online.bingzi.bilibili.video.internal.config.SettingConfig
 import org.bukkit.Bukkit
 import org.bukkit.entity.Player
@@ -334,8 +332,91 @@ class NMSMap(val image: BufferedImage, var hand: Hand = Hand.MAIN, val builder: 
             }
             // 获取地图渲染的字节数组
             val buffer = mapView.invokeMethod<Any>("render", player)!!.getProperty<ByteArray>("buffer")
-            val instance = NMS.getInstance()
-            val packet = instance.createMapPacket(mapView.id, buffer, null)
+            val packet = classPacketPlayOutMap.unsafeInstance()
+            when {
+                // 1.21版本及以上的处理
+                MinecraftVersion.isHigherOrEqual(MinecraftVersion.V1_21) -> {
+                    packet.setProperty("mapId", classMapId.invokeConstructor(mapView.id))
+                    packet.setProperty("scale", mapView.scale.value)
+                    packet.setProperty("locked", false)
+                    packet.setProperty("decorations", Optional.empty<List<Any>>())
+                    packet.setProperty("colorPatch", Optional.of(classMapData.unsafeInstance().also {
+                        it.setProperty("startX", 0)
+                        it.setProperty("startY", 0)
+                        it.setProperty("width", 128)
+                        it.setProperty("height", 128)
+                        it.setProperty("mapColors", buffer)
+                    }))
+                }
+                // 1.20版本及以上的处理
+                MinecraftVersion.isHigherOrEqual(MinecraftVersion.V1_20) -> {
+                    packet.setProperty("mapId", mapView.id)
+                    packet.setProperty("scale", mapView.scale.value)
+                    packet.setProperty("locked", false)
+                    packet.setProperty("decorations", ArrayList<Any>())
+                    packet.setProperty("colorPatch", classMapData.unsafeInstance().also {
+                        it.setProperty("startX", 0)
+                        it.setProperty("startY", 0)
+                        it.setProperty("width", 128)
+                        it.setProperty("height", 128)
+                        it.setProperty("mapColors", buffer)
+                    })
+                }
+                // 1.17版本及以上的处理
+                MinecraftVersion.isUniversal -> {
+                    packet.setProperty("mapId", (mapItem.itemMeta as MapMeta).mapId)
+                    packet.setProperty("scale", mapView.scale.value)
+                    packet.setProperty("locked", false)
+                    packet.setProperty("decorations", ArrayList<Any>())
+                    packet.setProperty("colorPatch", classMapData.unsafeInstance().also {
+                        it.setProperty("startX", 0)
+                        it.setProperty("startY", 0)
+                        it.setProperty("width", 128)
+                        it.setProperty("height", 128)
+                        it.setProperty("mapColors", buffer)
+                    })
+                }
+                // 1.14版本及以上的处理
+                MinecraftVersion.isHigherOrEqual(MinecraftVersion.V1_14) -> {
+                    packet.setProperty("a", (mapItem.itemMeta as MapMeta).mapId)
+                    packet.setProperty("b", mapView.scale.value)
+                    packet.setProperty("c", false)
+                    packet.setProperty("d", false)
+                    packet.setProperty("e", ArrayList<Any>())
+                    packet.setProperty("f", 0)
+                    packet.setProperty("g", 0)
+                    packet.setProperty("h", 128)
+                    packet.setProperty("i", 128)
+                    packet.setProperty("j", buffer)
+                }
+                // 1.12版本及以上的处理
+                MinecraftVersion.isHigherOrEqual(MinecraftVersion.V1_12) -> {
+                    if (MinecraftVersion.isHigherOrEqual(MinecraftVersion.V1_13)) {
+                        packet.setProperty("a", (mapItem.itemMeta as MapMeta).mapId)
+                    } else {
+                        packet.setProperty("a", mapView.invokeMethod<Short>("getId")!!.toInt())
+                    }
+                    packet.setProperty("b", mapView.scale.value)
+                    packet.setProperty("c", false)
+                    packet.setProperty("d", ArrayList<Any>())
+                    packet.setProperty("e", 0)
+                    packet.setProperty("f", 0)
+                    packet.setProperty("g", 128)
+                    packet.setProperty("h", 128)
+                    packet.setProperty("i", buffer)
+                }
+                // 1.12版本及以下的处理
+                else -> {
+                    packet.setProperty("a", mapView.id)
+                    packet.setProperty("b", mapView.scale.value)
+                    packet.setProperty("c", ArrayList<Any>())
+                    packet.setProperty("d", 0)
+                    packet.setProperty("e", 0)
+                    packet.setProperty("f", 128)
+                    packet.setProperty("g", 128)
+                    packet.setProperty("h", buffer)
+                }
+            }
             // 根据配置选择异步或同步发送包
             if (SettingConfig.sendMapAsync) {
                 player.sendPacket(packet)
