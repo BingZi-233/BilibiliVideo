@@ -1,6 +1,6 @@
 package online.bingzi.bilibili.video.internal.engine
 
-import online.bingzi.bilibili.video.api.event.TripleSendRewardsEvent
+import online.bingzi.bilibili.video.api.event.*
 import online.bingzi.bilibili.video.internal.cache.*
 import online.bingzi.bilibili.video.internal.config.SettingConfig.chainOperations
 import online.bingzi.bilibili.video.internal.database.Database
@@ -17,6 +17,7 @@ import retrofit2.Response
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import taboolib.common.platform.ProxyPlayer
+import taboolib.common.platform.event.SubscribeEvent
 import taboolib.common.platform.function.submit
 import taboolib.common.platform.function.warning
 import taboolib.library.kether.ArgTypes.listOf
@@ -76,271 +77,152 @@ object NetworkEngine {
      */
     private const val ERROR_MESSAGE_NOT_PROVIDED: String = "Bilibili未提供任何错误信息"
 
-    /**
-     * 生成哔哩哔哩二维码 URL
-     * @param player 触发生成二维码的玩家
-     * @param target 可选参数，指定二维码的目标玩家，默认为 null
-     */
-    fun generateBilibiliQRCodeUrl(player: ProxyPlayer, target: ProxyPlayer? = null) {
-        // 调用通行证 API 生成二维码
+    @SubscribeEvent
+    fun onQRCodeGenerateRequest(event: BilibiliQRCodeGenerateRequestEvent) {
+        val player = event.player
+        val target = event.target
+
         bilibiliPassportAPI.applyQRCodeGenerate().enqueue(object : Callback<BilibiliResult<QRCodeGenerateData>> {
             override fun onResponse(
                 call: Call<BilibiliResult<QRCodeGenerateData>>, response: Response<BilibiliResult<QRCodeGenerateData>>
             ) {
-                // 确定操作的玩家
-                val p = target ?: player
                 if (response.isSuccessful) {
-                    // 处理成功的响应
                     val body = response.body()
                     if (body != null && body.code == 0) {
-                        // 向玩家副手发送二维码地图
-                        player.sendMap(body.data.url.toBufferedImage(128)) {
-                            name = "&a&lBilibili扫码登陆".colored()
-                            shiny()
-                            lore.clear()
-                            lore.addAll(
-                                listOf(
-                                    "&7请使用Bilibili客户端扫描二维码",
-                                    "&7二维码有效期为3分钟",
-                                ).colored()
-                            )
-                        }
-                        // 每隔1s检查一次玩家是否扫码
-                        // 出现以下情况后会自动取消任务：
-                        // 1. 玩家扫码登陆成功
-                        // 2. 二维码已超时
-                        submit(async = true, delay = 20L * 9, period = 20L * 3) {
-                            val qrCodeKey = body.data.qrCodeKey
-                            val execute = bilibiliPassportAPI.scanningQRCode(qrCodeKey).execute()
-                            if (execute.isSuccessful) {
-                                execute.body()?.let { result ->
-                                    when (result.data.code) {
-                                        0 -> {
-                                            qrCodeKeyCache[qrCodeKey]?.let { list ->
-                                                // 提取Cookie中有效部分
-                                                // 这里不知道为什么会传递一些容易产生干扰的信息进来
-                                                val cookieList = list.map { it.split(";")[0] }
-                                                // 将Cookie转化为JSON
-                                                val replace = cookieList.joinToString(
-                                                    ",", prefix = "{", postfix = "}"
-                                                ) {
-                                                    "\"${
-                                                        it.replace("=", "\":\"").replace("""\u003d""", "\":\"")
-                                                    }\""
-                                                }
-                                                // GSON反序列化成CookieData
-                                                val cookieData = gson.fromJson(replace, CookieData::class.java)
-                                                // 检查MID重复
-                                                val userInfoData = checkRepeatabilityMid(p, cookieData)
-                                                val cacheMid = midCache[p.uniqueId]
-                                                when {
-                                                    // 检查重复的MID
-                                                    userInfoData == null -> {
-                                                        player.infoAsLang("GenerateUseCookieRepeatabilityMid")
-                                                    }
-                                                    // 登录的MID和绑定的MID不一致
-                                                    cacheMid.isNullOrBlank().not() && cacheMid != userInfoData.mid -> {
-                                                        player.infoAsLang("PlayerIsBindMid")
-                                                    }
-                                                    // Cookie刷新
-                                                    else -> {
-                                                        cookieCache.put(p.uniqueId, cookieData)
-                                                        midCache.put(p.uniqueId, userInfoData.mid)
-                                                        unameCache.put(p.uniqueId, userInfoData.uname)
-                                                        p.setDataContainer("mid", userInfoData.mid)
-                                                        p.setDataContainer("uname", userInfoData.uname)
-                                                        p.setDataContainer("refresh_token", result.data.refreshToken)
-                                                        p.setDataContainer("timestamp", result.data.timestamp.toString())
-                                                        p.infoAsLang("GenerateUseCookieSuccess")
-                                                    }
-                                                }
-                                                this.cancel() // 取消任务
-                                            }
-                                        }
-
-                                        86038 -> {
-                                            // 处理二维码超时
-                                            player.infoAsLang("GenerateUseCookieQRCodeTimeout")
-                                            this.cancel()
-                                        }
-
-                                        else -> return@submit
-                                    }
-                                }
-                                // 更新玩家的库存
-                                Bukkit.getPlayer(player.uniqueId)?.updateInventory()
-                            } else {
-                                // 网络请求失败处理
-                                warningMessageAsLang("NetworkRequestFailureCode", response.code())
-                            }
-                        }
+                        BilibiliQRCodeGeneratedResultEvent(player, target, body.data, true).call()
+                        startQRCodePolling(player, target, body.data.qrCodeKey)
                     } else {
-                        // 处理生成二维码失败的情况
-                        player.infoAsLang("GenerateUseCookieFailure", response.body()?.message ?: ERROR_MESSAGE_NOT_PROVIDED)
+                        BilibiliQRCodeGeneratedResultEvent(
+                            player, target, null, false,
+                            body?.message ?: ERROR_MESSAGE_NOT_PROVIDED
+                        ).call()
                     }
                 } else {
-                    // 处理网络请求被拒绝的情况
-                    player.infoAsLang("NetworkRequestRefuse", "HTTP受限，错误码：${response.code()}")
+                    BilibiliQRCodeGeneratedResultEvent(
+                        player, target, null, false,
+                        "HTTP受限，错误码：${response.code()}"
+                    ).call()
                 }
             }
 
             override fun onFailure(call: Call<BilibiliResult<QRCodeGenerateData>>, t: Throwable) {
-                // 处理请求失败的情况
-                player.infoAsLang("NetworkRequestFailure", t.message ?: "未提供错误描述。")
+                BilibiliQRCodeGeneratedResultEvent(
+                    player, target, null, false,
+                    t.message ?: "未提供错误描述。"
+                ).call()
             }
         })
     }
 
-    /**
-     * 获取三连状态
-     * @param player 玩家
-     * @param bvid 视频 BV 号
-     */
-    fun getTripleStatus(player: ProxyPlayer, bvid: String) {
-        // 检查玩家是否已经获取过该视频的三连状态
-        bvCache[player.uniqueId to bvid]?.let {
-            if (it) {
-                player.infoAsLang("GetTripleStatusRepeat")
-                return
+    private fun startQRCodePolling(player: ProxyPlayer, target: ProxyPlayer?, qrCodeKey: String) {
+        submit(async = true, delay = 20L * 3, period = 20L * 3) {
+            val execute = bilibiliPassportAPI.scanningQRCode(qrCodeKey).execute()
+            if (execute.isSuccessful) {
+                execute.body()?.let { result ->
+                    val scanStatusCode = result.data.code
+                    var cookieData: CookieData? = null
+                    var eventMessage = result.message
+
+                    if (scanStatusCode == 0) {
+                        qrCodeKeyCache[qrCodeKey]?.let { rawCookies ->
+                            try {
+                                val cookieList = rawCookies.map { it.split(";")[0] }
+                                val cookieJsonString = cookieList.joinToString(
+                                    ",", prefix = "{", postfix = "}"
+                                ) { "\"${it.replace("=", "\":\"").replace("""\u003d""", "\":\"")}\"" }
+                                cookieData = gson.fromJson(cookieJsonString, CookieData::class.java)
+                            } catch (e: Exception) {
+                                warning("解析CookieData失败 for qrCodeKey $qrCodeKey: ${e.message}")
+                            }
+                        }
+                        if (cookieData == null) {
+                            eventMessage = eventMessage ?: "扫码成功但无法获取或解析Cookie"
+                        }
+                    }
+
+                    BilibiliQRCodeScanUpdateEvent(
+                        player,
+                        target,
+                        qrCodeKey,
+                        scanStatusCode,
+                        cookieData,
+                        result.data.refreshToken,
+                        result.data.timestamp,
+                        eventMessage
+                    ).call()
+
+                    if (scanStatusCode == 0 || scanStatusCode == 86038) {
+                        this.cancel()
+                    }
+                } ?: BilibiliQRCodeScanUpdateEvent(player, target, qrCodeKey, -1, message = "扫码响应体为空").call().also { this.cancel() }
+            } else {
+                warningMessageAsLang("NetworkRequestFailureCode", execute.code())
+                BilibiliQRCodeScanUpdateEvent(player, target, qrCodeKey, -2, message = "扫码网络请求失败: ${execute.code()}").call()
+                this.cancel()
             }
         }
-        // 获取玩家的 CSRF 令牌
-        val csrf = cookieCache[player.uniqueId]?.biliJct ?: let {
-            player.warningAsLang("CookieNotFound")
+    }
+
+    @SubscribeEvent
+    fun onTripleStatusRequest(event: TripleStatusRequestEvent) {
+        val player = event.player
+        val bvid = event.bvid
+
+        val csrf = cookieCache[player.uniqueId]?.biliJct
+        val sessData = cookieCache[player.uniqueId]?.sessData?.let { "SESSDATA=$it" }
+
+        if (csrf == null || sessData == null) {
+            TripleStatusResultEvent(player, bvid, null, false, -101, "CookieNotFound (CSRF or SESSDATA missing)").call()
             return
         }
-        // 获取玩家的 sessData
-        val sessData = cookieCache[player.uniqueId]?.let { list -> list.sessData?.let { "SESSDATA=$it" } } ?: let {
-            player.warningAsLang("CookieNotFound")
-            return
-        }
-        // 调用 API 获取三连状态
+
         bilibiliAPI.actionLikeTriple(bvid, csrf, sessData).enqueue(object : Callback<BilibiliResult<TripleData>> {
             override fun onResponse(
                 call: Call<BilibiliResult<TripleData>>, response: Response<BilibiliResult<TripleData>>
             ) {
                 if (response.isSuccessful) {
-                    response.body()?.let {
-                        when (it.code) {
-                            0 -> {
-                                val tripleData = it.data
-                                // 检查三连状态
-                                if (tripleData.coin && tripleData.fav && tripleData.like) {
-                                    player.setDataContainer(bvid, true.toString())
-                                    bvCache.put(player.uniqueId to bvid, true)
-                                    // 触发三连奖励事件
-                                    TripleSendRewardsEvent(player, bvid).call()
-                                } else {
-                                    player.infoAsLang(
-                                        "GetTripleStatusFailure", tripleData.like, tripleData.coin, tripleData.multiply, tripleData.fav
-                                    )
-                                }
-                            }
-
-                            -101 -> {
-                                // 处理 cookie 无效的情况
-                                player.infoAsLang("GetTripleStatusCookieInvalid")
-                            }
-
-                            10003 -> {
-                                // 处理目标失败的情况
-                                player.infoAsLang("GetTripleStatusTargetFailed")
-                            }
-
-                            else -> {
-                                // 处理其他错误
-                                player.infoAsLang(
-                                    "GetTripleStatusError", response.body()?.message ?: ERROR_MESSAGE_NOT_PROVIDED
-                                )
-                            }
-                        }
-                    } ?: player.infoAsLang(
-                        "GetTripleStatusRefuse", response.body()?.message ?: ERROR_MESSAGE_NOT_PROVIDED
-                    )
+                    response.body()?.let { body ->
+                        TripleStatusResultEvent(player, bvid, body.data, body.code == 0, body.code, body.message ?: ERROR_MESSAGE_NOT_PROVIDED).call()
+                    } ?: TripleStatusResultEvent(player, bvid, null, false, response.code(), "三连请求响应体为空但HTTP成功").call()
                 } else {
-                    // 处理请求失败的情况
-                    warning("请求失败")
-                    warning("失败原因：${response.code()}")
+                    TripleStatusResultEvent(player, bvid, null, false, response.code(), "三连请求失败: ${response.message()} (HTTP ${response.code()})").call()
+                    warning("请求失败 - Code: ${response.code()}, Message: ${response.message()}")
                 }
             }
 
             override fun onFailure(call: Call<BilibiliResult<TripleData>>, t: Throwable) {
-                // 处理请求失败的情况
-                player.infoAsLang("NetworkRequestFailure", t.message ?: "Bilibili未提供任何错误信息。")
+                TripleStatusResultEvent(player, bvid, null, false, null, t.message ?: ERROR_MESSAGE_NOT_PROVIDED).call()
             }
         })
     }
 
-    /**
-     * 获取三连状态（查看模式）
-     * @param player 玩家
-     * @param bvid 视频 BV 号
-     */
-    fun getTripleStatusShow(player: ProxyPlayer, bvid: String) {
-        // 检查玩家是否已经获取过该视频的三连状态
-        bvCache[player.uniqueId to bvid]?.let {
-            if (it) {
-                player.infoAsLang("GetTripleStatusRepeat")
-                return
-            }
-        }
-        // 获取玩家的 sessData
-        val sessData = cookieCache[player.uniqueId]?.let { list ->
-            list.sessData?.let { "SESSDATA=$it" }
-        } ?: let {
-            player.warningAsLang("CookieNotFound")
+    @SubscribeEvent
+    fun onTripleStatusShowRequest(event: TripleStatusShowRequestEvent) {
+        val player = event.player
+        val bvid = event.bvid
+
+        val sessData = cookieCache[player.uniqueId]?.sessData?.let { "SESSDATA=$it" }
+        if (sessData == null) {
+            TripleStatusShowResultEvent(player, bvid, false, "CookieNotFound (SESSDATA missing)").call()
             return
         }
-        // 处理 Show 模式下的三连状态
-        if (showAction.handle(player, bvid, sessData)) {
-            TripleSendRewardsEvent(player, bvid).call() // 触发三连奖励事件
-        }
+
+        val success = showAction.handle(player, bvid, sessData)
+        TripleStatusShowResultEvent(player, bvid, success, if (!success) "ShowAction处理失败" else null).call()
     }
 
-    /**
-     * 获取玩家绑定的用户信息
-     * @param player 玩家
-     * @return 返回用户信息数据，如果不存在则返回 null
-     */
-    fun getPlayerBindUserInfo(player: ProxyPlayer): UserInfoData? {
-        return cookieCache[player.uniqueId]?.let {
-            val userInfoData = getUserInfo(it) ?: return null
-            userInfoData
-        }
-    }
-
-    /**
-     * 检查重复的 MID
-     * @param player 玩家
-     * @param cookie cookie 数据
-     * @return 返回用户信息数据，如果数据库中存在该 MID 则返回 null
-     */
-    private fun checkRepeatabilityMid(player: ProxyPlayer, cookie: CookieData): UserInfoData? {
-        val userInfo = getUserInfo(cookie) ?: return null
-        // 如果数据库中存在该 MID 则返回 null，否则返回 MID
-        return if (Database.searchPlayerByMid(player, userInfo.mid)) null else userInfo
-    }
-
-    /**
-     * 获取用户信息
-     * @param cookie cookie 数据
-     * @return 返回用户信息数据，如果请求失败则返回 null
-     */
     fun getUserInfo(cookie: CookieData): UserInfoData? {
-        // 获取 SESSDATA
-        val sessData = cookie.sessData?.let { "SESSDATA=$it" } ?: let {
-            return null
-        }
-        // 获取用户信息
-        val response = bilibiliAPI.getUserInfo(sessData).execute()
-        // 判断请求是否成功并且返回的数据 code 是否为 0
-        return when {
-            response.isSuccessful -> {
-                // 获取 MID
-                response.body()?.data ?: return null
+        val sessData = cookie.sessData?.let { "SESSDATA=$it" } ?: return null
+        return try {
+            val response = bilibiliAPI.getUserInfo(sessData).execute()
+            if (response.isSuccessful) {
+                response.body()?.data
+            } else {
+                null
             }
-
-            else -> null
+        } catch (e: Exception) {
+            warning("获取用户信息时发生异常: ${e.message}")
+            null
         }
     }
 }
