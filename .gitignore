@@ -2,3 +2,7 @@
 .idea
 build
 bin
+
+# Claude Code相关文件
+.claude/
+CLAUDE.local.md
