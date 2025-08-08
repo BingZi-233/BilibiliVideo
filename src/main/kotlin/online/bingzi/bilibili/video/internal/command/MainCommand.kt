@@ -1,6 +1,8 @@
 package online.bingzi.bilibili.video.internal.command
 
+import online.bingzi.bilibili.video.internal.cache.VerificationCodeCache
 import online.bingzi.bilibili.video.internal.cache.baffleCache
+import online.bingzi.bilibili.video.internal.onebot.QQBindManager
 import online.bingzi.bilibili.video.internal.cache.cookieCache
 import online.bingzi.bilibili.video.internal.cache.midCache
 import online.bingzi.bilibili.video.internal.config.SettingConfig
@@ -20,6 +22,7 @@ import taboolib.expansion.createHelper
 import taboolib.library.kether.ArgTypes.listOf
 import taboolib.module.chat.colored
 import taboolib.module.lang.sendInfoMessage
+import taboolib.module.lang.asLangText
 import taboolib.platform.util.bukkitPlugin
 
 // MainCommand 是一个对象，负责处理所有与 Bilibili 视频相关的命令。
@@ -63,6 +66,66 @@ object MainCommand {
                     return@execute // 退出执行
                 }
                 sender.infoAsLang("PlayerUnbindSuccess", argument) // 发送成功解除绑定的信息
+            }
+        }
+    }
+
+    // bind 子命令，申请QQ绑定
+    @CommandBody(permission = "BilibiliVideo.command.bind", permissionDefault = PermissionDefault.TRUE)
+    val bind = subCommand {
+        execute<ProxyPlayer> { sender, _, _ -> // 执行命令的逻辑
+            // 检查是否已绑定
+            if (QQBindManager.hasBinding(sender.uniqueId)) {
+                sender.infoAsLang("BindAlreadyBound")
+                return@execute
+            }
+            
+            // 检查冷却时间
+            if (VerificationCodeCache.isInCooldown(sender.uniqueId)) {
+                val remaining = VerificationCodeCache.getCooldownRemaining(sender.uniqueId)
+                sender.infoAsLang("BindCooldown", remaining)
+                return@execute
+            }
+            
+            // 生成验证码
+            val code = QQBindManager.requestBinding(sender)
+            if (code != null) {
+                sender.infoAsLang("BindCodeGeneratedHeader")
+                sender.infoAsLang("BindCodeGenerated", code)
+                sender.infoAsLang("BindCodeInstruction", code)
+                sender.infoAsLang("BindCodeExpireTime")
+                sender.infoAsLang("BindCodeGeneratedFooter")
+            } else {
+                sender.infoAsLang("BindCodeFailed")
+            }
+        }
+    }
+    
+    // unbindqq 子命令，解除QQ绑定
+    @CommandBody(permission = "BilibiliVideo.command.unbindqq", permissionDefault = PermissionDefault.TRUE)
+    val unbindqq = subCommand {
+        execute<ProxyPlayer> { sender, _, _ -> // 执行命令的逻辑
+            if (QQBindManager.unbind(sender.uniqueId)) {
+                sender.infoAsLang("UnbindQQSuccess")
+            } else {
+                sender.infoAsLang("UnbindQQNotBound")
+            }
+        }
+    }
+    
+    // qqinfo 子命令，查看QQ绑定信息
+    @CommandBody(permission = "BilibiliVideo.command.qqinfo", permissionDefault = PermissionDefault.TRUE)
+    val qqinfo = subCommand {
+        execute<ProxyPlayer> { sender, _, _ -> // 执行命令的逻辑
+            val binding = QQBindManager.getBinding(sender.uniqueId)
+            if (binding != null) {
+                sender.infoAsLang("QQBindInfoHeader")
+                sender.infoAsLang("QQBindInfoNumber", binding.qqNumber)
+                sender.infoAsLang("QQBindInfoTime", binding.bindTime)
+                sender.infoAsLang("QQBindInfoBilibili", if (binding.bilibiliMid != null) "已绑定" else "未绑定")
+                sender.infoAsLang("QQBindInfoFooter")
+            } else {
+                sender.infoAsLang("QQBindInfoNotBound")
             }
         }
     }

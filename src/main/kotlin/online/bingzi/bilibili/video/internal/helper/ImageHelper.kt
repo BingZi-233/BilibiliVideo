@@ -1,11 +1,7 @@
 package online.bingzi.bilibili.video.internal.helper
 
-import com.comphenix.protocol.PacketType
-import com.comphenix.protocol.ProtocolLibrary
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.qrcode.QRCodeWriter
-import org.bukkit.entity.Player
-import org.bukkit.inventory.ItemStack
 import java.awt.Color
 import java.awt.image.BufferedImage
 
@@ -48,29 +44,4 @@ fun String.toBufferedImage(size: Int): BufferedImage {
 
     // 返回生成的二维码图像
     return image
-}
-
-/**
- * 扩展函数：向玩家发送虚拟物品。
- * 该函数将创建一个数据包，将指定的物品发送到调用该函数的玩家的指定插槽中。
- *
- * @param itemStack 要发送的物品堆栈，类型为ItemStack。
- */
-fun Player.sendVirtualItem(itemStack: ItemStack) {
-    // 创建一个装载物品数据的包，使用ProtocolLibrary
-    val packet = ProtocolLibrary.getProtocolManager().createPacket(PacketType.Play.Server.SET_SLOT)
-
-    // 设置包中的数据：插槽ID，指定要放置物品的插槽编号为45
-    packet.integers.write(1, 45)  // 插槽ID
-
-    // 将物品堆栈放入包中，更新插槽的物品
-    packet.itemModifier.write(0, itemStack)
-
-    try {
-        // 发送包给指定的玩家
-        ProtocolLibrary.getProtocolManager().sendServerPacket(this, packet)
-    } catch (e: Exception) {
-        // 捕获并打印异常信息
-        e.printStackTrace()
-    }
 }

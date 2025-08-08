@@ -333,7 +333,7 @@ class NMSMap(val image: BufferedImage, var hand: Hand = Hand.MAIN, val builder: 
             // 获取地图渲染的字节数组
             val buffer = mapView.invokeMethod<Any>("render", player)!!.getProperty<ByteArray>("buffer")
             // 创建地图数据包
-            val packet = createMapPacket(mapView.id, buffer)
+            val packet = createMapPacket(mapView.id, buffer!!)
             // 根据配置选择异步或同步发送包
             if (SettingConfig.sendMapAsync) {
                 player.sendPacket(packet)

@@ -10,6 +10,8 @@ import online.bingzi.bilibili.video.internal.engine.drive.BilibiliPassportDrive
 import online.bingzi.bilibili.video.internal.entity.*
 import online.bingzi.bilibili.video.internal.handler.ApiType
 import online.bingzi.bilibili.video.internal.helper.*
+import online.bingzi.bilibili.video.internal.onebot.QRCodeService
+import online.bingzi.bilibili.video.internal.onebot.QQBindManager
 import org.bukkit.Bukkit
 import retrofit2.Call
 import retrofit2.Callback
@@ -93,18 +95,19 @@ object NetworkEngine {
                     // 处理成功的响应
                     val body = response.body()
                     if (body != null && body.code == 0) {
-                        // 向玩家副手发送二维码地图
-                        player.sendMap(body.data.url.toBufferedImage(128)) {
-                            name = "&a&lBilibili扫码登陆".colored()
-                            shiny()
-                            lore.clear()
-                            lore.addAll(
-                                listOf(
-                                    "&7请使用Bilibili客户端扫描二维码",
-                                    "&7二维码有效期为3分钟",
-                                ).colored()
-                            )
+                        // 使用QRCodeService发送二维码
+                        val success = QRCodeService.sendQRCode(
+                            player,
+                            body.data.url,
+                            "Bilibili扫码登陆",
+                            "请使用Bilibili客户端扫描二维码"
+                        )
+                        
+                        if (!success) {
+                            player.infoAsLang("GenerateUseCookieFailure", "发送二维码失败")
+                            return
                         }
+                        
                         // 每隔1s检查一次玩家是否扫码
                         // 出现以下情况后会自动取消任务：
                         // 1. 玩家扫码登陆成功
@@ -152,6 +155,14 @@ object NetworkEngine {
                                                         p.setDataContainer("refresh_token", result.data.refreshToken)
                                                         p.setDataContainer("timestamp", result.data.timestamp.toString())
                                                         p.infoAsLang("GenerateUseCookieSuccess")
+                                                        
+                                                        // 如果绑定了QQ，更新Bilibili MID
+                                                        if (QQBindManager.hasBinding(p.uniqueId)) {
+                                                            QQBindManager.updateBilibiliMid(p.uniqueId, userInfoData.mid)
+                                                        }
+                                                        
+                                                        // 发送登录成功通知
+                                                        QRCodeService.sendLoginSuccessNotification(p, userInfoData.uname)
                                                     }
                                                 }
                                                 this.cancel() // 取消任务
@@ -161,7 +172,14 @@ object NetworkEngine {
                                         86038 -> {
                                             // 处理二维码超时
                                             player.infoAsLang("GenerateUseCookieQRCodeTimeout")
+                                            // 发送二维码过期通知
+                                            QRCodeService.sendQRCodeExpiredNotification(p)
                                             this.cancel()
+                                        }
+                                        
+                                        86090 -> {
+                                            // 二维码已扫描，等待确认
+                                            QRCodeService.sendScanSuccessNotification(p)
                                         }
 
                                         else -> return@submit

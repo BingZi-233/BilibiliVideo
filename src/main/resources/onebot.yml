@@ -1,0 +1,51 @@
+# OneBot配置
+# 用于连接QQ机器人
+
+# OneBot连接配置
+onebot:
+  # 是否启用OneBot功能
+  enabled: true
+  
+  # WebSocket连接地址
+  # 支持的OneBot实现：NapCat、go-cqhttp、Mirai + OneBot插件等
+  url: "ws://127.0.0.1:8080"
+  
+  # 访问令牌（如果OneBot服务端设置了token）
+  # 留空表示不使用token
+  token: ""
+  
+  # 机器人QQ号（可选，某些功能可能需要）
+  bot-id: 123456789
+  
+  # 重连设置
+  reconnect:
+    # 是否自动重连
+    enabled: true
+    # 重连间隔（秒）
+    interval: 5
+    # 最大重连次数（-1表示无限）
+    max-attempts: -1
+
+# QQ绑定设置
+qq-binding:
+  # 验证码长度
+  code-length: 6
+  # 验证码有效期（秒）
+  code-expire: 300
+  # 验证码前缀（用于识别验证码消息）
+  code-prefix: "绑定"
+  # 每个玩家申请验证码的冷却时间（秒）
+  cooldown: 60
+  # 是否允许一个QQ绑定多个游戏账号
+  allow-multiple: false
+
+# 二维码发送设置
+qrcode:
+  # 发送模式: "game"（游戏内）, "qq"（QQ）, "both"（两者）
+  send-mode: "qq"
+  # 二维码图片大小（像素）
+  size: 256
+  # 二维码过期提醒
+  expire-reminder: true
+  # 过期提醒时间（秒，二维码过期前多久提醒）
+  expire-reminder-time: 30

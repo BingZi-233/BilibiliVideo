@@ -2,7 +2,6 @@ package online.bingzi.bilibili.video.internal.database
 
 import online.bingzi.bilibili.video.internal.helper.infoMessageAsLang
 import org.bukkit.entity.Player
-import sun.misc.MessageUtils.where
 import taboolib.common.platform.ProxyPlayer
 import taboolib.module.database.Table
 import java.util.*
