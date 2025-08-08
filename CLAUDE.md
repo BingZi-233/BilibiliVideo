@@ -8,38 +8,49 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 构建和开发命令
 
-### 构建
+### 核心构建命令
 ```bash
+# 清理并构建项目（推荐）
+./gradlew clean build
+
+# 仅构建
 ./gradlew build
-```
 
-### 运行测试
-```bash
-./gradlew test
-```
-
-### 清理构建产物
-```bash
+# 仅清理
 ./gradlew clean
-```
 
-### 生成开发环境jar包
-```bash
+# 运行测试
+./gradlew test
+
+# 生成开发环境jar包
 ./gradlew buildDev
-```
 
-### 查看所有可用任务
-```bash
+# 查看所有可用任务
 ./gradlew tasks
 ```
 
-### 主要TabooLib任务
-- `./gradlew taboolibMainTask` - 执行TabooLib主任务
-- `./gradlew taboolibRefreshDependencies` - 刷新TabooLib依赖
+### TabooLib特定任务
+```bash
+# 执行TabooLib主任务
+./gradlew taboolibMainTask
+
+# 刷新TabooLib依赖
+./gradlew taboolibRefreshDependencies
+```
+
+### 构建产物位置
+- 插件JAR包：`build/libs/BilibiliVideo-{version}.jar`
 
 ## 代码架构
 
-### 核心模块结构
+### 核心技术栈
+- **语言**: Kotlin 1.9.23
+- **框架**: TabooLib 6.2.3
+- **构建工具**: Gradle (Kotlin DSL)
+- **目标平台**: Bukkit/Spigot/Paper (Minecraft 1.8+)
+- **Java版本**: 1.8 (source/target compatibility)
+
+### 项目结构
 
 - **主入口**: `BilibiliVideo.kt` - 插件的主类，处理生命周期
 - **API模块**: `api/event/` - 对外提供的事件API
@@ -105,15 +116,58 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ### 开发约定
 
+#### 命名规范
 - 所有内部实现都在`internal`包下
 - 使用object单例模式管理主要组件
+- 配置文件使用小驼峰命名（如`lang/zh_CN.yml`中的key）
+- 类文件使用大驼峰命名
+- 每个文件只包含一个类
+
+#### TabooLib框架约定
+- 命令使用`@CommandHeader`注解定义
+- 子命令使用`@CommandBody`注解
+- 事件系统基于TabooLib的事件机制
+- 配置管理使用TabooLib的Config模块
+- 数据库操作使用TabooLib的Database模块
+
+#### 代码组织原则
 - 采用事件驱动架构处理业务逻辑
+- 网络请求统一通过`NetworkEngine`处理
+- 缓存使用Caffeine框架管理
 - 支持PlaceholderAPI变量扩展
 - 多语言支持通过lang文件实现
 
 ### 版本管理
 
-当前版本在`gradle.properties`中定义为`1.6.8-beta1`
+- 版本号定义：`gradle.properties`中的`version`属性
+- 当前版本：`1.6.8-beta1`
+- 版本格式：`major.minor.patch[-suffix]`
+
+## 开发流程
+
+### 添加新功能流程
+1. 在`internal`包下创建对应的功能模块
+2. 如需对外暴露事件，在`api/event`包下创建事件类
+3. 更新`lang/zh_CN.yml`添加相关语言键
+4. 如需新命令，在`MainCommand.kt`中添加子命令
+5. 运行`./gradlew clean build`确保编译通过
+
+### 调试技巧
+- 使用`DebugHelper`进行调试输出
+- 检查`logs/latest.log`查看详细日志
+- TabooLib错误通常会在控制台显示详细堆栈信息
+
+### 网络请求开发
+- 所有B站API调用通过`drive`包下的接口定义
+- 使用Retrofit2进行HTTP请求
+- Cookie管理通过`CookieCache`和拦截器实现
+- 请求结果统一封装为`BilibiliResult<T>`
+
+### 数据持久化
+- 支持MySQL和SQLite两种数据库
+- 数据库配置在`database.yml`
+- 玩家数据通过`Database`抽象层访问
+- 使用TabooLib的数据容器API
 
 ### 项目链接
 
@@ -123,9 +177,22 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ### 命令和权限
 
-主要命令包括：
-- `bilibilivideo login` - 绑定账户
-- `bilibilivideo receive [bv] [show|auto]` - 领取奖励
-- `bilibilivideo video [bv]` - 生成视频二维码
+#### 主要命令
+- `bilibilivideo login [player]` - 绑定B站账户
+- `bilibilivideo unbind <player>` - 解绑账户（OP）
+- `bilibilivideo receive <bv> [show|auto]` - 领取奖励
+- `bilibilivideo video <bv>` - 生成视频二维码
+- `bilibilivideo show` - 查看绑定信息
+- `bilibilivideo logout` - 清理Cookie
+- `bilibilivideo reload` - 重载配置（OP）
+- `bilibilivideo version` - 查看版本（OP）
 
-详细命令和权限列表参见README.md
+#### 权限节点
+- `BilibiliVideo.command.use` - 基础命令权限
+- `BilibiliVideo.command.{subcommand}` - 各子命令权限
+- 详细权限配置参见README.md
+
+### PlaceholderAPI变量
+- `%BilibiliVideo_uid%` - 用户UID
+- `%BilibiliVideo_uname%` - 用户名称  
+- `%BilibiliVideo_check_[bv]%` - 检查视频奖励状态
