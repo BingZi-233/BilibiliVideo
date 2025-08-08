@@ -2,11 +2,9 @@ package online.bingzi.bilibili.video.internal.onebot
 
 import online.bingzi.bilibili.video.internal.config.OneBotConfig
 import online.bingzi.bilibili.video.internal.helper.toBufferedImage
-import online.bingzi.bilibili.video.internal.helper.sendMap
 import online.bingzi.bilibili.video.internal.helper.infoAsLang
 import taboolib.common.platform.ProxyPlayer
 import taboolib.common.platform.function.warning
-import taboolib.module.chat.colored
 import taboolib.module.lang.asLangText
 import java.awt.image.BufferedImage
 import java.io.ByteArrayOutputStream
@@ -16,7 +14,7 @@ import javax.imageio.ImageIO
 /**
  * 二维码发送服务
  * 
- * 处理二维码的生成和发送
+ * 通过QQ发送二维码
  * 
  * @author BingZi-233
  * @since 2.0.0
@@ -24,7 +22,7 @@ import javax.imageio.ImageIO
 object QRCodeService {
     
     /**
-     * 发送二维码
+     * 发送二维码到QQ
      * 
      * @param player 玩家
      * @param qrCodeUrl 二维码内容
@@ -37,38 +35,6 @@ object QRCodeService {
         qrCodeUrl: String,
         title: String = "Bilibili登录",
         description: String = "请使用Bilibili客户端扫描二维码"
-    ): Boolean {
-        val sendMode = OneBotConfig.qrCodeSendMode
-        
-        return when (sendMode) {
-            "qq" -> sendToQQ(player, qrCodeUrl, title, description)
-            "game" -> sendToGame(player, qrCodeUrl, title, description)
-            "both" -> {
-                val qqResult = sendToQQ(player, qrCodeUrl, title, description)
-                val gameResult = sendToGame(player, qrCodeUrl, title, description)
-                qqResult || gameResult
-            }
-            else -> {
-                warning("未知的二维码发送模式: $sendMode")
-                false
-            }
-        }
-    }
-    
-    /**
-     * 发送二维码到QQ
-     * 
-     * @param player 玩家
-     * @param qrCodeUrl 二维码内容
-     * @param title 标题
-     * @param description 描述
-     * @return 是否发送成功
-     */
-    private fun sendToQQ(
-        player: ProxyPlayer,
-        qrCodeUrl: String,
-        title: String,
-        description: String
     ): Boolean {
         // 检查OneBot是否连接
         if (!OneBotManager.isConnected()) {
@@ -118,41 +84,6 @@ object QRCodeService {
         }
         
         return success
-    }
-    
-    /**
-     * 发送二维码到游戏内
-     * 
-     * @param player 玩家
-     * @param qrCodeUrl 二维码内容
-     * @param title 标题
-     * @param description 描述
-     * @return 是否发送成功
-     */
-    private fun sendToGame(
-        player: ProxyPlayer,
-        qrCodeUrl: String,
-        title: String,
-        description: String
-    ): Boolean {
-        // 使用原有的游戏内发送逻辑
-        // 这里需要调用MapHelper的sendMap方法
-        try {
-            val qrCodeImage = qrCodeUrl.toBufferedImage(128)
-            player.sendMap(qrCodeImage) {
-                name = "§a§l$title".colored()
-                shiny()
-                lore.clear()
-                lore.addAll(listOf(
-                    "§7$description",
-                    "§7二维码有效期为3分钟"
-                ).colored())
-            }
-            return true
-        } catch (e: Exception) {
-            warning("发送游戏内二维码失败: ${e.message}")
-            return false
-        }
     }
     
     /**

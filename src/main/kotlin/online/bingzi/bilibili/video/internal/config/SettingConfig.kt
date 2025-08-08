@@ -42,20 +42,6 @@ object SettingConfig {
     var chainOperations: List<ApiType> = listOf()
 
     /**
-     * virtualization
-     * 指示是否启用地图虚拟化功能。
-     * 默认值为 true。
-     */
-    var virtualization: Boolean = true
-
-    /**
-     * sendMapAsync
-     * 指示是否异步发送地图数据。
-     * 默认值为 true。
-     */
-    var sendMapAsync: Boolean = true
-
-    /**
      * registerAutoReload
      * 注册自动重载配置的功能。
      * 当配置文件被修改时，触发 reloadAction 方法以更新当前设置。
@@ -72,8 +58,6 @@ object SettingConfig {
      * - 重置缓存。
      * - 重新构建链式操作列表。
      * - 更新调试状态。
-     * - 更新虚拟化地图设置。
-     * - 更新异步地图发送设置。
      */
     @Awake(LifeCycle.ENABLE)
     fun reloadAction() {
@@ -91,11 +75,5 @@ object SettingConfig {
 
         // 从配置中获取调试状态并更新
         debugStatus = config.getBoolean("debug")
-
-        // 从配置中获取虚拟化地图设置并更新
-        virtualization = config.getBoolean("virtualization")
-
-        // 从配置中获取异步地图发送设置并更新
-        sendMapAsync = config.getBoolean("sendMapAsync")
     }
 }

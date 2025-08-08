@@ -4,13 +4,6 @@
 # 单位: 秒
 cooldown: 60
 
-# 地图虚拟化
-# 虚拟化之后将会有更高的安全性，但兼容性较差
-# 若无法正常获取地图，请设置为false关闭虚拟化
-virtualization: true
-
-sendMapAsync: false
-
 chainOperations:
   - COINS
   - LIKE

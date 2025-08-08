@@ -94,12 +94,6 @@ object OneBotConfig {
     // 二维码相关配置
     
     /**
-     * 发送模式
-     */
-    val qrCodeSendMode: String
-        get() = config.getString("qrcode.send-mode", "qq")!!
-    
-    /**
      * 二维码大小
      */
     val qrCodeSize: Int

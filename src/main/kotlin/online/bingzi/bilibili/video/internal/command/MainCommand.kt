@@ -10,19 +10,14 @@ import online.bingzi.bilibili.video.internal.config.VideoConfig
 import online.bingzi.bilibili.video.internal.database.Database.Companion.setDataContainer
 import online.bingzi.bilibili.video.internal.engine.NetworkEngine
 import online.bingzi.bilibili.video.internal.helper.infoAsLang
-import online.bingzi.bilibili.video.internal.helper.sendMap
-import online.bingzi.bilibili.video.internal.helper.toBufferedImage
-import org.bukkit.Bukkit
 import taboolib.common.platform.ProxyCommandSender
 import taboolib.common.platform.ProxyPlayer
 import taboolib.common.platform.command.*
 import taboolib.common.platform.function.getProxyPlayer
 import taboolib.common.platform.function.submit
 import taboolib.expansion.createHelper
-import taboolib.library.kether.ArgTypes.listOf
 import taboolib.module.chat.colored
 import taboolib.module.lang.sendInfoMessage
-import taboolib.module.lang.asLangText
 import taboolib.platform.util.bukkitPlugin
 
 // MainCommand 是一个对象，负责处理所有与 Bilibili 视频相关的命令。
@@ -218,32 +213,6 @@ object MainCommand {
                     submit(async = true) { // 异步操作
                         NetworkEngine.getTripleStatusShow(sender, context["bv"]) // 获取视频状态
                     }
-                }
-            }
-        }
-    }
-
-    // video 子命令，展示视频的相关信息
-    @CommandBody(permission = "BilibiliVideo.command.video", permissionDefault = PermissionDefault.TRUE)
-    val video = subCommand {
-        dynamic(comment = "bv") { // 动态参数，表示视频的 bv 号
-            suggestion<ProxyPlayer> { _, _ -> // 建议视频列表
-                VideoConfig.receiveMap.keys.toList() // 返回可用的 bv 号
-            }
-            execute<ProxyPlayer> { sender, _, argument -> // 执行命令的逻辑
-                // 发送视频链接的二维码
-                sender.sendMap("https://www.bilibili.com/video/${argument}/".toBufferedImage(128)) {
-                    name = "&a&lBilibili传送门".colored() // 设置二维码名称
-                    shiny() // 设置二维码为闪亮效果
-                    lore.clear() // 清空说明文本
-                    lore.addAll( // 添加说明文本
-                        listOf(
-                            "&7请使用Bilibili客户端扫描二维码" // 提示用户操作
-                        ).colored()
-                    )
-                }
-                submit(async = true, delay = 20 * 60 * 3) { // 延迟3分钟后更新玩家的背包
-                    Bukkit.getPlayer(sender.uniqueId)?.updateInventory() // 更新玩家的背包
                 }
             }
         }

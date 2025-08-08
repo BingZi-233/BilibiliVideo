@@ -41,8 +41,6 @@ qq-binding:
 
 # 二维码发送设置
 qrcode:
-  # 发送模式: "game"（游戏内）, "qq"（QQ）, "both"（两者）
-  send-mode: "qq"
   # 二维码图片大小（像素）
   size: 256
   # 二维码过期提醒
