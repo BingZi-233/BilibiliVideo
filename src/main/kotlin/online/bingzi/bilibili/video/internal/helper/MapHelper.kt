@@ -1,7 +1,5 @@
 package online.bingzi.bilibili.video.internal.helper
 
-import com.loohp.imageframe.nms.NMS
-import com.loohp.imageframe.nms.NMSWrapper
 import online.bingzi.bilibili.video.internal.config.SettingConfig
 import org.bukkit.Bukkit
 import org.bukkit.entity.Player
@@ -334,8 +332,8 @@ class NMSMap(val image: BufferedImage, var hand: Hand = Hand.MAIN, val builder: 
             }
             // 获取地图渲染的字节数组
             val buffer = mapView.invokeMethod<Any>("render", player)!!.getProperty<ByteArray>("buffer")
-            val instance = NMS.getInstance()
-            val packet = instance.createMapPacket(mapView.id, buffer, null)
+            // 创建地图数据包
+            val packet = createMapPacket(mapView.id, buffer)
             // 根据配置选择异步或同步发送包
             if (SettingConfig.sendMapAsync) {
                 player.sendPacket(packet)
@@ -343,6 +341,47 @@ class NMSMap(val image: BufferedImage, var hand: Hand = Hand.MAIN, val builder: 
                 player.sendPacketBlocking(packet)
             }
         }
+    }
+
+    /**
+     * 创建地图数据包
+     *
+     * @param mapId 地图ID
+     * @param buffer 地图数据缓冲区
+     * @return 地图数据包
+     */
+    private fun createMapPacket(mapId: Int, buffer: ByteArray): Any {
+        val packet = classPacketPlayOutMap.unsafeInstance()
+        
+        if (MinecraftVersion.isUniversal) {
+            // 1.17+ 版本
+            if (MinecraftVersion.isHigherOrEqual(MinecraftVersion.V1_21)) {
+                val mapIdObj = classMapId.invokeConstructor(mapId)
+                packet.setProperty("mapId", mapIdObj)
+            } else {
+                packet.setProperty("mapId", mapId)
+            }
+            packet.setProperty("scale", 0.toByte())
+            packet.setProperty("locked", false)
+            
+            // 创建空的图标列表
+            packet.setProperty("decorations", emptyList<Any>())
+            
+            // 创建地图数据
+            val mapData = classMapData.invokeConstructor(0, 0, 128, 128, buffer)
+            packet.setProperty("colorPatch", mapData)
+        } else {
+            // 1.16 及以下版本
+            packet.setProperty("a", mapId)
+            packet.setProperty("b", 0.toByte())
+            packet.setProperty("c", false)
+            packet.setProperty("d", emptyList<Any>())
+            
+            val mapData = classMapData.invokeConstructor(0, 0, 128, 128, buffer)
+            packet.setProperty("e", mapData)
+        }
+        
+        return packet
     }
 
     /**

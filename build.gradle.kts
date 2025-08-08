@@ -3,7 +3,7 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
     java
-    id("io.izzel.taboolib") version "2.0.22"
+    id("io.izzel.taboolib") version "2.0.27"
     id("org.jetbrains.kotlin.jvm") version "1.9.23"
 }
 
@@ -17,7 +17,6 @@ taboolib {
         }
         dependencies {
             name("PlaceholderAPI").with("bukkit").optional(true)
-            name("ImageFrame")
         }
         links {
             name("homepage").url("https://github.com/BingZi-233/BilibiliVideo")
@@ -36,20 +35,16 @@ taboolib {
         install(BukkitHook)
     }
     version {
-        taboolib = "6.2.3-8cc2f66"
+        taboolib = "6.2.3-ac49c9a"
     }
-    relocate("com.google.zxing", "online.bingzi.libs.zxing")
-    relocate("com.google.gson", "online.bingzi.libs.gson")
-    relocate("com.github.benmanes.caffeine", "online.bingzi.libs.caffeine")
+    relocate("com.google.zxing", "online.bingzi.bilibili.video.libraries.zxing")
+    relocate("com.google.gson", "online.bingzi.bilibili.video.libraries.gson")
+    relocate("com.github.benmanes.caffeine", "online.bingzi.bilibili.video.libraries.caffeine")
+    relocate("cn.evole.onebot", "online.bingzi.bilibili.video.libraries.onebot")
 }
 
 repositories {
     mavenCentral()
-    maven("https://repo.dmulloy2.net/repository/public/")
-    maven {
-        name = "loohp-repo"
-        url = uri("https://repo.loohpjames.com/repository")
-    }
 }
 
 dependencies {
@@ -58,15 +53,10 @@ dependencies {
     taboo("com.squareup.retrofit2:converter-gson:2.9.0")
     taboo("com.google.zxing:core:3.5.2")
     taboo("com.google.code.gson:gson:2.10.1")
-    compileOnly("com.comphenix.protocol:ProtocolLib:5.1.0")
-    compileOnly("ink.ptms:nms-all:1.0.0")
     compileOnly("ink.ptms.core:v12004:12004:mapped")
-    compileOnly("ink.ptms.core:v12004:v12004:universal")
-    compileOnly("ink.ptms.core:v12103:12103:mapped")
-    compileOnly("ink.ptms.core:v12103:v12103:universal")
+    compileOnly("ink.ptms.core:v12004:12004:universal")
     compileOnly(kotlin("stdlib"))
-    compileOnly(fileTree("libs"))
-    compileOnly("com.loohp:ImageFrame:1.8.2.0")
+    taboo(fileTree("libs"))
 }
 
 tasks.withType<JavaCompile> {
