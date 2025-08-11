@@ -52,6 +52,12 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
     // OneBot依赖
     implementation("online.bingzi:onebot:1.0.0-97bdc38")
+    // OrmLite依赖
+    implementation("com.j256.ormlite:ormlite-core:6.1")
+    implementation("com.j256.ormlite:ormlite-jdbc:6.1")
+    // 数据库驱动
+    implementation("org.xerial:sqlite-jdbc:3.45.1.0")
+    implementation("com.mysql:mysql-connector-j:8.3.0")
 }
 
 tasks.withType<JavaCompile> {

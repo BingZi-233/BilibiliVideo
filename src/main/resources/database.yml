@@ -1,18 +1,126 @@
-# 连接配置
-sql:
-  # 类型，不区分大小写
-  # sqlite - 本地
-  # mysql - 远程
-  type: sqlite
-  # 地址
-  host: localhost
-  # 端口
-  port: 3306
-  # 用户名
-  user: root
-  # 密码
-  password: root
-  # 数据库
-  database: minecraft
-  # 表名
-  table: BilibiliVideo
+# 数据库配置文件
+# BilibiliVideo 插件数据库连接和维护配置
+
+# 数据库连接配置
+connection:
+  # 是否启用外部数据库 (true: MySQL, false: SQLite)
+  enable: false
+  
+  # MySQL配置 (仅当enable为true时生效)
+  mysql:
+    host: localhost
+    port: 3306
+    database: bilibili_video
+    username: root
+    password: root
+    # 连接参数
+    parameters:
+      useSSL: false
+      allowPublicKeyRetrieval: true
+      serverTimezone: UTC
+      characterEncoding: utf8
+      autoReconnect: true
+      failOverReadOnly: false
+      maxReconnects: 3
+    
+    # 连接池配置
+    pool:
+      # 最小空闲连接数
+      minimum-idle: 2
+      # 最大连接数
+      maximum-pool-size: 10
+      # 连接超时时间（毫秒）
+      connection-timeout: 30000
+      # 空闲连接超时时间（毫秒）
+      idle-timeout: 600000
+      # 连接最大生命周期（毫秒）
+      max-lifetime: 1800000
+      # 连接泄漏检测阈值（毫秒，0表示禁用）
+      leak-detection-threshold: 60000
+  
+  # SQLite配置 (仅当enable为false时生效)
+  sqlite:
+    # 数据库文件路径 (相对于插件数据文件夹)
+    file-path: "database/bilibili.db"
+    # SQLite连接参数
+    parameters:
+      # 日志级别 (OFF, ERROR, WARN, INFO, DEBUG, TRACE)
+      journal_mode: WAL
+      synchronous: NORMAL
+      cache_size: 10000
+      temp_store: MEMORY
+      foreign_keys: true
+
+# 表配置
+tables:
+  # 数据表前缀
+  prefix: "bv_"
+  
+  # 表结构配置
+  structure:
+    # 玩家基础信息表
+    players:
+      name: "players"
+      comment: "玩家基础信息表"
+    
+    # QQ绑定表
+    qq_bindings:
+      name: "qq_bindings"
+      comment: "玩家QQ绑定表"
+    
+    # Bilibili绑定表
+    bilibili_bindings:
+      name: "bilibili_bindings"
+      comment: "玩家Bilibili账号绑定表"
+    
+    # Bilibili Cookie详情表
+    bilibili_cookies:
+      name: "bilibili_cookies"
+      comment: "Bilibili登录Cookie详情表"
+
+# 数据维护配置
+maintenance:
+  # 是否启用自动清理过期数据
+  cleanup:
+    enabled: true
+    # 清理任务执行间隔（小时）
+    interval-hours: 24
+    # 数据过期阈值配置
+    thresholds:
+      # 绑定过期阈值（天，超过此天数未活跃的绑定将被清理）
+      binding-expire-days: 30
+      # Cookie过期阈值（天，超过此天数未使用的Cookie将被清理）
+      cookie-expire-days: 7
+      # 临时数据清理阈值（小时）
+      temp-data-expire-hours: 2
+  
+  # 缓存配置
+  cache:
+    # 是否启用缓存
+    enabled: true
+    # 缓存最大容量
+    max-size: 1000
+    # 缓存过期时间（分钟）
+    expire-after-access: 30
+    # 缓存刷新间隔（分钟）
+    refresh-interval: 10
+
+# 数据库备份配置
+backup:
+  # 是否启用自动备份
+  enabled: false
+  # 备份间隔（小时）
+  interval-hours: 168  # 一周备份一次
+  # 备份文件保留数量
+  keep-backups: 5
+  # 备份文件存储路径
+  backup-path: "database/backups"
+
+# 调试和日志配置
+debug:
+  # 是否启用SQL日志记录
+  log-sql: false
+  # 是否启用连接池状态日志
+  log-pool-stats: false
+  # 是否启用慢查询日志（毫秒）
+  slow-query-threshold: 1000

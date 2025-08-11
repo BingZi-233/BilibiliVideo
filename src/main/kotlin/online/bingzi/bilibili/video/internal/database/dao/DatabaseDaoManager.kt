@@ -1,0 +1,91 @@
+package online.bingzi.bilibili.video.internal.database.dao
+
+import com.j256.ormlite.dao.Dao
+import com.j256.ormlite.dao.DaoManager
+import com.j256.ormlite.table.TableUtils
+import online.bingzi.bilibili.video.internal.database.DatabaseManager
+import online.bingzi.bilibili.video.internal.database.entity.BilibiliBinding
+import online.bingzi.bilibili.video.internal.database.entity.BilibiliCookie
+import online.bingzi.bilibili.video.internal.database.entity.Player
+import online.bingzi.bilibili.video.internal.database.entity.QQBinding
+import taboolib.common.LifeCycle
+import taboolib.common.platform.Awake
+import taboolib.common.platform.function.console
+import taboolib.module.lang.sendInfo
+import taboolib.module.lang.sendWarn
+import java.sql.SQLException
+
+/**
+ * 数据库DAO管理器
+ * 管理所有数据表的DAO实例和操作
+ */
+object DatabaseDaoManager {
+
+    // DAO实例
+    lateinit var playerDao: Dao<Player, String>
+        private set
+
+    lateinit var qqBindingDao: Dao<QQBinding, Long>
+        private set
+
+    lateinit var bilibiliBindingDao: Dao<BilibiliBinding, Long>
+        private set
+
+    lateinit var bilibiliCookieDao: Dao<BilibiliCookie, Long>
+        private set
+
+    /**
+     * 初始化所有DAO
+     */
+    @Awake(LifeCycle.ENABLE)
+    fun init() {
+        try {
+            if (!DatabaseManager.initialize()) {
+                throw SQLException("数据库连接初始化失败")
+            }
+
+            val connectionSource = DatabaseManager.getConnectionSource()
+
+            // 创建DAO实例
+            playerDao = DaoManager.createDao(connectionSource, Player::class.java)
+            qqBindingDao = DaoManager.createDao(connectionSource, QQBinding::class.java)
+            bilibiliBindingDao = DaoManager.createDao(connectionSource, BilibiliBinding::class.java)
+            bilibiliCookieDao = DaoManager.createDao(connectionSource, BilibiliCookie::class.java)
+
+            // 创建表结构（如果不存在）
+            createTablesIfNotExists()
+
+            console().sendInfo("databaseInitialized")
+
+        } catch (e: Exception) {
+            console().sendWarn("databaseInitFailed", e.message ?: "Unknown error")
+            throw e
+        }
+    }
+
+    /**
+     * 关闭数据库连接
+     */
+    @Awake(LifeCycle.DISABLE)
+    fun close() {
+        DatabaseManager.close()
+    }
+
+    /**
+     * 创建所有表结构
+     */
+    private fun createTablesIfNotExists() {
+        val connectionSource = DatabaseManager.getConnectionSource()
+
+        DatabaseManager.entityClasses.forEach { entityClass ->
+            try {
+                TableUtils.createTableIfNotExists(connectionSource, entityClass)
+                console().sendInfo("databaseTableCreated", entityClass.simpleName)
+            } catch (e: SQLException) {
+                console().sendWarn("databaseTableCreateFailed", entityClass.simpleName, e.message ?: "Unknown error")
+                throw e
+            }
+        }
+    }
+}
+
