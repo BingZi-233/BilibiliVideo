@@ -497,6 +497,48 @@ object BilibiliVideoService {
     }
 
     /**
+     * 获取精简版视频评论
+     * 只返回必要的评论信息（内容、评论者mid、时间）
+     * @param oid 对象ID，可以是视频AV号或BV号
+     * @param page 页码，从1开始，默认1
+     * @param pageSize 每页数量，默认20，最大49
+     * @param sort 排序方式：0=时间，1=点赞数，2=回复数，默认0
+     * @return 精简版评论响应数据或 null
+     */
+    fun getSimpleVideoComments(
+        oid: String,
+        page: Int = 1,
+        pageSize: Int = 20,
+        sort: Int = 0
+    ): CompletableFuture<SimpleCommentsResponse?> {
+        val actualPageSize = pageSize.coerceIn(1, 49) // 限制页面大小在1-49之间
+        val actualPage = page.coerceAtLeast(1) // 页码至少为1
+        val actualSort = sort.coerceIn(0, 2) // 排序方式限制在0-2之间
+
+        // 首先尝试将oid转换为AV号
+        val avid = when {
+            oid.startsWith("BV") -> {
+                // 如果是BV号，需要先获取视频信息来得到AV号
+                return getVideoInfo(oid).thenCompose { videoInfo ->
+                    if (videoInfo != null) {
+                        getSimpleVideoCommentsInternal(videoInfo.aid.toString(), actualPage, actualPageSize, actualSort, oid)
+                    } else {
+                        CompletableFuture.completedFuture(null)
+                    }
+                }
+            }
+
+            oid.matches(Regex("\\d+")) -> oid // 纯数字，假设是AV号
+            oid.startsWith("av") || oid.startsWith("AV") -> oid.substring(2) // 去掉av前缀
+            else -> {
+                return CompletableFuture.completedFuture(null)
+            }
+        }
+
+        return getSimpleVideoCommentsInternal(avid, actualPage, actualPageSize, actualSort, oid)
+    }
+
+    /**
      * 获取视频评论的内部实现
      */
     private fun getVideoCommentsInternal(
@@ -704,5 +746,148 @@ object BilibiliVideoService {
             console().sendWarn("commentParseError", e.message ?: "")
             null
         }
+    }
+
+    /**
+     * 获取精简版视频评论的内部实现
+     * 只保留必要的评论信息
+     */
+    private fun getSimpleVideoCommentsInternal(
+        avid: String,
+        page: Int,
+        pageSize: Int,
+        sort: Int,
+        originalOid: String
+    ): CompletableFuture<SimpleCommentsResponse?> {
+        // 使用新的带 WBI 签名的评论 API
+        val baseUrl = "https://api.bilibili.com/x/v2/reply/wbi/main"
+        val params = mapOf(
+            "type" to 1,  // 1 表示视频评论
+            "oid" to avid,
+            "mode" to sort,  // 排序方式：0=时间，1=点赞数，2=回复数
+            "pagination_str" to """{"offset":""}""",  // 首页留空
+            "plat" to 1,  // 平台：1=web端
+            "seek_rpid" to "",  // 跳转到指定评论，留空
+            "web_location" to "1315875"  // 页面定位，固定值
+        )
+
+        // 对于翻页，需要使用 pagination_str 参数
+        val paginationParams = if (page > 1) {
+            params + ("pagination_str" to """{"offset":"${(page - 1) * pageSize}"}""")
+        } else {
+            params
+        }
+
+        return BilibiliApiClient.getAsyncWithWbi(baseUrl, paginationParams)
+            .thenApply { response ->
+                if (response.isSuccess()) {
+                    try {
+                        val json = JsonParser.parseString(response.data).asJsonObject
+                        val code = json.get("code")?.asInt ?: -1
+
+                        if (code == 0) {
+                            val data = json.getAsJsonObject("data")
+                            
+                            // 获取分页信息
+                            val pageObj = data.getAsJsonObject("page")
+                            val count = pageObj?.get("count")?.asLong ?: 0L
+                            
+                            // 获取游标信息判断是否还有更多
+                            val cursorObj = data.getAsJsonObject("cursor")
+                            val hasMore = cursorObj?.get("is_end")?.asBoolean != true
+                            
+                            // 解析评论列表
+                            val repliesArray = data.getAsJsonArray("replies")
+                            val simpleComments = mutableListOf<SimpleComment>()
+                            
+                            repliesArray?.forEach { replyElement ->
+                                val commentObj = replyElement.asJsonObject
+                                
+                                // 提取必要字段
+                                val rpid = commentObj.get("rpid")?.asLong
+                                val mid = commentObj.get("mid")?.asLong
+                                val ctime = commentObj.get("ctime")?.asLong
+                                val like = commentObj.get("like")?.asInt ?: 0
+                                val rcount = commentObj.get("rcount")?.asInt ?: 0
+                                
+                                // 提取评论者用户名
+                                val memberObj = commentObj.getAsJsonObject("member")
+                                val username = memberObj?.get("uname")?.asString ?: "未知用户"
+                                
+                                // 提取评论内容
+                                val contentObj = commentObj.getAsJsonObject("content")
+                                val message = contentObj?.get("message")?.asString ?: ""
+                                
+                                if (rpid != null && mid != null && ctime != null) {
+                                    simpleComments.add(
+                                        SimpleComment(
+                                            rpid = rpid,
+                                            mid = mid,
+                                            username = username,
+                                            content = message,
+                                            ctime = ctime,
+                                            like = like,
+                                            replyCount = rcount
+                                        )
+                                    )
+                                }
+                            }
+                            
+                            // 解析置顶评论（可选）
+                            val upperObj = data.getAsJsonObject("upper")
+                            val upperArray = upperObj?.getAsJsonArray("top")
+                            
+                            upperArray?.forEach { topElement ->
+                                val commentObj = topElement.asJsonObject
+                                
+                                val rpid = commentObj.get("rpid")?.asLong
+                                val mid = commentObj.get("mid")?.asLong
+                                val ctime = commentObj.get("ctime")?.asLong
+                                val like = commentObj.get("like")?.asInt ?: 0
+                                val rcount = commentObj.get("rcount")?.asInt ?: 0
+                                
+                                val memberObj = commentObj.getAsJsonObject("member")
+                                val username = memberObj?.get("uname")?.asString ?: "未知用户"
+                                
+                                val contentObj = commentObj.getAsJsonObject("content")
+                                val message = contentObj?.get("message")?.asString ?: ""
+                                
+                                if (rpid != null && mid != null && ctime != null) {
+                                    // 将置顶评论添加到列表开头
+                                    simpleComments.add(0, 
+                                        SimpleComment(
+                                            rpid = rpid,
+                                            mid = mid,
+                                            username = username,
+                                            content = message,
+                                            ctime = ctime,
+                                            like = like,
+                                            replyCount = rcount
+                                        )
+                                    )
+                                }
+                            }
+                            
+                            return@thenApply SimpleCommentsResponse(
+                                comments = simpleComments,
+                                total = count,
+                                currentPage = page,
+                                hasMore = hasMore
+                            )
+                            
+                        } else {
+                            val message = json.get("message")?.asString ?: "未知错误"
+                            console().sendWarn("videoCommentsGetFailed", message)
+                        }
+                    } catch (e: Exception) {
+                        val errorMsg = e.message ?: "解析响应失败"
+                        console().sendWarn("videoCommentsParseError", errorMsg)
+                    }
+                } else {
+                    val errorMsg = response.getError() ?: "网络请求失败"
+                    console().sendWarn("networkApiRequestFailed", errorMsg)
+                }
+                null
+            }
     }
 }
