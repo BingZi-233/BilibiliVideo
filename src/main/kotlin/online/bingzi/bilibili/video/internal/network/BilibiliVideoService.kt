@@ -2,6 +2,7 @@ package online.bingzi.bilibili.video.internal.network
 
 import com.google.gson.Gson
 import com.google.gson.JsonParser
+import online.bingzi.bilibili.video.api.event.network.video.*
 import online.bingzi.bilibili.video.internal.network.entity.*
 import taboolib.common.platform.function.console
 import taboolib.module.lang.sendInfo
@@ -57,7 +58,7 @@ object BilibiliVideoService {
                             val face = owner.get("face")?.asString
 
                             if (aid != null && bvid != null && title != null && mid != null && name != null) {
-                                return@thenApply VideoInfo(
+                                val videoInfo = VideoInfo(
                                     aid = aid,
                                     bvid = bvid,
                                     title = title,
@@ -80,16 +81,32 @@ object BilibiliVideoService {
                                         avatar = face
                                     )
                                 )
+                                
+                                // 触发视频信息获取成功事件
+                                VideoInfoFetchEvent(bvid, videoInfo, true).call()
+                                
+                                return@thenApply videoInfo
                             }
                         } else {
                             val message = json.get("message")?.asString ?: "未知错误"
                             console().sendWarn("videoInfoGetFailed", message)
+                            
+                            // 触发视频信息获取失败事件
+                            VideoInfoFetchEvent(bvid, null, false, message).call()
                         }
                     } catch (e: Exception) {
-                        console().sendWarn("videoInfoParseError", e.message ?: "")
+                        val errorMsg = e.message ?: "解析响应失败"
+                        console().sendWarn("videoInfoParseError", errorMsg)
+                        
+                        // 触发视频信息获取失败事件
+                        VideoInfoFetchEvent(bvid, null, false, errorMsg).call()
                     }
                 } else {
-                    console().sendWarn("networkApiRequestFailed", response.getError() ?: "")
+                    val errorMsg = response.getError() ?: "网络请求失败"
+                    console().sendWarn("networkApiRequestFailed", errorMsg)
+                    
+                    // 触发视频信息获取失败事件
+                    VideoInfoFetchEvent(bvid, null, false, errorMsg).call()
                 }
                 null
             }
@@ -103,6 +120,10 @@ object BilibiliVideoService {
     fun getTripleActionStatus(aid: Long): CompletableFuture<TripleActionStatus?> {
         if (!BilibiliCookieJar.isLoggedIn()) {
             console().sendWarn("loginRequired")
+            
+            // 触发视频三连状态获取失败事件
+            VideoTripleStatusFetchEvent(aid, null, null, false, "需要登录").call()
+            
             return CompletableFuture.completedFuture(null)
         }
 
@@ -118,14 +139,24 @@ object BilibiliVideoService {
                     val coined = coinFuture.get() ?: false
                     val favorited = favoriteFuture.get() ?: false
 
-                    TripleActionStatus(
+                    val tripleStatus = TripleActionStatus(
                         aid = aid,
                         liked = liked,
                         coined = coined,
                         favorited = favorited
                     )
+                    
+                    // 触发视频三连状态获取成功事件
+                    VideoTripleStatusFetchEvent(aid, null, tripleStatus, true).call()
+                    
+                    tripleStatus
                 } catch (e: Exception) {
-                    console().sendWarn("videoTripleStatusGetFailed", e.message ?: "")
+                    val errorMsg = e.message ?: "获取三连状态失败"
+                    console().sendWarn("videoTripleStatusGetFailed", errorMsg)
+                    
+                    // 触发视频三连状态获取失败事件
+                    VideoTripleStatusFetchEvent(aid, null, null, false, errorMsg).call()
+                    
                     null
                 }
             }
@@ -256,16 +287,31 @@ object BilibiliVideoService {
 
                     if (code == 0) {
                         console().sendInfo(if (like) "videoLikeSuccess" else "videoUnlikeSuccess")
+                        
+                        // 触发视频点赞成功事件
+                        VideoLikeEvent(aid, null, like, true).call()
+                        
                         return@thenApply true
                     } else {
                         val message = json.get("message")?.asString ?: "未知错误"
                         console().sendWarn("videoLikeFailed", message)
+                        
+                        // 触发视频点赞失败事件
+                        VideoLikeEvent(aid, null, like, false, message).call()
                     }
                 } catch (e: Exception) {
-                    console().sendWarn("videoLikeParseResponseError", e.message ?: "")
+                    val errorMsg = e.message ?: "解析响应失败"
+                    console().sendWarn("videoLikeParseResponseError", errorMsg)
+                    
+                    // 触发视频点赞失败事件
+                    VideoLikeEvent(aid, null, like, false, errorMsg).call()
                 }
             } else {
-                console().sendWarn("networkApiRequestFailed", response.getError() ?: "")
+                val errorMsg = response.getError() ?: "网络请求失败"
+                console().sendWarn("networkApiRequestFailed", errorMsg)
+                
+                // 触发视频点赞失败事件
+                VideoLikeEvent(aid, null, like, false, errorMsg).call()
             }
             false
         }
@@ -320,16 +366,31 @@ object BilibiliVideoService {
 
                     if (code == 0) {
                         console().sendInfo("videoCoinSuccess", multiply.toString())
+                        
+                        // 触发视频投币成功事件
+                        VideoCoinEvent(aid, null, multiply, selectLike, true).call()
+                        
                         return@thenApply true
                     } else {
                         val message = json.get("message")?.asString ?: "未知错误"
                         console().sendWarn("videoCoinFailed", message)
+                        
+                        // 触发视频投币失败事件
+                        VideoCoinEvent(aid, null, multiply, selectLike, false, message).call()
                     }
                 } catch (e: Exception) {
-                    console().sendWarn("videoCoinParseResponseError", e.message ?: "")
+                    val errorMsg = e.message ?: "解析响应失败"
+                    console().sendWarn("videoCoinParseResponseError", errorMsg)
+                    
+                    // 触发视频投币失败事件
+                    VideoCoinEvent(aid, null, multiply, selectLike, false, errorMsg).call()
                 }
             } else {
-                console().sendWarn("networkApiRequestFailed", response.getError() ?: "")
+                val errorMsg = response.getError() ?: "网络请求失败"
+                console().sendWarn("networkApiRequestFailed", errorMsg)
+                
+                // 触发视频投币失败事件
+                VideoCoinEvent(aid, null, multiply, selectLike, false, errorMsg).call()
             }
             false
         }
@@ -366,16 +427,31 @@ object BilibiliVideoService {
 
                     if (code == 0) {
                         console().sendInfo("videoFavoriteSuccess")
+                        
+                        // 触发视频收藏成功事件
+                        VideoFavoriteEvent(aid, null, addMediaIds, delMediaIds, true).call()
+                        
                         return@thenApply true
                     } else {
                         val message = json.get("message")?.asString ?: "未知错误"
                         console().sendWarn("videoFavoriteFailed", message)
+                        
+                        // 触发视频收藏失败事件
+                        VideoFavoriteEvent(aid, null, addMediaIds, delMediaIds, false, message).call()
                     }
                 } catch (e: Exception) {
-                    console().sendWarn("videoFavoriteParseResponseError", e.message ?: "")
+                    val errorMsg = e.message ?: "解析响应失败"
+                    console().sendWarn("videoFavoriteParseResponseError", errorMsg)
+                    
+                    // 触发视频收藏失败事件
+                    VideoFavoriteEvent(aid, null, addMediaIds, delMediaIds, false, errorMsg).call()
                 }
             } else {
-                console().sendWarn("networkApiRequestFailed", response.getError() ?: "")
+                val errorMsg = response.getError() ?: "网络请求失败"
+                console().sendWarn("networkApiRequestFailed", errorMsg)
+                
+                // 触发视频收藏失败事件
+                VideoFavoriteEvent(aid, null, addMediaIds, delMediaIds, false, errorMsg).call()
             }
             false
         }
@@ -389,7 +465,12 @@ object BilibiliVideoService {
     fun performTripleAction(aid: Long): CompletableFuture<TripleActionResult> {
         if (!BilibiliCookieJar.isLoggedIn()) {
             console().sendWarn("loginRequired")
-            return CompletableFuture.completedFuture(TripleActionResult(false, false, false))
+            val result = TripleActionResult(false, false, false)
+            
+            // 触发一键三连操作事件（失败）
+            VideoTripleActionEvent(aid, null, result, false).call()
+            
+            return CompletableFuture.completedFuture(result)
         }
 
         // 依次执行点赞、投币操作
@@ -401,13 +482,17 @@ object BilibiliVideoService {
             }
             .thenCompose { (likeSuccess, coinSuccess) ->
                 // 收藏操作需要先获取默认收藏夹，这里简化处理
-                CompletableFuture.completedFuture(
-                    TripleActionResult(
-                        liked = likeSuccess,
-                        coined = coinSuccess,
-                        favorited = false  // 收藏操作需要收藏夹 ID，这里暂时不实现
-                    )
+                val result = TripleActionResult(
+                    liked = likeSuccess,
+                    coined = coinSuccess,
+                    favorited = false  // 收藏操作需要收藏夹 ID，这里暂时不实现
                 )
+                
+                // 触发一键三连操作事件
+                val success = likeSuccess || coinSuccess
+                VideoTripleActionEvent(aid, null, result, success).call()
+                
+                CompletableFuture.completedFuture(result)
             }
     }
 }

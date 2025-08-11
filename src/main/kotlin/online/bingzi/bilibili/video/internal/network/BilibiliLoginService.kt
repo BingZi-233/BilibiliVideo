@@ -2,6 +2,13 @@ package online.bingzi.bilibili.video.internal.network
 
 import com.google.gson.Gson
 import com.google.gson.JsonParser
+import online.bingzi.bilibili.video.api.event.network.*
+import online.bingzi.bilibili.video.api.event.network.login.CookieSetEvent
+import online.bingzi.bilibili.video.api.event.network.login.LoginFailureEvent
+import online.bingzi.bilibili.video.api.event.network.login.LoginStatusPollEvent
+import online.bingzi.bilibili.video.api.event.network.login.LoginSuccessEvent
+import online.bingzi.bilibili.video.api.event.network.login.QrCodeGenerateEvent
+import online.bingzi.bilibili.video.api.event.network.login.UserLogoutEvent
 import online.bingzi.bilibili.video.internal.network.entity.LoginStatus
 import online.bingzi.bilibili.video.internal.network.entity.QrCodeLoginInfo
 import taboolib.common.platform.function.console
@@ -35,18 +42,34 @@ object BilibiliLoginService {
                             val qrcodeKey = data.get("qrcode_key")?.asString
 
                             if (url != null && qrcodeKey != null) {
+                                val qrCodeInfo = QrCodeLoginInfo(url, qrcodeKey)
                                 console().sendInfo("loginQrCodeGenerateSuccess")
-                                return@thenApply QrCodeLoginInfo(url, qrcodeKey)
+                                
+                                // 触发二维码生成成功事件
+                                QrCodeGenerateEvent(qrCodeInfo, true).call()
+                                
+                                return@thenApply qrCodeInfo
                             }
                         } else {
                             val message = json.get("message")?.asString ?: "未知错误"
                             console().sendWarn("loginQrCodeGenerateFailed", message)
+                            
+                            // 触发二维码生成失败事件
+                            QrCodeGenerateEvent(null, false, message).call()
                         }
                     } catch (e: Exception) {
-                        console().sendWarn("networkResponseParseFailed", e.message ?: "")
+                        val errorMsg = e.message ?: "解析响应失败"
+                        console().sendWarn("networkResponseParseFailed", errorMsg)
+                        
+                        // 触发二维码生成失败事件
+                        QrCodeGenerateEvent(null, false, errorMsg).call()
                     }
                 } else {
-                    console().sendWarn("networkApiRequestFailed", response.getError() ?: "")
+                    val errorMsg = response.getError() ?: "网络请求失败"
+                    console().sendWarn("networkApiRequestFailed", errorMsg)
+                    
+                    // 触发二维码生成失败事件
+                    QrCodeGenerateEvent(null, false, errorMsg).call()
                 }
                 null
             }
@@ -65,8 +88,8 @@ object BilibiliLoginService {
                         val json = JsonParser.parseString(response.data).asJsonObject
                         val code = json.get("code")?.asInt ?: -1
                         val message = json.get("message")?.asString ?: ""
-
-                        when (code) {
+                        
+                        val newStatus = when (code) {
                             86101 -> {
                                 console().sendInfo("loginWaitingForScan")
                                 LoginStatus.WAITING_FOR_SCAN
@@ -79,6 +102,10 @@ object BilibiliLoginService {
 
                             86038 -> {
                                 console().sendWarn("loginQrCodeExpired")
+                                
+                                // 触发登录失败事件
+                                LoginFailureEvent(qrcodeKey, LoginStatus.EXPIRED, "二维码已过期", "qrcode").call()
+                                
                                 LoginStatus.EXPIRED
                             }
 
@@ -93,20 +120,43 @@ object BilibiliLoginService {
                                     parseCookiesFromUrl(url)
                                 }
 
+                                // 获取用户 ID 并触发登录成功事件
+                                val userId = getCurrentUserId() ?: "unknown"
+                                LoginSuccessEvent(userId, "qrcode").call()
+
                                 LoginStatus.SUCCESS
                             }
 
                             else -> {
                                 console().sendWarn("loginFailed", message)
+                                
+                                // 触发登录失败事件
+                                LoginFailureEvent(qrcodeKey, LoginStatus.FAILED, message, "qrcode").call()
+                                
                                 LoginStatus.FAILED
                             }
                         }
+                        
+                        // 触发登录状态轮询事件（这里简化处理，假设状态总是变化的）
+                        LoginStatusPollEvent(qrcodeKey, newStatus, true).call()
+                        
+                        newStatus
                     } catch (e: Exception) {
-                        console().sendWarn("networkResponseParseFailed", e.message ?: "")
+                        val errorMsg = e.message ?: "解析响应失败"
+                        console().sendWarn("networkResponseParseFailed", errorMsg)
+                        
+                        // 触发登录失败事件
+                        LoginFailureEvent(qrcodeKey, LoginStatus.FAILED, errorMsg, "qrcode").call()
+                        
                         LoginStatus.FAILED
                     }
                 } else {
-                    console().sendWarn("networkApiRequestFailed", response.getError() ?: "")
+                    val errorMsg = response.getError() ?: "网络请求失败"
+                    console().sendWarn("networkApiRequestFailed", errorMsg)
+                    
+                    // 触发登录失败事件
+                    LoginFailureEvent(qrcodeKey, LoginStatus.FAILED, errorMsg, "qrcode").call()
+                    
                     LoginStatus.FAILED
                 }
             }
@@ -152,8 +202,12 @@ object BilibiliLoginService {
      * 登出当前用户
      */
     fun logout() {
+        val userId = getCurrentUserId()
         BilibiliCookieJar.clearCookies()
         console().sendInfo("loginLogout")
+        
+        // 触发用户登出事件
+        UserLogoutEvent(userId, "logout").call()
     }
 
     /**
@@ -171,8 +225,21 @@ object BilibiliLoginService {
             }
             BilibiliCookieJar.setCookies(cookieMap)
             console().sendInfo("loginCookieSet")
+            
+            // 触发 Cookie 设置成功事件
+            CookieSetEvent(true).call()
+            
+            // 如果能获取到用户 ID，触发登录成功事件
+            val userId = getCurrentUserId()
+            if (userId != null) {
+                LoginSuccessEvent(userId, "cookie").call()
+            }
         } catch (e: Exception) {
-            console().sendWarn("loginCookieSetFailed", e.message ?: "")
+            val errorMsg = e.message ?: "Cookie设置失败"
+            console().sendWarn("loginCookieSetFailed", errorMsg)
+            
+            // 触发 Cookie 设置失败事件
+            CookieSetEvent(false, errorMsg).call()
         }
     }
 }
