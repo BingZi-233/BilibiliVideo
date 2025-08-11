@@ -1,5 +1,8 @@
 package online.bingzi.bilibili.video.internal.database.dao
 
+import online.bingzi.bilibili.video.api.event.database.player.PlayerDataCreateEvent
+import online.bingzi.bilibili.video.api.event.database.player.PlayerDataDeleteEvent
+import online.bingzi.bilibili.video.api.event.database.player.PlayerDataUpdateEvent
 import online.bingzi.bilibili.video.internal.database.entity.Player
 import taboolib.common.platform.function.console
 import taboolib.module.lang.sendWarn
@@ -35,10 +38,45 @@ object PlayerDaoService {
     fun savePlayer(player: Player): CompletableFuture<Boolean> {
         return CompletableFuture.supplyAsync {
             try {
-                dao.createOrUpdate(player)
-                true
+                val result = dao.createOrUpdate(player)
+                val success = result != null
+                
+                // 触发相应的事件
+                if (success) {
+                    if (result.isCreated) {
+                        // 创建事件
+                        val createEvent = PlayerDataCreateEvent(
+                            playerUuid = player.playerUuid,
+                            playerName = player.playerName,
+                            success = true
+                        )
+                        createEvent.call()
+                    } else if (result.isUpdated) {
+                        // 更新事件
+                        val updateEvent = PlayerDataUpdateEvent(
+                            playerUuid = player.playerUuid,
+                            fieldName = "player",
+                            oldValue = null,
+                            newValue = player,
+                            success = true
+                        )
+                        updateEvent.call()
+                    }
+                }
+                
+                success
             } catch (e: SQLException) {
                 console().sendWarn("playerBilibiliDatabaseSaveError", player.playerUuid, e.message ?: "Unknown error")
+                
+                // 触发失败事件
+                val failEvent = PlayerDataCreateEvent(
+                    playerUuid = player.playerUuid,
+                    playerName = player.playerName,
+                    success = false,
+                    errorMessage = e.message
+                )
+                failEvent.call()
+                
                 false
             }
         }
@@ -54,12 +92,29 @@ object PlayerDaoService {
                 if (player != null) {
                     player.updateActiveStatus(false)
                     dao.update(player)
+                    
+                    // 触发删除事件
+                    val deleteEvent = PlayerDataDeleteEvent(
+                        playerUuid = playerUuid.toString(),
+                        success = true
+                    )
+                    deleteEvent.call()
+                    
                     true
                 } else {
                     false
                 }
             } catch (e: SQLException) {
                 console().sendWarn("playerBilibiliDatabaseDeleteError", playerUuid, e.message ?: "Unknown error")
+                
+                // 触发失败事件
+                val failEvent = PlayerDataDeleteEvent(
+                    playerUuid = playerUuid.toString(),
+                    success = false,
+                    errorMessage = e.message
+                )
+                failEvent.call()
+                
                 false
             }
         }
@@ -92,6 +147,17 @@ object PlayerDaoService {
                 if (player != null) {
                     player.updateLastActiveTime()
                     dao.update(player)
+                    
+                    // 触发更新事件
+                    val updateEvent = PlayerDataUpdateEvent(
+                        playerUuid = playerUuid.toString(),
+                        fieldName = "lastActiveTime",
+                        oldValue = null,
+                        newValue = player.lastActiveTime,
+                        success = true
+                    )
+                    updateEvent.call()
+                    
                     true
                 } else {
                     false

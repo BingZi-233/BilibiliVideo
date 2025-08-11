@@ -2,6 +2,8 @@ package online.bingzi.bilibili.video.internal.database
 
 import com.j256.ormlite.jdbc.JdbcConnectionSource
 import com.j256.ormlite.support.ConnectionSource
+import online.bingzi.bilibili.video.api.event.database.DatabaseConnectionEvent
+import online.bingzi.bilibili.video.api.event.database.DatabaseInitializeEvent
 import online.bingzi.bilibili.video.internal.database.entity.BilibiliBinding
 import online.bingzi.bilibili.video.internal.database.entity.BilibiliCookie
 import online.bingzi.bilibili.video.internal.database.entity.Player
@@ -51,6 +53,18 @@ object DatabaseManager {
 
             val config = loadDatabaseConfig()
             databaseConfig = config
+            
+            // 触发初始化事件
+            val databaseType = when(config) {
+                is DatabaseConfig.MySQL -> "MySQL"
+                is DatabaseConfig.SQLite -> "SQLite"
+            }
+            val initEvent = DatabaseInitializeEvent(
+                databaseType = databaseType,
+                success = true
+            )
+            initEvent.call()
+            
             connectionSource = createConnectionSource(config)
 
             console().sendInfo("databaseInitialized")
@@ -208,14 +222,32 @@ object DatabaseManager {
                 val paramStr = config.parameters.entries.joinToString("&") { "${it.key}=${it.value}" }
                 val url = "jdbc:mysql://${config.host}:${config.port}/${config.database}?$paramStr"
                 console().sendInfo("databaseConnected", "MySQL (${config.host}:${config.port}/${config.database})")
-                JdbcConnectionSource(url, config.username, config.password)
+                val source = JdbcConnectionSource(url, config.username, config.password)
+                
+                // 触发连接事件
+                val connectionEvent = DatabaseConnectionEvent(
+                    connected = true,
+                    databaseInfo = "MySQL (${config.host}:${config.port}/${config.database})"
+                )
+                connectionEvent.call()
+                
+                source
             }
 
             is DatabaseConfig.SQLite -> {
                 val paramStr = config.parameters.entries.joinToString("&") { "${it.key}=${it.value}" }
                 val url = "jdbc:sqlite:${config.filePath}?$paramStr"
                 console().sendInfo("databaseConnected", "SQLite (${config.filePath})")
-                JdbcConnectionSource(url)
+                val source = JdbcConnectionSource(url)
+                
+                // 触发连接事件
+                val connectionEvent = DatabaseConnectionEvent(
+                    connected = true,
+                    databaseInfo = "SQLite (${config.filePath})"
+                )
+                connectionEvent.call()
+                
+                source
             }
         }
     }

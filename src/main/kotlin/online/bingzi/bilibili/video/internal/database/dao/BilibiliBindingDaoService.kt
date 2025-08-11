@@ -1,5 +1,7 @@
 package online.bingzi.bilibili.video.internal.database.dao
 
+import online.bingzi.bilibili.video.api.event.database.binding.BilibiliBindingCreateEvent
+import online.bingzi.bilibili.video.api.event.database.binding.BilibiliBindingDeleteEvent
 import online.bingzi.bilibili.video.internal.database.entity.BilibiliBinding
 import taboolib.common.platform.function.console
 import taboolib.module.lang.sendInfo
@@ -65,6 +67,14 @@ object BilibiliBindingDaoService {
                 // 记录操作结果
                 if (result.isCreated) {
                     console().sendInfo("playerBindingCreated")
+                    
+                    // 触发创建事件
+                    val createEvent = BilibiliBindingCreateEvent(
+                        playerUuid = bilibiliBinding.playerUuid,
+                        bilibiliUid = bilibiliBinding.bilibiliUid,
+                        success = true
+                    )
+                    createEvent.call()
                 } else {
                     console().sendInfo("playerBindingUpdated")
                 }
@@ -72,6 +82,16 @@ object BilibiliBindingDaoService {
                 true
             } catch (e: SQLException) {
                 console().sendWarn("playerBilibiliDatabaseSaveError", bilibiliBinding.bilibiliUid.toString(), e.message ?: "Unknown error")
+                
+                // 触发失败事件
+                val failEvent = BilibiliBindingCreateEvent(
+                    playerUuid = bilibiliBinding.playerUuid,
+                    bilibiliUid = bilibiliBinding.bilibiliUid,
+                    success = false,
+                    errorMessage = e.message
+                )
+                failEvent.call()
+                
                 false
             }
         }
@@ -91,12 +111,31 @@ object BilibiliBindingDaoService {
                 if (binding != null) {
                     binding.updateActiveStatus(false)
                     dao.update(binding)
+                    
+                    // 触发删除事件
+                    val deleteEvent = BilibiliBindingDeleteEvent(
+                        playerUuid = playerUuid.toString(),
+                        bilibiliUid = binding.bilibiliUid,
+                        success = true
+                    )
+                    deleteEvent.call()
+                    
                     true
                 } else {
                     false
                 }
             } catch (e: SQLException) {
                 console().sendWarn("playerBilibiliDatabaseDeleteError", playerUuid, e.message ?: "Unknown error")
+                
+                // 触发失败事件
+                val failEvent = BilibiliBindingDeleteEvent(
+                    playerUuid = playerUuid.toString(),
+                    bilibiliUid = 0L,
+                    success = false,
+                    errorMessage = e.message
+                )
+                failEvent.call()
+                
                 false
             }
         }

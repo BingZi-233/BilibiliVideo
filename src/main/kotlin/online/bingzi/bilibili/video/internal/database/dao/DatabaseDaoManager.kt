@@ -3,6 +3,7 @@ package online.bingzi.bilibili.video.internal.database.dao
 import com.j256.ormlite.dao.Dao
 import com.j256.ormlite.dao.DaoManager
 import com.j256.ormlite.table.TableUtils
+import online.bingzi.bilibili.video.api.event.database.DatabaseTableCreateEvent
 import online.bingzi.bilibili.video.internal.database.DatabaseManager
 import online.bingzi.bilibili.video.internal.database.entity.BilibiliBinding
 import online.bingzi.bilibili.video.internal.database.entity.BilibiliCookie
@@ -81,8 +82,24 @@ object DatabaseDaoManager {
             try {
                 TableUtils.createTableIfNotExists(connectionSource, entityClass)
                 console().sendInfo("databaseTableCreated", entityClass.simpleName)
+                
+                // 触发表创建事件
+                val tableCreateEvent = DatabaseTableCreateEvent(
+                    tableName = entityClass.simpleName,
+                    success = true
+                )
+                tableCreateEvent.call()
             } catch (e: SQLException) {
                 console().sendWarn("databaseTableCreateFailed", entityClass.simpleName, e.message ?: "Unknown error")
+                
+                // 触发失败事件
+                val failEvent = DatabaseTableCreateEvent(
+                    tableName = entityClass.simpleName,
+                    success = false,
+                    errorMessage = e.message
+                )
+                failEvent.call()
+                
                 throw e
             }
         }
