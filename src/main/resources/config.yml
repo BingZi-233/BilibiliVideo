@@ -16,22 +16,6 @@ qrcode:
     enabled: true
     # 聊天框二维码显示大小
     display-size: 25
-  
-  # OneBot QQ机器人模式设置
-  onebot:
-    # 是否启用OneBot模式
-    enabled: false
-    # OneBot服务器地址
-    server-url: "http://localhost:3000"
-    # 访问令牌（可选，如果OneBot配置了access_token）
-    access-token: ""
-    
-    # 玩家QQ绑定
-    # 格式：玩家名: QQ号 或 UUID: QQ号
-    player-bindings:
-      # 示例配置
-      # PlayerName: "123456789"
-      # "550e8400-e29b-41d4-a716-446655440000": "987654321"
 
 # 登录配置
 login:
