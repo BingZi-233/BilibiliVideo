@@ -2,6 +2,7 @@ package online.bingzi.bilibili.video.internal.qrcode
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import online.bingzi.bilibili.video.api.event.qrcode.*
 import online.bingzi.bilibili.video.internal.qrcode.senders.ChatQRCodeSender
 import online.bingzi.bilibili.video.internal.qrcode.senders.MapQRCodeSender
 import online.bingzi.bilibili.video.internal.qrcode.senders.OneBotQRCodeSender
@@ -88,15 +89,47 @@ object QRCodeSendService {
         description: String,
         preferredMode: QRCodeSendMode
     ): Boolean {
+        // 触发发送前事件
+        val preSendEvent = QRCodePreSendEvent(player, qrCodeImage, title, description, preferredMode)
+        if (!preSendEvent.call()) {
+            // 事件被取消
+            console().sendWarn("qrcodeSendCancelled", player.name)
+            return false
+        }
+        
+        val startTime = System.currentTimeMillis()
+        
         // 尝试使用优先模式
         val preferredSender = senders[preferredMode]
         if (preferredSender != null && preferredSender.isAvailable(player)) {
             console().sendInfo("qrcodeSendAttempt", preferredMode.displayName, player.name)
-            if (preferredSender.sendQRCode(player, qrCodeImage, title, description)) {
-                console().sendInfo("qrcodeSendSuccess", preferredMode.displayName, player.name)
-                return true
-            } else {
+            
+            try {
+                if (preferredSender.sendQRCode(player, qrCodeImage, title, description)) {
+                    val endTime = System.currentTimeMillis()
+                    console().sendInfo("qrcodeSendSuccess", preferredMode.displayName, player.name)
+                    
+                    // 触发发送成功事件
+                    QRCodeSendSuccessEvent(
+                        player, qrCodeImage, title, description, preferredMode, endTime - startTime
+                    ).call()
+                    
+                    return true
+                } else {
+                    console().sendWarn("qrcodeSendModeFailed", preferredMode.displayName, player.name)
+                    
+                    // 触发发送失败事件
+                    QRCodeSendFailureEvent(
+                        player, qrCodeImage, title, description, preferredMode, "发送器返回失败", null
+                    ).call()
+                }
+            } catch (e: Exception) {
                 console().sendWarn("qrcodeSendModeFailed", preferredMode.displayName, player.name)
+                
+                // 触发发送失败事件
+                QRCodeSendFailureEvent(
+                    player, qrCodeImage, title, description, preferredMode, e.message, e
+                ).call()
             }
         }
         
@@ -106,16 +139,49 @@ object QRCodeSendService {
             
             if (sender.isAvailable(player)) {
                 console().sendInfo("qrcodeSendFallback", mode.displayName, player.name)
-                if (sender.sendQRCode(player, qrCodeImage, title, description)) {
-                    console().sendInfo("qrcodeSendSuccess", mode.displayName, player.name)
-                    return true
-                } else {
+                
+                // 触发模式切换事件
+                QRCodeSendModeChangeEvent(
+                    player, qrCodeImage, title, description, preferredMode, mode, "优先模式发送失败"
+                ).call()
+                
+                try {
+                    if (sender.sendQRCode(player, qrCodeImage, title, description)) {
+                        val endTime = System.currentTimeMillis()
+                        console().sendInfo("qrcodeSendSuccess", mode.displayName, player.name)
+                        
+                        // 触发发送成功事件
+                        QRCodeSendSuccessEvent(
+                            player, qrCodeImage, title, description, mode, endTime - startTime
+                        ).call()
+                        
+                        return true
+                    } else {
+                        console().sendWarn("qrcodeSendModeFailed", mode.displayName, player.name)
+                        
+                        // 触发发送失败事件
+                        QRCodeSendFailureEvent(
+                            player, qrCodeImage, title, description, mode, "发送器返回失败", null
+                        ).call()
+                    }
+                } catch (e: Exception) {
                     console().sendWarn("qrcodeSendModeFailed", mode.displayName, player.name)
+                    
+                    // 触发发送失败事件
+                    QRCodeSendFailureEvent(
+                        player, qrCodeImage, title, description, mode, e.message, e
+                    ).call()
                 }
             }
         }
         
         console().sendWarn("qrcodeSendAllFailed", player.name)
+        
+        // 触发所有模式都失败的事件
+        QRCodeSendFailureEvent(
+            player, qrCodeImage, title, description, preferredMode, "所有发送模式都失败", null
+        ).call()
+        
         return false
     }
     
