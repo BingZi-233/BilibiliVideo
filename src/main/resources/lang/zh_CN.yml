@@ -211,3 +211,18 @@ playerBindingBilibiliBound: "&a成功绑定Bilibili账号: {0}"
 playerBindingStatus: "&a您的绑定状态: QQ: {0}, Bilibili: {1}"
 playerBindingInactive: "&c您的绑定已被禁用"
 playerBindingComplete: "&a您的绑定信息完整: QQ({0}) -> Bilibili({1})"
+
+# QQ绑定服务相关消息
+qqBindingSuccess: "&a成功绑定QQ号: {0}"
+qqBindingFailed: "&c绑定QQ号失败"
+qqUnbindingSuccess: "&a成功解绑QQ号"
+qqUnbindingFailed: "&c解绑QQ号失败"
+qqBindingAlreadyBound: "&cQQ号 {0} 已被玩家 {1} 绑定"
+qqBindingInvalidNumber: "&c无效的QQ号: {0}"
+qqBindingInvalidFormat: "&cQQ号格式无效: {0} (玩家: {1})"
+qqBindingPlayerBound: "&a玩家 {0} 成功绑定QQ号: {1}"
+qqBindingPlayerUnbound: "&a玩家 {0} 成功解绑QQ号"
+
+# OneBot二维码发送器新增消息  
+qrcodeOneBotSendError: "&c为 {0} 发送OneBot消息时出错: {1}"
+qrcodeOneBotQueryError: "&c为 {0} 查询QQ绑定时出错: {1}"

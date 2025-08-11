@@ -1,5 +1,6 @@
 package online.bingzi.bilibili.video.internal.qrcode.senders
 
+import online.bingzi.bilibili.video.internal.database.PlayerQQBindingService
 import online.bingzi.bilibili.video.internal.qrcode.QRCodeSender
 import online.bingzi.onebot.api.OneBotAPI
 import taboolib.common.platform.ProxyPlayer
@@ -8,7 +9,7 @@ import taboolib.module.lang.sendInfo
 import taboolib.module.lang.sendWarn
 import java.awt.image.BufferedImage
 import java.io.ByteArrayOutputStream
-import java.util.Base64
+import java.util.*
 import javax.imageio.ImageIO
 
 /**
@@ -31,24 +32,39 @@ class OneBotQRCodeSender : QRCodeSender {
                 return false
             }
             
-            // 获取玩家绑定的QQ号
-            val qqNumber = getPlayerQQNumber(player) ?: return false
-            
-            // 将二维码图片转换为Base64并构建消息
-            val base64Image = imageToBase64(qrCodeImage)
-            val message = buildOneBotMessage(title, description, base64Image)
-            
-            // 使用OneBot API发送私聊消息
-            val success = OneBotAPI.sendPrivateMessage(qqNumber, message)
-            
-            if (success) {
-                player.sendInfo("qrcodeOneBotSent", title, qqNumber.toString())
-                console().sendInfo("qrcodeOneBotCreated", player.name, qqNumber.toString())
-            } else {
-                player.sendWarn("qrcodeOneBotSendFailed")
+            // 异步获取玩家绑定的QQ号并发送
+            PlayerQQBindingService.getPlayerQQNumber(player).thenAccept { qqNumber ->
+                if (qqNumber == null) {
+                    player.sendWarn("qrcodeOneBotNotBound")
+                    console().sendWarn("qrcodeOneBotPlayerNotBound", player.name)
+                } else {
+                    try {
+                        // 将二维码图片转换为Base64并构建消息
+                        val base64Image = imageToBase64(qrCodeImage)
+                        val message = buildOneBotMessage(title, description, base64Image)
+                        
+                        // 使用OneBot API发送私聊消息
+                        val success = OneBotAPI.sendPrivateMessage(qqNumber, message)
+                        
+                        if (success) {
+                            player.sendInfo("qrcodeOneBotSent", title, qqNumber.toString())
+                            console().sendInfo("qrcodeOneBotCreated", player.name, qqNumber.toString())
+                        } else {
+                            player.sendWarn("qrcodeOneBotSendFailed")
+                        }
+                    } catch (e: Exception) {
+                        console().sendWarn("qrcodeOneBotSendError", player.name, e.message ?: "")
+                        player.sendWarn("qrcodeOneBotSendFailed")
+                    }
+                }
+            }.exceptionally { e ->
+                console().sendWarn("qrcodeOneBotQueryError", player.name, e.message ?: "")
+                player.sendWarn("qrcodeOneBotNotBound")
+                null
             }
             
-            success
+            // 返回true表示处理已开始，具体结果通过消息通知
+            true
             
         } catch (e: Exception) {
             console().sendWarn("qrcodeOneBotFailed", player.name, e.message ?: "")
@@ -63,9 +79,21 @@ class OneBotQRCodeSender : QRCodeSender {
             // 检查OneBot插件连接状态
             if (!OneBotAPI.isConnected()) return false
             
-            // TODO: 等待其他模块实现玩家QQ绑定功能后，这里检查玩家绑定状态
-            // 如果指定了玩家，检查玩家是否有绑定的QQ号
-            player?.let { getPlayerQQNumber(it) != null } ?: true
+            // 如果指定了玩家，同步检查玩家是否有绑定的QQ号
+            if (player != null) {
+                // 由于这个方法是同步的，我们需要阻塞等待结果
+                // 在实际使用中，调用方会处理异步情况
+                try {
+                    val hasBinding = PlayerQQBindingService.hasValidQQBinding(player).get()
+                    hasBinding
+                } catch (e: Exception) {
+                    // 如果查询失败，返回false
+                    false
+                }
+            } else {
+                // 如果没有指定玩家，只检查OneBot连接状态
+                true
+            }
             
         } catch (e: Exception) {
             false
@@ -80,18 +108,6 @@ class OneBotQRCodeSender : QRCodeSender {
         ImageIO.write(image, "PNG", baos)
         val imageBytes = baos.toByteArray()
         return Base64.getEncoder().encodeToString(imageBytes)
-    }
-    
-    /**
-     * 获取玩家绑定的QQ号
-     * TODO: 玩家QQ绑定功能由其他模块实现
-     */
-    private fun getPlayerQQNumber(player: ProxyPlayer): Long? {
-        // TODO: 这里应该调用其他模块提供的玩家QQ绑定API
-        // 临时返回null，等待其他模块实现绑定功能
-        player.sendWarn("qrcodeOneBotNotBound")
-        console().sendWarn("qrcodeOneBotPlayerNotBound", player.name)
-        return null
     }
     
     /**
