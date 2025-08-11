@@ -246,3 +246,78 @@ wbiAllCacheCleared: "&a已清除所有 WBI 密钥缓存"
 videoCommentsGetFailed: "&c获取视频评论失败: {0}"
 videoCommentsParseError: "&c解析视频评论失败: {0}"
 commentParseError: "&c解析单条评论失败: {0}"
+
+# UP主视频监控
+uploaderSchedulerStart: "&a启动UP主视频监控调度器"
+uploaderSchedulerStop: "&a停止UP主视频监控调度器"
+uploaderSchedulerCheckStart: "&7开始检查需要同步的UP主..."
+uploaderSchedulerCheckComplete: "&a UP主同步检查完成"
+uploaderSchedulerCheckError: "&c UP主同步检查出错: {0}"
+uploaderSchedulerNoNeedSync: "&7没有需要同步的UP主"
+uploaderSchedulerNeedSync: "&7发现 {0} 个需要同步的UP主"
+uploaderAlreadySyncing: "&e UP主 {0} 正在同步中，跳过"
+uploaderSyncStart: "&7开始同步UP主 {0} (UID: {1}) 的视频..."
+uploaderSyncComplete: "&a UP主 {0} 同步完成"
+uploaderSyncError: "&c UP主 {0} 同步失败: {1}"
+uploaderNoVideos: "&e UP主 {0} 没有视频"
+uploaderVideosSaved: "&a已保存UP主 {0} 的 {1}/{2} 个视频"
+uploaderVideoFetchStart: "&7开始获取UP主 {0} 的视频列表..."
+uploaderVideoFetchProgress: "&7正在获取第 {0} 页，本页 {1} 个视频"
+uploaderVideoFetchComplete: "&a获取UP主 {0} 的 {1} 个视频完成"
+uploaderVideoFetchError: "&c获取UP主视频列表失败: {0}"
+uploaderVideoParseError: "&c解析视频列表失败: {0}"
+uploaderVideoStatsUpdateError: "&c更新视频 {0} 统计信息失败: {1}"
+uploaderConfigNotFound: "&c未找到UP主 {0} 的配置"
+uploaderManualSyncError: "&c手动同步失败: {0}"
+uploaderAdded: "&a已添加UP主 {0} (UID: {1}) 到监控列表"
+uploaderAddError: "&c添加UP主 {0} 失败: {1}"
+uploaderRemoved: "&a已移除UP主 {0} 的监控"
+uploaderRemoveError: "&c移除UP主 {0} 失败: {1}"
+
+# UP主视频数据库操作
+uploaderConfigQueryError: "&c查询UP主配置失败: {0}"
+uploaderConfigSaveError: "&c保存UP主 {0} 配置失败: {1}"
+uploaderConfigDeleteError: "&c删除UP主 {0} 配置失败: {1}"
+uploaderConfigUpdateError: "&c更新UP主 {0} 配置失败: {1}"
+uploaderVideoQueryError: "&c查询UP主视频失败: {0}"
+uploaderVideoSaveError: "&c保存视频 {0} 失败: {1}"
+uploaderVideoDeleteError: "&c删除视频失败: {0}"
+uploaderVideoCountError: "&c获取视频数量失败: {0}"
+uploaderVideoSearchError: "&c搜索视频失败: {0}"
+
+# UP主命令
+uploaderCommandHelp: |
+  &6====== UP主视频监控命令 ======
+  &e/uploader add <UID> [间隔小时] &7- 添加UP主监控
+  &e/uploader remove <UID> &7- 移除UP主监控
+  &e/uploader list &7- 列出所有监控的UP主
+  &e/uploader sync <UID> &7- 手动同步指定UP主
+  &e/uploader syncAll &7- 同步所有UP主
+  &e/uploader toggle <UID> &7- 启用/禁用UP主监控
+  &e/uploader status &7- 查看同步状态
+  &e/uploader search <关键词> &7- 搜索视频
+uploaderInvalidUid: "&c无效的UP主UID: {0}"
+uploaderInvalidInterval: "&c无效的同步间隔: {0}，应在1-168小时之间"
+uploaderAddSuccess: "&a成功添加UP主 {0} 到监控列表，同步间隔: {1} 小时"
+uploaderAddFailed: "&c添加UP主 {0} 失败"
+uploaderRemoveSuccess: "&a成功移除UP主 {0} 的监控"
+uploaderRemoveFailed: "&c移除UP主 {0} 失败"
+uploaderListEmpty: "&7没有监控的UP主"
+uploaderListHeader: "&6===== 监控的UP主列表 ({0}) ====="
+uploaderListItem: "&e{0} &7- &b{1} &7- 视频: &a{2} &7- 间隔: &6{3}h &7- 状态: &f{4}"
+uploaderSyncStartManual: "&7开始手动同步UP主 {0}..."
+uploaderSyncQueued: "&a UP主 {0} 已加入同步队列"
+uploaderSyncFailed: "&c UP主 {0} 同步失败"
+uploaderNoEnabledConfigs: "&7没有启用的UP主配置"
+uploaderSyncAllStart: "&7开始同步 {0} 个UP主..."
+uploaderSyncAllQueued: "&a所有UP主已加入同步队列"
+uploaderNotFound: "&c未找到UP主 {0}"
+uploaderEnabled: "&a已启用UP主 {0} 的监控"
+uploaderDisabled: "&e已禁用UP主 {0} 的监控"
+uploaderToggleFailed: "&c切换UP主 {0} 状态失败"
+uploaderSchedulerStatus: "&6调度器状态: &e{0} &7| 同步中: &b{1} &7| 检查间隔: &a{2}分钟"
+uploaderSyncingList: "&7正在同步的UP主: &e{0}"
+uploaderSearchNoResult: "&7没有找到包含 &e{0} &7的视频"
+uploaderSearchResult: "&6找到 {0} 个包含 &e{1} &6的视频:"
+uploaderSearchItem: "&7- &a{0} &7: &f{1} &7(UP主: &b{2})"
+uploaderSearchMore: "&7... 还有 {0} 个结果未显示"

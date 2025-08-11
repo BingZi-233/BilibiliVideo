@@ -9,6 +9,8 @@ import online.bingzi.bilibili.video.internal.database.entity.BilibiliBinding
 import online.bingzi.bilibili.video.internal.database.entity.BilibiliCookie
 import online.bingzi.bilibili.video.internal.database.entity.Player
 import online.bingzi.bilibili.video.internal.database.entity.QQBinding
+import online.bingzi.bilibili.video.internal.database.entity.UploaderVideo
+import online.bingzi.bilibili.video.internal.database.entity.UploaderConfig
 import taboolib.common.LifeCycle
 import taboolib.common.platform.Awake
 import taboolib.common.platform.function.console
@@ -35,6 +37,12 @@ object DatabaseDaoManager {
     lateinit var bilibiliCookieDao: Dao<BilibiliCookie, Long>
         private set
 
+    lateinit var uploaderVideoDao: Dao<UploaderVideo, Long>
+        private set
+
+    lateinit var uploaderConfigDao: Dao<UploaderConfig, Long>
+        private set
+
     /**
      * 初始化所有DAO
      */
@@ -52,6 +60,8 @@ object DatabaseDaoManager {
             qqBindingDao = DaoManager.createDao(connectionSource, QQBinding::class.java)
             bilibiliBindingDao = DaoManager.createDao(connectionSource, BilibiliBinding::class.java)
             bilibiliCookieDao = DaoManager.createDao(connectionSource, BilibiliCookie::class.java)
+            uploaderVideoDao = DaoManager.createDao(connectionSource, UploaderVideo::class.java)
+            uploaderConfigDao = DaoManager.createDao(connectionSource, UploaderConfig::class.java)
 
             // 创建表结构（如果不存在）
             createTablesIfNotExists()

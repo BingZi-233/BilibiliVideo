@@ -8,6 +8,8 @@ import online.bingzi.bilibili.video.internal.database.entity.BilibiliBinding
 import online.bingzi.bilibili.video.internal.database.entity.BilibiliCookie
 import online.bingzi.bilibili.video.internal.database.entity.Player
 import online.bingzi.bilibili.video.internal.database.entity.QQBinding
+import online.bingzi.bilibili.video.internal.database.entity.UploaderVideo
+import online.bingzi.bilibili.video.internal.database.entity.UploaderConfig
 import taboolib.common.platform.function.console
 import taboolib.common.platform.function.getDataFolder
 import taboolib.library.configuration.ConfigurationSection
@@ -39,7 +41,9 @@ object DatabaseManager {
         Player::class.java,
         QQBinding::class.java,
         BilibiliBinding::class.java,
-        BilibiliCookie::class.java
+        BilibiliCookie::class.java,
+        UploaderVideo::class.java,
+        UploaderConfig::class.java
     )
 
     /**
