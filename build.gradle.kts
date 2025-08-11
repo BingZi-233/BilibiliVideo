@@ -1,46 +1,36 @@
 import io.izzel.taboolib.gradle.*
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_1_8
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+
 
 plugins {
     java
     id("io.izzel.taboolib") version "2.0.27"
-    id("org.jetbrains.kotlin.jvm") version "1.9.23"
+    id("org.jetbrains.kotlin.jvm") version "2.2.0"
 }
 
 taboolib {
+    env {
+        install(Basic)
+        install(I18n)
+        install(Metrics)
+        install(MinecraftChat)
+        install(CommandHelper)
+        install(Bukkit)
+        install(Kether)
+        install(BukkitHook)
+        install(BukkitUtil)
+    }
     description {
-        desc("Bilibili视频一键三连奖励系统，目前维护在GitHub上。遇到问题请先在GitHub上提出Issue，遇到长时间无反应请联系[冰子]。")
+        name = "BilibiliVideo"
         contributors {
-            name("坏黑")
-            name("冰子")
-            name("南瓜")
-        }
-        dependencies {
-            name("PlaceholderAPI").with("bukkit").optional(true)
+            name("BingZi-233")
         }
         links {
-            name("homepage").url("https://github.com/BingZi-233/BilibiliVideo")
+            name("https://github.com/BingZi-233/BilibiliVideo")
         }
     }
-    env {
-        install(Kether)
-        install(Database)
-        install(Metrics)
-        install(Basic)
-        install(Bukkit)
-        install(BukkitNMS)
-        install(BukkitNMSUtil)
-        install(BukkitNMSItemTag)
-        install(CommandHelper)
-        install(BukkitHook)
-    }
-    version {
-        taboolib = "6.2.3-ac49c9a"
-    }
-    relocate("com.google.zxing", "online.bingzi.bilibili.video.libraries.zxing")
-    relocate("com.google.gson", "online.bingzi.bilibili.video.libraries.gson")
-    relocate("com.github.benmanes.caffeine", "online.bingzi.bilibili.video.libraries.caffeine")
-    relocate("cn.evole.onebot", "online.bingzi.bilibili.video.libraries.onebot")
+    version { taboolib = "6.2.3-ee81cb0" }
 }
 
 repositories {
@@ -48,15 +38,12 @@ repositories {
 }
 
 dependencies {
-    taboo("com.github.ben-manes.caffeine:caffeine:2.9.3")
-    taboo("com.squareup.retrofit2:retrofit:2.9.0")
-    taboo("com.squareup.retrofit2:converter-gson:2.9.0")
-    taboo("com.google.zxing:core:3.5.2")
-    taboo("com.google.code.gson:gson:2.10.1")
     compileOnly("ink.ptms.core:v12004:12004:mapped")
     compileOnly("ink.ptms.core:v12004:12004:universal")
     compileOnly(kotlin("stdlib"))
-    taboo(fileTree("libs"))
+    compileOnly(fileTree("libs"))
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
+    implementation("com.google.code.gson:gson:2.10.1")
 }
 
 tasks.withType<JavaCompile> {
@@ -64,13 +51,13 @@ tasks.withType<JavaCompile> {
 }
 
 tasks.withType<KotlinCompile> {
-    kotlinOptions {
-        jvmTarget = "1.8"
-        freeCompilerArgs = listOf("-Xjvm-default=all")
+    compilerOptions {
+        jvmTarget.set(JVM_1_8)
+        freeCompilerArgs.add("-Xjvm-default=all")
     }
 }
 
-configure<JavaPluginConvention> {
+java {
     sourceCompatibility = JavaVersion.VERSION_1_8
     targetCompatibility = JavaVersion.VERSION_1_8
 }

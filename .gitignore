@@ -1,8 +1,5 @@
 .gradle
 .idea
 build
-bin
-
-# Claude Code相关文件
-.claude/
+.kotlin
 CLAUDE.local.md
