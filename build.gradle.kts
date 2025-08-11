@@ -35,6 +35,7 @@ taboolib {
 
 repositories {
     mavenCentral()
+    maven("https://repo.aeoliancloud.com/repository/releases/")
 }
 
 dependencies {
@@ -44,6 +45,13 @@ dependencies {
     compileOnly(fileTree("libs"))
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
     implementation("com.google.code.gson:gson:2.10.1")
+    // 二维码生成库
+    implementation("com.google.zxing:core:3.5.3")
+    implementation("com.google.zxing:javase:3.5.3")
+    // Kotlin协程库
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
+    // OneBot依赖
+    implementation("online.bingzi:onebot:1.0.0-97bdc38")
 }
 
 tasks.withType<JavaCompile> {

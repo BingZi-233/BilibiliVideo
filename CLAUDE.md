@@ -9,8 +9,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 # 构建发行版本
 ./gradlew build
 
-# 构建开发版本（不含 TabooLib 本体，用于开发者使用）
-./gradlewtaboolibBuildApi -PDeleteCode
+# 构建开发版本（包含 TabooLib 本体，用于开发者使用）
+./gradlew taboolibBuildApi -PDeleteCode
 ```
 
 ### 测试
@@ -26,18 +26,33 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **语言**: Kotlin（主要）+ Java（目标版本：Java 1.8）
 - **构建工具**: Gradle 8.x + Kotlin DSL
 - **依赖管理**: TabooLib的模块化系统
+- **网络请求**: OkHttp 4.12.0
+- **JSON处理**: Gson 2.10.1
+- **二维码生成**: ZXing 3.5.3
+- **异步处理**: Kotlin Coroutines 1.7.3
+- **OneBot集成**: OneBot 1.0.0（QQ机器人通讯）
 
 ### 架构概述
-这是一个基于TabooLib开发的Minecraft插件，使用TabooLib的跨平台架构：
+这是一个基于TabooLib开发的Minecraft插件，实现了完整的Bilibili API集成功能：
 
-1. **插件主类**: `BilibiliVideo` - 继承自TabooLib的`Plugin`接口
-2. **模块依赖**: 
-   - Basic模块（基础功能）
-   - I18n模块（国际化）
-   - Metrics模块（数据统计）
-   - MinecraftChat模块（聊天组件）
-   - CommandHelper模块（命令系统）
-   - Bukkit相关模块（Bukkit、Kether、BukkitHook、BukkitUtil）
+1. **插件主类**: `BilibiliVideo` - 继承自TabooLib的`Plugin`接口，负责插件生命周期管理
+2. **核心模块架构**:
+   - `commands/` - 命令处理层（登录、测试等命令）
+   - `internal.network/` - 网络服务层（API调用、Cookie管理、用户服务）
+   - `internal.qrcode/` - 二维码处理层（生成、发送模式、多平台发送器）
+   - `internal.network.entity/` - 数据实体层（API响应、用户信息、视频信息等）
+
+3. **关键服务组件**:
+   - `BilibiliApiClient` - 核心HTTP客户端
+   - `EnhancedLoginService` - 增强登录服务（支持二维码登录）
+   - `BilibiliVideoService` - 视频操作服务（获取信息、点赞、投币、收藏）
+   - `BilibiliUserService` - 用户服务（个人信息、统计数据）
+   - `QRCodeSendService` - 二维码发送服务（支持聊天、地图、OneBot多种模式）
+
+4. **TabooLib模块依赖**: 
+   - Basic（基础功能）、I18n（国际化）、Metrics（数据统计）
+   - MinecraftChat（聊天组件）、CommandHelper（命令系统）
+   - Bukkit系列模块（Bukkit、Kether、BukkitHook、BukkitUtil）
 
 ### TabooLib关键概念
 
@@ -119,21 +134,43 @@ player.sendError("errorKey")
 
 ## 特定于此项目的指导
 
-### 插件功能
-根据项目名称，这似乎是一个与哔哩哔哩视频相关的Minecraft插件。开发时应考虑：
+### 核心功能实现
+这是一个完整的Bilibili API集成Minecraft插件，主要功能包括：
 
-1. **网络请求**: 使用TabooLib的异步系统处理API调用
-2. **数据缓存**: 合理缓存视频信息减少API调用
-3. **用户界面**: 利用TabooLib的UI系统创建用户友好的界面
-4. **配置管理**: 支持API密钥、缓存设置等配置项
+1. **登录认证系统**:
+   - 二维码登录（支持聊天框、游戏内地图、QQ机器人多种显示方式）
+   - Cookie持久化管理
+   - 登录会话自动清理
 
-### 扩展建议
-1. 使用TabooLib的数据库模块存储用户数据
-2. 利用Kether脚本引擎提供自定义脚本功能
-3. 使用Metrics模块收集使用统计
-4. 考虑BukkitHook模块与其他插件的兼容性
+2. **视频交互功能**:
+   - 视频信息获取（标题、描述、统计数据等）
+   - 三连操作（点赞、投币、收藏）
+   - 视频状态查询
+
+3. **用户信息服务**:
+   - 个人资料获取
+   - 用户统计数据
+   - 账号状态查询
+
+4. **多平台二维码发送**:
+   - 游戏内聊天框发送
+   - 游戏内地图显示
+   - OneBot（QQ机器人）发送
+
+### 开发注意事项
+1. **异步处理**: 所有网络请求均使用CompletableFuture异步处理，避免阻塞游戏主线程
+2. **错误处理**: 使用TabooLib的错误处理机制和国际化消息系统
+3. **Cookie管理**: 实现了自定义CookieJar用于B站登录状态管理
+4. **定时任务**: 插件启动时自动注册会话清理定时任务
+5. **多平台兼容**: 支持通过OneBot与QQ机器人系统集成
+
+### 关键API参考
+1. **Bilibili API**: 项目使用官方API，参考文档：https://github.com/SocialSisterYi/bilibili-API-collect
+2. **OneBot标准**: QQ机器人通讯协议，源码参考：https://github.com/BingZi-233/OneBot
+3. **TabooLib文档**: 开发过程中遇到TabooLib相关问题，使用DeepWiki查询`TabooLib/taboolib`仓库
 
 ### 调试和测试
 1. 使用TabooLib的调试工具进行问题诊断
 2. 在不同Minecraft版本上测试兼容性
-3. 使用TabooLib的测试工具验证功能正确性
+3. 测试二维码发送的各种模式（聊天、地图、OneBot）
+4. 验证登录会话的正确管理和清理

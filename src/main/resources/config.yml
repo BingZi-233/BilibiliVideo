@@ -1,0 +1,43 @@
+# 二维码配置
+qrcode:
+  # 默认发送模式 (CHAT, MAP, ONEBOT)
+  default-send-mode: CHAT
+  
+  # 地图模式设置
+  map:
+    # 是否启用地图模式
+    enabled: true
+    # 地图尺寸 (推荐128，Minecraft默认地图大小)
+    size: 128
+  
+  # 聊天框模式设置
+  chat:
+    # 是否启用聊天框模式
+    enabled: true
+    # 聊天框二维码显示大小
+    display-size: 25
+  
+  # OneBot QQ机器人模式设置
+  onebot:
+    # 是否启用OneBot模式
+    enabled: false
+    # OneBot服务器地址
+    server-url: "http://localhost:3000"
+    # 访问令牌（可选，如果OneBot配置了access_token）
+    access-token: ""
+    
+    # 玩家QQ绑定
+    # 格式：玩家名: QQ号 或 UUID: QQ号
+    player-bindings:
+      # 示例配置
+      # PlayerName: "123456789"
+      # "550e8400-e29b-41d4-a716-446655440000": "987654321"
+
+# 登录配置
+login:
+  # 二维码登录超时时间（分钟）
+  qrcode-timeout: 5
+  # 状态轮询间隔（秒）
+  polling-interval: 3
+  # 会话清理间隔（分钟）
+  session-cleanup-interval: 10
