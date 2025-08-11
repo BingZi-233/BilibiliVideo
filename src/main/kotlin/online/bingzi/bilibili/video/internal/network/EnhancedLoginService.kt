@@ -1,7 +1,7 @@
 package online.bingzi.bilibili.video.internal.network
 
+import online.bingzi.bilibili.video.internal.network.entity.LoginSession
 import online.bingzi.bilibili.video.internal.network.entity.LoginStatus
-import online.bingzi.bilibili.video.internal.network.entity.QrCodeLoginInfo
 import online.bingzi.bilibili.video.internal.qrcode.QRCodeGenerator
 import online.bingzi.bilibili.video.internal.qrcode.QRCodeSendMode
 import online.bingzi.bilibili.video.internal.qrcode.QRCodeSendService
@@ -251,12 +251,3 @@ object EnhancedLoginService {
     }
 }
 
-/**
- * 登录会话数据类
- */
-data class LoginSession(
-    val playerUuid: String,
-    val playerName: String,
-    val qrcodeKey: String,
-    val startTime: Long
-)
