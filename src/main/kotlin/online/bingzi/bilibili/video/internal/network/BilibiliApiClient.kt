@@ -6,6 +6,7 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import online.bingzi.bilibili.video.internal.network.entity.ApiResponse
 import taboolib.common.platform.function.console
 import taboolib.module.lang.sendWarn
+import taboolib.module.lang.sendInfo
 import java.io.IOException
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.TimeUnit
@@ -21,7 +22,7 @@ object BilibiliApiClient {
         .readTimeout(30, TimeUnit.SECONDS)
         .writeTimeout(30, TimeUnit.SECONDS)
         .cookieJar(BilibiliCookieJar)
-        .addInterceptor(UserAgentInterceptor())
+        .addInterceptor(BuvidInterceptor())
         .build()
 
     /**
@@ -160,15 +161,71 @@ object BilibiliApiClient {
 }
 
 /**
- * User-Agent 拦截器
- * 为所有请求添加合适的 User-Agent
+ * Buvid 和 User-Agent 拦截器
+ * 同时处理 User-Agent 设置和 buvid 自动获取
  */
-private class UserAgentInterceptor : Interceptor {
+private class BuvidInterceptor : Interceptor {
+    
+    // 需要 buvid3 的 API 路径列表
+    private val buvidRequiredPaths = setOf(
+        "/x/web-interface/wbi/search/all/v2",    // 综合搜索
+        "/x/web-interface/wbi/search/type",     // 分类搜索
+        "/x/web-interface/archive/like",        // 点赞视频
+        "/x/web-interface/coin/add",            // 投币视频
+        "/x/web-interface/archive/like/triple", // 一键三连
+        "/x/web-interface/share/add",           // 分享视频
+        "/x/space/wbi/acc/info",                // 用户空间详细信息
+        "/x/player/wbi/playurl",                // 获取视频流地址
+        "/x/resource/laser2"                    // 播放反馈
+    )
+    
     override fun intercept(chain: Interceptor.Chain): Response {
         val originalRequest = chain.request()
+        
+        // 添加 User-Agent
         val requestWithUserAgent = originalRequest.newBuilder()
             .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
             .build()
+        
+        val url = requestWithUserAgent.url.toString()
+        val path = requestWithUserAgent.url.encodedPath
+        
+        // 只对需要 buvid 的特定 API 进行处理
+        if (isApiRequiresBuvid(url, path)) {
+            val playerUuid = BilibiliCookieJar.getCurrentPlayerUuid()
+            
+            // 如果有当前用户且没有有效的 buvid3，尝试预先获取
+            if (playerUuid != null && !BilibiliCookieJar.hasValidBuvid3(playerUuid)) {
+                try {
+                    // 使用异步方式获取，避免阻塞当前请求
+                    BuvidService.ensureBuvid(playerUuid).get(5, TimeUnit.SECONDS)
+                } catch (e: Exception) {
+                    // 如果获取失败，记录警告但继续请求
+                    console().sendWarn("buvidEnsureTimeout", playerUuid, e.message ?: "")
+                }
+            }
+        }
+        
         return chain.proceed(requestWithUserAgent)
+    }
+    
+    /**
+     * 判断 API 是否需要 buvid
+     */
+    private fun isApiRequiresBuvid(url: String, path: String): Boolean {
+        // 检查是否是 Bilibili 域名
+        if (!url.contains("bilibili.com") && !url.contains("bilivideo.com")) {
+            return false
+        }
+        
+        // 排除获取 buvid 的 API，避免递归
+        if (path.contains("/x/web-frontend/getbuvid") || path.contains("/x/frontend/finger/spi")) {
+            return false
+        }
+        
+        // 检查是否是需要 buvid 的 API
+        return buvidRequiredPaths.any { requiredPath ->
+            path.contains(requiredPath)
+        }
     }
 }

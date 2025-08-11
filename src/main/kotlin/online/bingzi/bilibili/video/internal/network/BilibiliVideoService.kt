@@ -220,6 +220,25 @@ object BilibiliVideoService {
             return CompletableFuture.completedFuture(false)
         }
 
+        // 确保有 buvid3，这对点赞操作是必需的
+        val playerUuid = BilibiliCookieJar.getCurrentPlayerUuid()
+        if (playerUuid != null && !BilibiliCookieJar.hasValidBuvid3(playerUuid)) {
+            return BuvidService.ensureBuvid(playerUuid).thenCompose { buvidSuccess ->
+                if (!buvidSuccess) {
+                    console().sendWarn("buvidRequiredForOperation", "点赞")
+                    return@thenCompose CompletableFuture.completedFuture(false)
+                }
+                performLikeOperation(aid, like)
+            }
+        }
+
+        return performLikeOperation(aid, like)
+    }
+
+    /**
+     * 执行具体的点赞操作
+     */
+    private fun performLikeOperation(aid: Long, like: Boolean): CompletableFuture<Boolean> {
         val csrf = BilibiliCookieJar.getCsrfToken() ?: ""
         val likeValue = if (like) 1 else 2
 
@@ -265,6 +284,25 @@ object BilibiliVideoService {
             return CompletableFuture.completedFuture(false)
         }
 
+        // 确保有 buvid3，这对投币操作是必需的
+        val playerUuid = BilibiliCookieJar.getCurrentPlayerUuid()
+        if (playerUuid != null && !BilibiliCookieJar.hasValidBuvid3(playerUuid)) {
+            return BuvidService.ensureBuvid(playerUuid).thenCompose { buvidSuccess ->
+                if (!buvidSuccess) {
+                    console().sendWarn("buvidRequiredForOperation", "投币")
+                    return@thenCompose CompletableFuture.completedFuture(false)
+                }
+                performCoinOperation(aid, multiply, selectLike)
+            }
+        }
+
+        return performCoinOperation(aid, multiply, selectLike)
+    }
+
+    /**
+     * 执行具体的投币操作
+     */
+    private fun performCoinOperation(aid: Long, multiply: Int, selectLike: Boolean): CompletableFuture<Boolean> {
         val csrf = BilibiliCookieJar.getCsrfToken() ?: ""
         val selectLikeValue = if (selectLike) 1 else 0
 

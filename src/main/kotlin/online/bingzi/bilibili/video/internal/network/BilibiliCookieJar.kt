@@ -241,6 +241,114 @@ object BilibiliCookieJar : CookieJar {
     }
     
     /**
+     * 获取指定 Player 的 buvid3
+     * @param playerUuid Player的UUID
+     * @return buvid3 值，不存在则返回 null
+     */
+    fun getBuvid3(playerUuid: String): String? {
+        return getCookie(playerUuid, "buvid3")
+    }
+    
+    /**
+     * 获取当前活动 Player 的 buvid3
+     * @return buvid3 值，不存在则返回 null
+     */
+    fun getBuvid3(): String? {
+        val playerUuid = getCurrentPlayerUuid() ?: return null
+        return getBuvid3(playerUuid)
+    }
+    
+    /**
+     * 获取指定 Player 的 buvid4
+     * @param playerUuid Player的UUID
+     * @return buvid4 值，不存在则返回 null
+     */
+    fun getBuvid4(playerUuid: String): String? {
+        return getCookie(playerUuid, "buvid4")
+    }
+    
+    /**
+     * 获取当前活动 Player 的 buvid4
+     * @return buvid4 值，不存在则返回 null
+     */
+    fun getBuvid4(): String? {
+        val playerUuid = getCurrentPlayerUuid() ?: return null
+        return getBuvid4(playerUuid)
+    }
+    
+    /**
+     * 检查指定 Player 是否有有效的 buvid3
+     * @param playerUuid Player的UUID
+     * @return 是否有有效的 buvid3
+     */
+    fun hasValidBuvid3(playerUuid: String): Boolean {
+        val buvid3 = getBuvid3(playerUuid)
+        return buvid3 != null && buvid3.isNotEmpty() && buvid3.length > 10
+    }
+    
+    /**
+     * 检查当前活动 Player 是否有有效的 buvid3
+     * @return 是否有有效的 buvid3
+     */
+    fun hasValidBuvid3(): Boolean {
+        val playerUuid = getCurrentPlayerUuid() ?: return false
+        return hasValidBuvid3(playerUuid)
+    }
+    
+    /**
+     * 检查指定 Player 是否有有效的 buvid4
+     * @param playerUuid Player的UUID
+     * @return 是否有有效的 buvid4
+     */
+    fun hasValidBuvid4(playerUuid: String): Boolean {
+        val buvid4 = getBuvid4(playerUuid)
+        return buvid4 != null && buvid4.isNotEmpty() && buvid4.length > 10
+    }
+    
+    /**
+     * 检查当前活动 Player 是否有有效的 buvid4
+     * @return 是否有有效的 buvid4
+     */
+    fun hasValidBuvid4(): Boolean {
+        val playerUuid = getCurrentPlayerUuid() ?: return false
+        return hasValidBuvid4(playerUuid)
+    }
+    
+    /**
+     * 设置指定 Player 的 buvid3
+     * @param playerUuid Player的UUID
+     * @param buvid3 buvid3 值
+     */
+    fun setBuvid3(playerUuid: String, buvid3: String) {
+        setCookie(playerUuid, "buvid3", buvid3)
+    }
+    
+    /**
+     * 设置当前活动 Player 的 buvid3
+     * @param buvid3 buvid3 值
+     */
+    fun setBuvid3(buvid3: String) {
+        setCookie("buvid3", buvid3)
+    }
+    
+    /**
+     * 设置指定 Player 的 buvid4
+     * @param playerUuid Player的UUID
+     * @param buvid4 buvid4 值
+     */
+    fun setBuvid4(playerUuid: String, buvid4: String) {
+        setCookie(playerUuid, "buvid4", buvid4)
+    }
+    
+    /**
+     * 设置当前活动 Player 的 buvid4
+     * @param buvid4 buvid4 值
+     */
+    fun setBuvid4(buvid4: String) {
+        setCookie("buvid4", buvid4)
+    }
+    
+    /**
      * 获取所有已存储Cookie的Player列表
      * @return Player UUID 列表
      */

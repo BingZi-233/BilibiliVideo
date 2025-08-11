@@ -18,6 +18,29 @@ object BilibiliUserService {
     private val gson = Gson()
 
     /**
+     * 为当前用户预先获取并设置 buvid
+     * 这个方法应该在用户登录后或进行需要 buvid 的操作前调用
+     * @return 是否成功获取并设置 buvid
+     */
+    fun ensureBuvidForCurrentUser(): CompletableFuture<Boolean> {
+        val playerUuid = BilibiliCookieJar.getCurrentPlayerUuid()
+        return if (playerUuid != null) {
+            BuvidService.ensureBuvid(playerUuid)
+        } else {
+            CompletableFuture.completedFuture(false)
+        }
+    }
+
+    /**
+     * 为指定用户预先获取并设置 buvid
+     * @param playerUuid Player UUID
+     * @return 是否成功获取并设置 buvid
+     */
+    fun ensureBuvidForUser(playerUuid: String): CompletableFuture<Boolean> {
+        return BuvidService.ensureBuvid(playerUuid)
+    }
+
+    /**
      * 获取当前登录用户的基本信息
      * @return 用户信息或 null
      */
