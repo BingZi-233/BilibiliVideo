@@ -181,16 +181,16 @@ object BilibiliUserService {
      * @return 用户视频列表响应或 null
      */
     fun getUserVideoList(
-        uid: Long, 
-        page: Int = 1, 
+        uid: Long,
+        page: Int = 1,
         pageSize: Int = 20,
         order: String = "pubdate"
     ): CompletableFuture<UserVideoListResponse?> {
         val actualPageSize = pageSize.coerceIn(1, 50) // 限制页面大小在1-50之间
         val actualPage = page.coerceAtLeast(1) // 页码至少为1
-        
+
         val url = "https://api.bilibili.com/x/space/wbi/arc/search?mid=$uid&pn=$actualPage&ps=$actualPageSize&order=$order"
-        
+
         return BilibiliApiClient.getAsync(url)
             .thenApply { response ->
                 if (response.isSuccess()) {
@@ -201,19 +201,19 @@ object BilibiliUserService {
                         if (code == 0) {
                             val data = json.getAsJsonObject("data")
                             val list = data.getAsJsonObject("list")
-                            
+
                             // 获取分页信息
                             val page = list.get("page")?.asJsonObject
                             val total = page?.get("count")?.asLong ?: 0L
                             val pages = ((total + actualPageSize - 1) / actualPageSize).toInt() // 计算总页数
-                            
+
                             // 获取视频数据
                             val vlistArray = list.getAsJsonArray("vlist")
                             val videos = mutableListOf<UserVideoInfo>()
-                            
+
                             vlistArray?.forEach { videoElement ->
                                 val videoObj = videoElement.asJsonObject
-                                
+
                                 val aid = videoObj.get("aid")?.asLong
                                 val bvid = videoObj.get("bvid")?.asString
                                 val title = videoObj.get("title")?.asString
@@ -227,37 +227,39 @@ object BilibiliUserService {
                                 val favorites = videoObj.get("favorites")?.asLong ?: 0L
                                 val author = videoObj.get("author")?.asString
                                 val mid = videoObj.get("mid")?.asLong
-                                
+
                                 if (aid != null && bvid != null && title != null && mid != null && author != null) {
                                     // 将时间字符串转换为秒数
                                     val duration = length?.let { parseTimeLength(it) }
-                                    
-                                    videos.add(UserVideoInfo(
-                                        aid = aid,
-                                        bvid = bvid,
-                                        title = title,
-                                        description = description,
-                                        cover = pic,
-                                        duration = duration,
-                                        publishTime = created,
-                                        videoStats = SimpleVideoStats(
-                                            view = play,
-                                            danmaku = danmaku,
-                                            reply = comment,
-                                            favorite = favorites,
-                                            coin = 0L, // 视频列表API不提供投币数
-                                            share = 0L, // 视频列表API不提供分享数
-                                            like = 0L   // 视频列表API不提供点赞数
-                                        ),
-                                        author = VideoAuthor(
-                                            uid = mid,
-                                            name = author,
-                                            avatar = null // 视频列表API不提供作者头像
+
+                                    videos.add(
+                                        UserVideoInfo(
+                                            aid = aid,
+                                            bvid = bvid,
+                                            title = title,
+                                            description = description,
+                                            cover = pic,
+                                            duration = duration,
+                                            publishTime = created,
+                                            videoStats = SimpleVideoStats(
+                                                view = play,
+                                                danmaku = danmaku,
+                                                reply = comment,
+                                                favorite = favorites,
+                                                coin = 0L, // 视频列表API不提供投币数
+                                                share = 0L, // 视频列表API不提供分享数
+                                                like = 0L   // 视频列表API不提供点赞数
+                                            ),
+                                            author = VideoAuthor(
+                                                uid = mid,
+                                                name = author,
+                                                avatar = null // 视频列表API不提供作者头像
+                                            )
                                         )
-                                    ))
+                                    )
                                 }
                             }
-                            
+
                             val result = UserVideoListResponse(
                                 videos = videos,
                                 total = total,
@@ -265,37 +267,37 @@ object BilibiliUserService {
                                 currentPage = actualPage,
                                 pageSize = actualPageSize
                             )
-                            
+
                             // 触发用户视频列表获取成功事件
                             UserVideoListFetchEvent(uid, actualPage, actualPageSize, result, true).call()
-                            
+
                             return@thenApply result
-                            
+
                         } else {
                             val message = json.get("message")?.asString ?: "未知错误"
                             console().sendWarn("userVideoListGetFailed", message)
-                            
+
                             // 触发用户视频列表获取失败事件
                             UserVideoListFetchEvent(uid, actualPage, actualPageSize, null, false, message).call()
                         }
                     } catch (e: Exception) {
                         val errorMsg = e.message ?: "解析响应失败"
                         console().sendWarn("userVideoListParseError", errorMsg)
-                        
+
                         // 触发用户视频列表获取失败事件
                         UserVideoListFetchEvent(uid, actualPage, actualPageSize, null, false, errorMsg).call()
                     }
                 } else {
                     val errorMsg = response.getError() ?: "网络请求失败"
                     console().sendWarn("networkApiRequestFailed", errorMsg)
-                    
+
                     // 触发用户视频列表获取失败事件
                     UserVideoListFetchEvent(uid, actualPage, actualPageSize, null, false, errorMsg).call()
                 }
                 null
             }
     }
-    
+
     /**
      * 将时间长度字符串解析为秒数
      * @param timeStr 时间字符串，格式如 "02:30" 或 "01:02:30"
@@ -310,12 +312,14 @@ object BilibiliUserService {
                     val seconds = parts[1].toInt()
                     minutes * 60 + seconds
                 }
+
                 3 -> { // HH:MM:SS 格式
                     val hours = parts[0].toInt()
                     val minutes = parts[1].toInt()
                     val seconds = parts[2].toInt()
                     hours * 3600 + minutes * 60 + seconds
                 }
+
                 else -> null
             }
         } catch (e: Exception) {

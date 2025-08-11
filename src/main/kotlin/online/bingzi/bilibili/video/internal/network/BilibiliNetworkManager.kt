@@ -15,14 +15,14 @@ import java.util.concurrent.ConcurrentHashMap
  */
 @Awake(LifeCycle.ENABLE)
 object BilibiliNetworkManager {
-    
+
     // Player服务实例缓存
     private val playerServices = ConcurrentHashMap<String, PlayerBilibiliService>()
-    
+
     init {
         console().sendInfo("networkModuleStartup")
     }
-    
+
     /**
      * 获取指定Player的网络服务实例
      * @param playerUuid Player的UUID字符串
@@ -33,7 +33,7 @@ object BilibiliNetworkManager {
             PlayerBilibiliService(playerUuid)
         }
     }
-    
+
     /**
      * 移除指定Player的服务实例（清理资源）
      * @param playerUuid Player的UUID字符串
@@ -42,7 +42,7 @@ object BilibiliNetworkManager {
         playerServices.remove(playerUuid)
         BilibiliCookieJar.clearCookies(playerUuid)
     }
-    
+
     /**
      * 获取所有活跃Player的UUID列表
      * @return Player UUID集合
@@ -50,7 +50,7 @@ object BilibiliNetworkManager {
     fun getActivePlayerUuids(): Set<String> {
         return BilibiliCookieJar.getAllPlayerUuids()
     }
-    
+
     /**
      * 检查指定Player是否已登录
      * @param playerUuid Player的UUID字符串
@@ -59,7 +59,7 @@ object BilibiliNetworkManager {
     fun isPlayerLoggedIn(playerUuid: String): Boolean {
         return BilibiliCookieJar.isLoggedIn(playerUuid)
     }
-    
+
     /**
      * 获取指定Player的当前用户信息（如果已登录）
      * @param playerUuid Player的UUID字符串
@@ -68,7 +68,7 @@ object BilibiliNetworkManager {
     fun getPlayerCurrentUser(playerUuid: String): CompletableFuture<UserInfo?> {
         return getPlayerService(playerUuid).getCurrentUserInfo()
     }
-    
+
     /**
      * 为指定Player快速获取视频信息和一键三连状态
      * @param playerUuid Player的UUID字符串
@@ -78,42 +78,42 @@ object BilibiliNetworkManager {
     fun getVideoWithTripleStatusForPlayer(playerUuid: String, bvid: String): CompletableFuture<VideoWithTripleStatus?> {
         return getPlayerService(playerUuid).getVideoWithTripleStatus(bvid)
     }
-    
+
     // ==================== 兼容性方法（向后兼容） ====================
-    
+
     /**
      * 登录服务实例（兼容性保留）
      * @deprecated 使用 getPlayerService(playerUuid).xxx 替代
      */
     @Deprecated("使用 getPlayerService(playerUuid) 获取Player专属服务")
     val loginService = BilibiliLoginService
-    
+
     /**
      * 用户服务实例（兼容性保留）
      * @deprecated 使用 getPlayerService(playerUuid).xxx 替代
      */
     @Deprecated("使用 getPlayerService(playerUuid) 获取Player专属服务")
     val userService = BilibiliUserService
-    
+
     /**
      * 视频服务实例（兼容性保留）
      * @deprecated 使用 getPlayerService(playerUuid).xxx 替代
      */
     @Deprecated("使用 getPlayerService(playerUuid) 获取Player专属服务")
     val videoService = BilibiliVideoService
-    
+
     /**
      * API 客户端实例
      */
     val apiClient = BilibiliApiClient
-    
+
     /**
      * Cookie 管理器实例（兼容性保留）
      * @deprecated 使用新的 BilibiliCookieJar 替代
      */
     @Deprecated("使用新的 BilibiliCookieJar 替代")
     val cookieJar = BilibiliCookieJar
-    
+
     /**
      * 检查网络模块是否就绪
      * @return 是否就绪
@@ -121,7 +121,7 @@ object BilibiliNetworkManager {
     fun isReady(): Boolean {
         return true
     }
-    
+
     /**
      * 快速登录检查（兼容性保留，使用第一个找到的已登录Player）
      * @deprecated 使用 isPlayerLoggedIn(playerUuid) 替代
@@ -131,7 +131,7 @@ object BilibiliNetworkManager {
     fun isLoggedIn(): Boolean {
         return BilibiliCookieJar.getAllPlayerUuids().any { BilibiliCookieJar.isLoggedIn(it) }
     }
-    
+
     /**
      * 获取当前用户信息（兼容性保留，使用第一个找到的已登录Player）
      * @deprecated 使用 getPlayerCurrentUser(playerUuid) 替代
@@ -146,7 +146,7 @@ object BilibiliNetworkManager {
             CompletableFuture.completedFuture(null)
         }
     }
-    
+
     /**
      * 快速获取视频信息和一键三连状态（兼容性保留，使用第一个找到的已登录Player）
      * @deprecated 使用 getVideoWithTripleStatusForPlayer(playerUuid, bvid) 替代
@@ -165,7 +165,7 @@ object BilibiliNetworkManager {
             }
         }
     }
-    
+
     /**
      * 清理网络模块资源
      * @param playerUuid 指定Player UUID，null表示清理所有

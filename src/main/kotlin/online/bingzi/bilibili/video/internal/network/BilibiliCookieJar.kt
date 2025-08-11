@@ -10,31 +10,31 @@ import java.util.concurrent.ConcurrentHashMap
  * 支持按 Player/用户分离的 Cookie 存储和管理
  */
 object BilibiliCookieJar : CookieJar {
-    
+
     // 每个Player的Cookie存储 Map<PlayerUUID, Map<CookieName, Cookie>>
     private val playerCookieStores = ConcurrentHashMap<String, ConcurrentHashMap<String, Cookie>>()
-    
+
     // 当前活动的Player UUID（线程本地存储）
     private val currentPlayerUuid = ThreadLocal<String>()
-    
+
     override fun saveFromResponse(url: HttpUrl, cookies: List<Cookie>) {
         val playerUuid = getCurrentPlayerUuid() ?: return
         val cookieStore = getOrCreateCookieStore(playerUuid)
-        
+
         for (cookie in cookies) {
             cookieStore[cookie.name] = cookie
         }
     }
-    
+
     override fun loadForRequest(url: HttpUrl): List<Cookie> {
         val playerUuid = getCurrentPlayerUuid() ?: return emptyList()
         val cookieStore = getCookieStore(playerUuid) ?: return emptyList()
-        
+
         return cookieStore.values.filter { cookie ->
             cookie.matches(url)
         }
     }
-    
+
     /**
      * 设置当前活动的 Player
      * @param playerUuid Player的UUID字符串
@@ -46,7 +46,7 @@ object BilibiliCookieJar : CookieJar {
             currentPlayerUuid.remove()
         }
     }
-    
+
     /**
      * 切换到指定用户
      * 这是 setCurrentPlayer 的别名方法，便于理解
@@ -55,14 +55,14 @@ object BilibiliCookieJar : CookieJar {
     fun switchUser(playerUuid: String) {
         setCurrentPlayer(playerUuid)
     }
-    
+
     /**
      * 获取当前活动的 Player UUID
      */
     fun getCurrentPlayerUuid(): String? {
         return currentPlayerUuid.get()
     }
-    
+
     /**
      * 为指定 Player 设置 Cookie
      * @param playerUuid Player的UUID
@@ -80,7 +80,7 @@ object BilibiliCookieJar : CookieJar {
             cookieStore[name] = cookie
         }
     }
-    
+
     /**
      * 为当前活动 Player 设置 Cookie
      * @param cookies Cookie 键值对
@@ -89,7 +89,7 @@ object BilibiliCookieJar : CookieJar {
         val playerUuid = getCurrentPlayerUuid() ?: return
         setCookies(playerUuid, cookies)
     }
-    
+
     /**
      * 获取指定 Player 的所有 Cookie
      * @param playerUuid Player的UUID
@@ -99,7 +99,7 @@ object BilibiliCookieJar : CookieJar {
         val cookieStore = getCookieStore(playerUuid) ?: return emptyMap()
         return cookieStore.mapValues { it.value.value }
     }
-    
+
     /**
      * 获取当前活动 Player 的所有 Cookie
      * @return Cookie 键值对
@@ -108,7 +108,7 @@ object BilibiliCookieJar : CookieJar {
         val playerUuid = getCurrentPlayerUuid() ?: return emptyMap()
         return getCookies(playerUuid)
     }
-    
+
     /**
      * 获取指定 Player 的指定名称的 Cookie
      * @param playerUuid Player的UUID
@@ -119,7 +119,7 @@ object BilibiliCookieJar : CookieJar {
         val cookieStore = getCookieStore(playerUuid) ?: return null
         return cookieStore[name]?.value
     }
-    
+
     /**
      * 获取当前活动 Player 的指定名称的 Cookie
      * @param name Cookie 名称
@@ -129,7 +129,7 @@ object BilibiliCookieJar : CookieJar {
         val playerUuid = getCurrentPlayerUuid() ?: return null
         return getCookie(playerUuid, name)
     }
-    
+
     /**
      * 为指定 Player 设置单个 Cookie
      * @param playerUuid Player的UUID
@@ -146,7 +146,7 @@ object BilibiliCookieJar : CookieJar {
             .build()
         cookieStore[name] = cookie
     }
-    
+
     /**
      * 为当前活动 Player 设置单个 Cookie
      * @param name Cookie 名称
@@ -156,7 +156,7 @@ object BilibiliCookieJar : CookieJar {
         val playerUuid = getCurrentPlayerUuid() ?: return
         setCookie(playerUuid, name, value)
     }
-    
+
     /**
      * 清除指定 Player 的所有 Cookie
      * @param playerUuid Player的UUID
@@ -164,7 +164,7 @@ object BilibiliCookieJar : CookieJar {
     fun clearCookies(playerUuid: String) {
         playerCookieStores.remove(playerUuid)
     }
-    
+
     /**
      * 清除当前活动 Player 的所有 Cookie
      */
@@ -172,7 +172,7 @@ object BilibiliCookieJar : CookieJar {
         val playerUuid = getCurrentPlayerUuid() ?: return
         clearCookies(playerUuid)
     }
-    
+
     /**
      * 移除指定 Player 的指定名称的 Cookie
      * @param playerUuid Player的UUID
@@ -182,7 +182,7 @@ object BilibiliCookieJar : CookieJar {
         val cookieStore = getCookieStore(playerUuid) ?: return
         cookieStore.remove(name)
     }
-    
+
     /**
      * 移除当前活动 Player 的指定名称的 Cookie
      * @param name Cookie 名称
@@ -191,7 +191,7 @@ object BilibiliCookieJar : CookieJar {
         val playerUuid = getCurrentPlayerUuid() ?: return
         removeCookie(playerUuid, name)
     }
-    
+
     /**
      * 检查指定 Player 是否已登录
      * @param playerUuid Player的UUID
@@ -199,11 +199,11 @@ object BilibiliCookieJar : CookieJar {
      */
     fun isLoggedIn(playerUuid: String): Boolean {
         val cookieStore = getCookieStore(playerUuid) ?: return false
-        return cookieStore.containsKey("DedeUserID") && 
-               cookieStore.containsKey("SESSDATA") && 
-               cookieStore.containsKey("bili_jct")
+        return cookieStore.containsKey("DedeUserID") &&
+                cookieStore.containsKey("SESSDATA") &&
+                cookieStore.containsKey("bili_jct")
     }
-    
+
     /**
      * 检查当前活动 Player 是否已登录
      * @return 是否已登录
@@ -212,7 +212,7 @@ object BilibiliCookieJar : CookieJar {
         val playerUuid = getCurrentPlayerUuid() ?: return false
         return isLoggedIn(playerUuid)
     }
-    
+
     /**
      * 获取指定 Player 的用户 ID
      * @param playerUuid Player的UUID
@@ -221,7 +221,7 @@ object BilibiliCookieJar : CookieJar {
     fun getUserId(playerUuid: String): String? {
         return getCookie(playerUuid, "DedeUserID")
     }
-    
+
     /**
      * 获取当前活动 Player 的用户 ID
      * @return 用户 ID，未登录则返回 null
@@ -230,7 +230,7 @@ object BilibiliCookieJar : CookieJar {
         val playerUuid = getCurrentPlayerUuid() ?: return null
         return getUserId(playerUuid)
     }
-    
+
     /**
      * 获取指定 Player 的 CSRF Token
      * @param playerUuid Player的UUID
@@ -239,7 +239,7 @@ object BilibiliCookieJar : CookieJar {
     fun getCsrfToken(playerUuid: String): String? {
         return getCookie(playerUuid, "bili_jct")
     }
-    
+
     /**
      * 获取当前活动 Player 的 CSRF Token
      * @return CSRF Token，未登录则返回 null
@@ -248,7 +248,7 @@ object BilibiliCookieJar : CookieJar {
         val playerUuid = getCurrentPlayerUuid() ?: return null
         return getCsrfToken(playerUuid)
     }
-    
+
     /**
      * 获取指定 Player 的 buvid3
      * @param playerUuid Player的UUID
@@ -257,7 +257,7 @@ object BilibiliCookieJar : CookieJar {
     fun getBuvid3(playerUuid: String): String? {
         return getCookie(playerUuid, "buvid3")
     }
-    
+
     /**
      * 获取当前活动 Player 的 buvid3
      * @return buvid3 值，不存在则返回 null
@@ -266,7 +266,7 @@ object BilibiliCookieJar : CookieJar {
         val playerUuid = getCurrentPlayerUuid() ?: return null
         return getBuvid3(playerUuid)
     }
-    
+
     /**
      * 获取指定 Player 的 buvid4
      * @param playerUuid Player的UUID
@@ -275,7 +275,7 @@ object BilibiliCookieJar : CookieJar {
     fun getBuvid4(playerUuid: String): String? {
         return getCookie(playerUuid, "buvid4")
     }
-    
+
     /**
      * 获取当前活动 Player 的 buvid4
      * @return buvid4 值，不存在则返回 null
@@ -284,7 +284,7 @@ object BilibiliCookieJar : CookieJar {
         val playerUuid = getCurrentPlayerUuid() ?: return null
         return getBuvid4(playerUuid)
     }
-    
+
     /**
      * 检查指定 Player 是否有有效的 buvid3
      * @param playerUuid Player的UUID
@@ -294,7 +294,7 @@ object BilibiliCookieJar : CookieJar {
         val buvid3 = getBuvid3(playerUuid)
         return buvid3 != null && buvid3.isNotEmpty() && buvid3.length > 10
     }
-    
+
     /**
      * 检查当前活动 Player 是否有有效的 buvid3
      * @return 是否有有效的 buvid3
@@ -303,7 +303,7 @@ object BilibiliCookieJar : CookieJar {
         val playerUuid = getCurrentPlayerUuid() ?: return false
         return hasValidBuvid3(playerUuid)
     }
-    
+
     /**
      * 检查指定 Player 是否有有效的 buvid4
      * @param playerUuid Player的UUID
@@ -313,7 +313,7 @@ object BilibiliCookieJar : CookieJar {
         val buvid4 = getBuvid4(playerUuid)
         return buvid4 != null && buvid4.isNotEmpty() && buvid4.length > 10
     }
-    
+
     /**
      * 检查当前活动 Player 是否有有效的 buvid4
      * @return 是否有有效的 buvid4
@@ -322,7 +322,7 @@ object BilibiliCookieJar : CookieJar {
         val playerUuid = getCurrentPlayerUuid() ?: return false
         return hasValidBuvid4(playerUuid)
     }
-    
+
     /**
      * 设置指定 Player 的 buvid3
      * @param playerUuid Player的UUID
@@ -331,7 +331,7 @@ object BilibiliCookieJar : CookieJar {
     fun setBuvid3(playerUuid: String, buvid3: String) {
         setCookie(playerUuid, "buvid3", buvid3)
     }
-    
+
     /**
      * 设置当前活动 Player 的 buvid3
      * @param buvid3 buvid3 值
@@ -339,7 +339,7 @@ object BilibiliCookieJar : CookieJar {
     fun setBuvid3(buvid3: String) {
         setCookie("buvid3", buvid3)
     }
-    
+
     /**
      * 设置指定 Player 的 buvid4
      * @param playerUuid Player的UUID
@@ -348,7 +348,7 @@ object BilibiliCookieJar : CookieJar {
     fun setBuvid4(playerUuid: String, buvid4: String) {
         setCookie(playerUuid, "buvid4", buvid4)
     }
-    
+
     /**
      * 设置当前活动 Player 的 buvid4
      * @param buvid4 buvid4 值
@@ -356,7 +356,7 @@ object BilibiliCookieJar : CookieJar {
     fun setBuvid4(buvid4: String) {
         setCookie("buvid4", buvid4)
     }
-    
+
     /**
      * 获取所有已存储Cookie的Player列表
      * @return Player UUID 列表
@@ -364,21 +364,21 @@ object BilibiliCookieJar : CookieJar {
     fun getAllPlayerUuids(): Set<String> {
         return playerCookieStores.keys.toSet()
     }
-    
+
     /**
      * 获取或创建指定 Player 的 Cookie 存储
      */
     private fun getOrCreateCookieStore(playerUuid: String): ConcurrentHashMap<String, Cookie> {
         return playerCookieStores.getOrPut(playerUuid) { ConcurrentHashMap() }
     }
-    
+
     /**
      * 获取指定 Player 的 Cookie 存储
      */
     private fun getCookieStore(playerUuid: String): ConcurrentHashMap<String, Cookie>? {
         return playerCookieStores[playerUuid]
     }
-    
+
     /**
      * 清理所有 Cookie 数据（慎用）
      */

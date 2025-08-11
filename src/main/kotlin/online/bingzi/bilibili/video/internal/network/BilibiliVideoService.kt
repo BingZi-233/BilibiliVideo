@@ -2,7 +2,9 @@ package online.bingzi.bilibili.video.internal.network
 
 import com.google.gson.Gson
 import com.google.gson.JsonParser
-import online.bingzi.bilibili.video.api.event.network.video.*
+import online.bingzi.bilibili.video.api.event.network.video.VideoCommentsFetchEvent
+import online.bingzi.bilibili.video.api.event.network.video.VideoInfoFetchEvent
+import online.bingzi.bilibili.video.api.event.network.video.VideoTripleStatusFetchEvent
 import online.bingzi.bilibili.video.internal.network.entity.*
 import taboolib.common.platform.function.console
 import taboolib.module.lang.sendInfo
@@ -81,30 +83,30 @@ object BilibiliVideoService {
                                         avatar = face
                                     )
                                 )
-                                
+
                                 // 触发视频信息获取成功事件
                                 VideoInfoFetchEvent(bvid, videoInfo, true).call()
-                                
+
                                 return@thenApply videoInfo
                             }
                         } else {
                             val message = json.get("message")?.asString ?: "未知错误"
                             console().sendWarn("videoInfoGetFailed", message)
-                            
+
                             // 触发视频信息获取失败事件
                             VideoInfoFetchEvent(bvid, null, false, message).call()
                         }
                     } catch (e: Exception) {
                         val errorMsg = e.message ?: "解析响应失败"
                         console().sendWarn("videoInfoParseError", errorMsg)
-                        
+
                         // 触发视频信息获取失败事件
                         VideoInfoFetchEvent(bvid, null, false, errorMsg).call()
                     }
                 } else {
                     val errorMsg = response.getError() ?: "网络请求失败"
                     console().sendWarn("networkApiRequestFailed", errorMsg)
-                    
+
                     // 触发视频信息获取失败事件
                     VideoInfoFetchEvent(bvid, null, false, errorMsg).call()
                 }
@@ -120,10 +122,10 @@ object BilibiliVideoService {
     fun getTripleActionStatus(aid: Long): CompletableFuture<TripleActionStatus?> {
         if (!BilibiliCookieJar.isLoggedIn()) {
             console().sendWarn("loginRequired")
-            
+
             // 触发视频三连状态获取失败事件
             VideoTripleStatusFetchEvent(aid, null, null, false, "需要登录").call()
-            
+
             return CompletableFuture.completedFuture(null)
         }
 
@@ -145,18 +147,18 @@ object BilibiliVideoService {
                         coined = coined,
                         favorited = favorited
                     )
-                    
+
                     // 触发视频三连状态获取成功事件
                     VideoTripleStatusFetchEvent(aid, null, tripleStatus, true).call()
-                    
+
                     tripleStatus
                 } catch (e: Exception) {
                     val errorMsg = e.message ?: "获取三连状态失败"
                     console().sendWarn("videoTripleStatusGetFailed", errorMsg)
-                    
+
                     // 触发视频三连状态获取失败事件
                     VideoTripleStatusFetchEvent(aid, null, null, false, errorMsg).call()
-                    
+
                     null
                 }
             }
@@ -444,7 +446,7 @@ object BilibiliVideoService {
                     coined = coinSuccess,
                     favorited = false  // 收藏操作需要收藏夹 ID，这里暂时不实现
                 )
-                
+
                 CompletableFuture.completedFuture(result)
             }
     }
@@ -466,7 +468,7 @@ object BilibiliVideoService {
         val actualPageSize = pageSize.coerceIn(1, 49) // 限制页面大小在1-49之间
         val actualPage = page.coerceAtLeast(1) // 页码至少为1
         val actualSort = sort.coerceIn(0, 2) // 排序方式限制在0-2之间
-        
+
         // 首先尝试将oid转换为AV号
         val avid = when {
             oid.startsWith("BV") -> {
@@ -481,6 +483,7 @@ object BilibiliVideoService {
                     }
                 }
             }
+
             oid.matches(Regex("\\d+")) -> oid // 纯数字，假设是AV号
             oid.startsWith("av") || oid.startsWith("AV") -> oid.substring(2) // 去掉av前缀
             else -> {
@@ -489,10 +492,10 @@ object BilibiliVideoService {
                 return CompletableFuture.completedFuture(null)
             }
         }
-        
+
         return getVideoCommentsInternal(avid, actualPage, actualPageSize, actualSort, oid)
     }
-    
+
     /**
      * 获取视频评论的内部实现
      */
@@ -514,14 +517,14 @@ object BilibiliVideoService {
             "seek_rpid" to "",  // 跳转到指定评论，留空
             "web_location" to "1315875"  // 页面定位，固定值
         )
-        
+
         // 对于翻页，需要使用 pagination_str 参数
         val paginationParams = if (page > 1) {
             params + ("pagination_str" to """{"offset":"${(page - 1) * pageSize}"}""")
         } else {
             params
         }
-        
+
         return BilibiliApiClient.getAsyncWithWbi(baseUrl, paginationParams)
             .thenApply { response ->
                 if (response.isSuccess()) {
@@ -531,13 +534,13 @@ object BilibiliVideoService {
 
                         if (code == 0) {
                             val data = json.getAsJsonObject("data")
-                            
+
                             // 获取分页信息
                             val pageObj = data.getAsJsonObject("page")
                             val count = pageObj?.get("count")?.asLong ?: 0L
                             val size = pageObj?.get("size")?.asInt ?: pageSize
                             val pages = if (size > 0) ((count + size - 1) / size).toInt() else 0
-                            
+
                             // 获取游标信息
                             val cursorObj = data.getAsJsonObject("cursor")
                             val cursor = if (cursorObj != null) {
@@ -553,30 +556,30 @@ object BilibiliVideoService {
                                     name = cursorObj.get("name")?.asString ?: ""
                                 )
                             } else null
-                            
+
                             // 解析评论列表
                             val repliesArray = data.getAsJsonArray("replies")
                             val comments = mutableListOf<CommentInfo>()
-                            
+
                             repliesArray?.forEach { replyElement ->
                                 val commentInfo = parseCommentInfo(replyElement.asJsonObject)
                                 if (commentInfo != null) {
                                     comments.add(commentInfo)
                                 }
                             }
-                            
+
                             // 解析置顶评论
                             val upperObj = data.getAsJsonObject("upper")
                             val upperArray = upperObj?.getAsJsonArray("top")
                             val topComments = mutableListOf<CommentInfo>()
-                            
+
                             upperArray?.forEach { topElement ->
                                 val topCommentInfo = parseCommentInfo(topElement.asJsonObject)
                                 if (topCommentInfo != null) {
                                     topComments.add(topCommentInfo)
                                 }
                             }
-                            
+
                             val result = VideoCommentsResponse(
                                 comments = comments,
                                 total = count,
@@ -587,37 +590,37 @@ object BilibiliVideoService {
                                 hasMore = cursor?.isEnd != true,
                                 topComments = topComments
                             )
-                            
+
                             // 触发评论获取成功事件
                             VideoCommentsFetchEvent(originalOid, 1, page, pageSize, sort.toString(), result, true).call()
-                            
+
                             return@thenApply result
-                            
+
                         } else {
                             val message = json.get("message")?.asString ?: "未知错误"
                             console().sendWarn("videoCommentsGetFailed", message)
-                            
+
                             // 触发评论获取失败事件
                             VideoCommentsFetchEvent(originalOid, 1, page, pageSize, sort.toString(), null, false, message).call()
                         }
                     } catch (e: Exception) {
                         val errorMsg = e.message ?: "解析响应失败"
                         console().sendWarn("videoCommentsParseError", errorMsg)
-                        
+
                         // 触发评论获取失败事件
                         VideoCommentsFetchEvent(originalOid, 1, page, pageSize, sort.toString(), null, false, errorMsg).call()
                     }
                 } else {
                     val errorMsg = response.getError() ?: "网络请求失败"
                     console().sendWarn("networkApiRequestFailed", errorMsg)
-                    
+
                     // 触发评论获取失败事件
                     VideoCommentsFetchEvent(originalOid, 1, page, pageSize, sort.toString(), null, false, errorMsg).call()
                 }
                 null
             }
     }
-    
+
     /**
      * 解析评论信息
      */
@@ -640,7 +643,7 @@ object BilibiliVideoService {
             val action = commentObj.get("action")?.asInt ?: 0
             val assist = commentObj.get("assist")?.asInt ?: 0
             val showFollow = commentObj.get("show_follow")?.asBoolean ?: false
-            
+
             // 解析member信息
             val memberObj = commentObj.getAsJsonObject("member")
             val member = CommentMember(
@@ -660,7 +663,7 @@ object BilibiliVideoService {
                 following = memberObj?.get("following")?.asInt ?: 0,
                 isFollowed = memberObj?.get("is_followed")?.asInt ?: 0
             )
-            
+
             // 解析content信息
             val contentObj = commentObj.getAsJsonObject("content")
             val content = CommentContent(
@@ -672,7 +675,7 @@ object BilibiliVideoService {
                 jumpUrl = null,  // 简化处理
                 maxLine = contentObj?.get("max_line")?.asInt ?: 0
             )
-            
+
             CommentInfo(
                 rpid = rpid,
                 oid = oid,

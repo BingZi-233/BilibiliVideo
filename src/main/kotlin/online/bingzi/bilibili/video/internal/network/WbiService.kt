@@ -129,10 +129,10 @@ object WbiService {
                                     val subKey = subUrl.substringAfterLast("/").substringBeforeLast(".")
 
                                     val keys = WbiKeys(imgKey, subKey)
-                                    
+
                                     // 缓存密钥
                                     wbiKeysCache[playerUuid] = keys
-                                    
+
                                     console().sendInfo("wbiKeysFetched", playerUuid)
                                     return@thenApply keys
                                 } else {
@@ -236,17 +236,17 @@ object WbiService {
     private fun encodeURIComponent(value: String): String {
         // 使用 URLEncoder 进行基础编码
         var encoded = URLEncoder.encode(value, "UTF-8")
-        
+
         // 将 + 替换为 %20（空格的正确编码）
         encoded = encoded.replace("+", "%20")
-        
+
         // 还原不需要编码的字符（过滤 !'()* ）
         encoded = encoded.replace("%21", "!")
         encoded = encoded.replace("%27", "'")
         encoded = encoded.replace("%28", "(")
         encoded = encoded.replace("%29", ")")
         encoded = encoded.replace("%2A", "*")
-        
+
         return encoded
     }
 

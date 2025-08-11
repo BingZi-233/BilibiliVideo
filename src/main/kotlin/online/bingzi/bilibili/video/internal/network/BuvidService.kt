@@ -14,7 +14,7 @@ import java.util.concurrent.TimeUnit
  * 负责获取和管理 buvid3、buvid4 等设备标识符
  */
 object BuvidService {
-    
+
     // 专用于获取 buvid 的客户端，避免循环依赖
     private val buvidClient: OkHttpClient = OkHttpClient.Builder()
         .connectTimeout(30, TimeUnit.SECONDS)
@@ -22,32 +22,32 @@ object BuvidService {
         .writeTimeout(30, TimeUnit.SECONDS)
         .addInterceptor(BuvidUserAgentInterceptor())
         .build()
-    
+
     /**
      * 异步获取 buvid3
      * @return CompletableFuture<String?> buvid3 值，失败时返回 null
      */
     fun getBuvid3Async(): CompletableFuture<String?> {
         val future = CompletableFuture<String?>()
-        
+
         val request = Request.Builder()
             .url("https://api.bilibili.com/x/web-frontend/getbuvid")
             .get()
             .build()
-        
+
         buvidClient.newCall(request).enqueue(object : Callback {
             override fun onFailure(call: Call, e: IOException) {
                 console().sendWarn("buvidRequestFailed", "buvid3", e.message ?: "")
                 future.complete(null)
             }
-            
+
             override fun onResponse(call: Call, response: Response) {
                 try {
                     val body = response.body?.string() ?: ""
                     if (response.isSuccessful) {
                         val jsonResponse = JsonParser.parseString(body).asJsonObject
                         val code = jsonResponse.get("code")?.asInt ?: -1
-                        
+
                         if (code == 0) {
                             val data = jsonResponse.getAsJsonObject("data")
                             val buvid = data?.get("buvid")?.asString
@@ -72,40 +72,40 @@ object BuvidService {
                 }
             }
         })
-        
+
         return future
     }
-    
+
     /**
      * 异步同时获取 buvid3 和 buvid4
      * @return CompletableFuture<Pair<String?, String?>> (buvid3, buvid4)，失败时对应项为 null
      */
     fun getBuvidAsync(): CompletableFuture<Pair<String?, String?>> {
         val future = CompletableFuture<Pair<String?, String?>>()
-        
+
         val request = Request.Builder()
             .url("https://api.bilibili.com/x/frontend/finger/spi")
             .get()
             .build()
-        
+
         buvidClient.newCall(request).enqueue(object : Callback {
             override fun onFailure(call: Call, e: IOException) {
                 console().sendWarn("buvidRequestFailed", "buvid3/buvid4", e.message ?: "")
                 future.complete(Pair(null, null))
             }
-            
+
             override fun onResponse(call: Call, response: Response) {
                 try {
                     val body = response.body?.string() ?: ""
                     if (response.isSuccessful) {
                         val jsonResponse = JsonParser.parseString(body).asJsonObject
                         val code = jsonResponse.get("code")?.asInt ?: -1
-                        
+
                         if (code == 0) {
                             val data = jsonResponse.getAsJsonObject("data")
                             val buvid3 = data?.get("b_3")?.asString
                             val buvid4 = data?.get("b_4")?.asString
-                            
+
                             if (buvid3 != null || buvid4 != null) {
                                 console().sendInfo("buvidObtained", "buvid3/buvid4", "$buvid3, $buvid4")
                                 future.complete(Pair(buvid3, buvid4))
@@ -127,28 +127,28 @@ object BuvidService {
                 }
             }
         })
-        
+
         return future
     }
-    
+
     /**
      * 从 bilibili.com 主页的响应头中获取 buvid3
      * @return CompletableFuture<String?> buvid3 值，失败时返回 null
      */
     fun getBuvid3FromHeaderAsync(): CompletableFuture<String?> {
         val future = CompletableFuture<String?>()
-        
+
         val request = Request.Builder()
             .url("https://www.bilibili.com/")
             .head() // 使用 HEAD 请求减少数据传输
             .build()
-        
+
         buvidClient.newCall(request).enqueue(object : Callback {
             override fun onFailure(call: Call, e: IOException) {
                 console().sendWarn("buvidHeaderRequestFailed", e.message ?: "")
                 future.complete(null)
             }
-            
+
             override fun onResponse(call: Call, response: Response) {
                 try {
                     val setCookieHeaders = response.headers("Set-Cookie")
@@ -168,10 +168,10 @@ object BuvidService {
                 }
             }
         })
-        
+
         return future
     }
-    
+
     /**
      * 同步获取 buvid3
      * 注意：此方法会阻塞当前线程，建议在异步环境中使用
@@ -179,7 +179,7 @@ object BuvidService {
     fun getBuvid3Sync(): String? {
         return getBuvid3Async().get()
     }
-    
+
     /**
      * 同步获取 buvid3 和 buvid4
      * 注意：此方法会阻塞当前线程，建议在异步环境中使用
@@ -187,7 +187,7 @@ object BuvidService {
     fun getBuvidSync(): Pair<String?, String?> {
         return getBuvidAsync().get()
     }
-    
+
     /**
      * 为指定用户自动获取并设置 buvid
      * @param playerUuid 用户UUID
@@ -195,7 +195,7 @@ object BuvidService {
      */
     fun ensureBuvid(playerUuid: String): CompletableFuture<Boolean> {
         val future = CompletableFuture<Boolean>()
-        
+
         // 检查是否已经有 buvid3
         val existingBuvid3 = BilibiliCookieJar.getCookie(playerUuid, "buvid3")
         if (existingBuvid3 != null && existingBuvid3.isNotEmpty()) {
@@ -203,37 +203,37 @@ object BuvidService {
             future.complete(true)
             return future
         }
-        
+
         // 尝试获取 buvid
         getBuvidAsync().thenAccept { (buvid3, buvid4) ->
             var success = false
-            
+
             if (buvid3 != null) {
                 BilibiliCookieJar.setCookie(playerUuid, "buvid3", buvid3)
                 success = true
             }
-            
+
             if (buvid4 != null) {
                 BilibiliCookieJar.setCookie(playerUuid, "buvid4", buvid4)
                 success = true
             }
-            
+
             if (success) {
                 console().sendInfo("buvidSetSuccess", playerUuid)
             } else {
                 console().sendWarn("buvidSetFailed", playerUuid)
             }
-            
+
             future.complete(success)
         }.exceptionally { throwable ->
             console().sendWarn("buvidEnsureFailed", playerUuid, throwable.message ?: "")
             future.complete(false)
             null
         }
-        
+
         return future
     }
-    
+
     /**
      * 为当前活动用户自动获取并设置 buvid
      * @return CompletableFuture<Boolean> 是否成功设置
@@ -246,7 +246,7 @@ object BuvidService {
             CompletableFuture.completedFuture(false)
         }
     }
-    
+
     /**
      * 验证 buvid 是否有效
      * @param buvid buvid 值

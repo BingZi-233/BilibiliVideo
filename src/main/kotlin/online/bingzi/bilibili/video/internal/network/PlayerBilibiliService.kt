@@ -10,7 +10,7 @@ import java.util.concurrent.CompletableFuture
  * 自动管理每个Player的独立Cookie和会话状态
  */
 class PlayerBilibiliService(private val playerUuid: String) {
-    
+
     /**
      * 在指定Player上下文中执行操作
      */
@@ -23,21 +23,21 @@ class PlayerBilibiliService(private val playerUuid: String) {
             BilibiliCookieJar.setCurrentPlayer(originalPlayer)
         }
     }
-    
+
     /**
      * 在指定Player上下文中执行异步操作
      */
     private fun <T> withPlayerContextAsync(operation: () -> CompletableFuture<T>): CompletableFuture<T> {
         val originalPlayer = BilibiliCookieJar.getCurrentPlayerUuid()
         BilibiliCookieJar.setCurrentPlayer(playerUuid)
-        
+
         return operation().whenComplete { _, _ ->
             BilibiliCookieJar.setCurrentPlayer(originalPlayer)
         }
     }
-    
+
     // ==================== 登录服务 ====================
-    
+
     /**
      * 生成二维码登录信息
      */
@@ -46,7 +46,7 @@ class PlayerBilibiliService(private val playerUuid: String) {
             BilibiliLoginService.generateQrCode()
         }
     }
-    
+
     /**
      * 轮询登录状态
      */
@@ -55,21 +55,21 @@ class PlayerBilibiliService(private val playerUuid: String) {
             BilibiliLoginService.pollLoginStatus(qrcodeKey)
         }
     }
-    
+
     /**
      * 检查当前Player登录状态
      */
     fun isLoggedIn(): Boolean {
         return BilibiliCookieJar.isLoggedIn(playerUuid)
     }
-    
+
     /**
      * 获取当前Player的用户 UID
      */
     fun getCurrentUserId(): String? {
         return BilibiliCookieJar.getUserId(playerUuid)
     }
-    
+
     /**
      * 登出当前Player
      */
@@ -77,7 +77,7 @@ class PlayerBilibiliService(private val playerUuid: String) {
         BilibiliCookieJar.clearCookies(playerUuid)
         console().sendWarn("loginLogout")
     }
-    
+
     /**
      * 使用 Cookie 字符串为当前Player设置登录状态
      */
@@ -86,9 +86,9 @@ class PlayerBilibiliService(private val playerUuid: String) {
             BilibiliLoginService.loginWithCookies(cookies)
         }
     }
-    
+
     // ==================== 用户服务 ====================
-    
+
     /**
      * 获取当前Player登录用户的基本信息
      */
@@ -97,7 +97,7 @@ class PlayerBilibiliService(private val playerUuid: String) {
             BilibiliUserService.getCurrentUserInfo()
         }
     }
-    
+
     /**
      * 获取指定用户的详细信息
      */
@@ -106,7 +106,7 @@ class PlayerBilibiliService(private val playerUuid: String) {
             BilibiliUserService.getUserInfo(uid)
         }
     }
-    
+
     /**
      * 获取用户的关注统计信息
      */
@@ -115,9 +115,9 @@ class PlayerBilibiliService(private val playerUuid: String) {
             BilibiliUserService.getUserStats(uid)
         }
     }
-    
+
     // ==================== 视频服务 ====================
-    
+
     /**
      * 根据 BV 号获取视频详细信息
      */
@@ -126,7 +126,7 @@ class PlayerBilibiliService(private val playerUuid: String) {
             BilibiliVideoService.getVideoInfo(bvid)
         }
     }
-    
+
     /**
      * 获取视频的一键三连状态
      */
@@ -135,7 +135,7 @@ class PlayerBilibiliService(private val playerUuid: String) {
             BilibiliVideoService.getTripleActionStatus(aid)
         }
     }
-    
+
     /**
      * 对视频执行点赞操作
      */
@@ -144,7 +144,7 @@ class PlayerBilibiliService(private val playerUuid: String) {
             BilibiliVideoService.likeVideo(aid, like)
         }
     }
-    
+
     /**
      * 对视频执行投币操作
      */
@@ -153,7 +153,7 @@ class PlayerBilibiliService(private val playerUuid: String) {
             BilibiliVideoService.coinVideo(aid, multiply, selectLike)
         }
     }
-    
+
     /**
      * 对视频执行收藏操作
      */
@@ -162,7 +162,7 @@ class PlayerBilibiliService(private val playerUuid: String) {
             BilibiliVideoService.favoriteVideo(aid, addMediaIds, delMediaIds)
         }
     }
-    
+
     /**
      * 执行一键三连操作
      */
@@ -171,7 +171,7 @@ class PlayerBilibiliService(private val playerUuid: String) {
             BilibiliVideoService.performTripleAction(aid)
         }
     }
-    
+
     /**
      * 快速获取视频信息和一键三连状态
      */

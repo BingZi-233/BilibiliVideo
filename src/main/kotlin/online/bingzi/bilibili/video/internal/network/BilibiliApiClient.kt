@@ -6,7 +6,6 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import online.bingzi.bilibili.video.internal.network.entity.ApiResponse
 import taboolib.common.platform.function.console
 import taboolib.module.lang.sendWarn
-import taboolib.module.lang.sendInfo
 import java.io.IOException
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.TimeUnit
@@ -184,7 +183,7 @@ object BilibiliApiClient {
  * 同时处理 User-Agent 设置和 buvid 自动获取
  */
 private class BuvidInterceptor : Interceptor {
-    
+
     // 需要 buvid3 的 API 路径列表
     private val buvidRequiredPaths = setOf(
         "/x/web-interface/wbi/search/all/v2",    // 综合搜索
@@ -197,22 +196,22 @@ private class BuvidInterceptor : Interceptor {
         "/x/player/wbi/playurl",                // 获取视频流地址
         "/x/resource/laser2"                    // 播放反馈
     )
-    
+
     override fun intercept(chain: Interceptor.Chain): Response {
         val originalRequest = chain.request()
-        
+
         // 添加 User-Agent
         val requestWithUserAgent = originalRequest.newBuilder()
             .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
             .build()
-        
+
         val url = requestWithUserAgent.url.toString()
         val path = requestWithUserAgent.url.encodedPath
-        
+
         // 只对需要 buvid 的特定 API 进行处理
         if (isApiRequiresBuvid(url, path)) {
             val playerUuid = BilibiliCookieJar.getCurrentPlayerUuid()
-            
+
             // 如果有当前用户且没有有效的 buvid3，尝试预先获取
             if (playerUuid != null && !BilibiliCookieJar.hasValidBuvid3(playerUuid)) {
                 try {
@@ -224,10 +223,10 @@ private class BuvidInterceptor : Interceptor {
                 }
             }
         }
-        
+
         return chain.proceed(requestWithUserAgent)
     }
-    
+
     /**
      * 判断 API 是否需要 buvid
      */
@@ -236,12 +235,12 @@ private class BuvidInterceptor : Interceptor {
         if (!url.contains("bilibili.com") && !url.contains("bilivideo.com")) {
             return false
         }
-        
+
         // 排除获取 buvid 的 API，避免递归
         if (path.contains("/x/web-frontend/getbuvid") || path.contains("/x/frontend/finger/spi")) {
             return false
         }
-        
+
         // 检查是否是需要 buvid 的 API
         return buvidRequiredPaths.any { requiredPath ->
             path.contains(requiredPath)

@@ -17,10 +17,10 @@ import java.util.concurrent.ConcurrentHashMap
  * 集成二维码生成和发送功能
  */
 object EnhancedLoginService {
-    
+
     // 存储每个玩家的登录会话
     private val loginSessions = ConcurrentHashMap<String, LoginSession>()
-    
+
     /**
      * 为玩家启动登录流程
      * @param player 目标玩家
@@ -35,20 +35,20 @@ object EnhancedLoginService {
             try {
                 // 设置当前玩家上下文
                 BilibiliCookieJar.setCurrentPlayer(player.uniqueId.toString())
-                
+
                 // 检查是否已经登录
                 if (BilibiliCookieJar.isLoggedIn()) {
                     player.sendInfo("loginAlreadyLoggedIn", BilibiliCookieJar.getUserId() ?: "未知")
                     return@supplyAsync true
                 }
-                
+
                 // 生成二维码登录信息
                 val qrCodeInfo = BilibiliLoginService.generateQrCode().get()
                 if (qrCodeInfo == null) {
                     player.sendWarn("loginQrCodeGenerateFailed", "获取登录二维码失败")
                     return@supplyAsync false
                 }
-                
+
                 // 生成二维码图片
                 val qrCodeSize = QRCodeGenerator.getRecommendedSize(qrCodeInfo.url.length)
                 val qrCodeImage = QRCodeGenerator.generateQRCode(qrCodeInfo.url, qrCodeSize)
@@ -56,7 +56,7 @@ object EnhancedLoginService {
                     player.sendWarn("qrcodeGenerateFailed", "生成二维码图片失败")
                     return@supplyAsync false
                 }
-                
+
                 // 发送二维码给玩家
                 val sendSuccess = QRCodeSendService.sendQRCode(
                     player = player,
@@ -65,12 +65,12 @@ object EnhancedLoginService {
                     description = "请使用Bilibili手机APP扫描二维码登录",
                     preferredMode = sendMode
                 ).get()
-                
+
                 if (!sendSuccess) {
                     player.sendWarn("qrcodeSendAllFailed")
                     return@supplyAsync false
                 }
-                
+
                 // 创建登录会话
                 val session = LoginSession(
                     playerUuid = player.uniqueId.toString(),
@@ -79,22 +79,22 @@ object EnhancedLoginService {
                     startTime = System.currentTimeMillis()
                 )
                 loginSessions[player.uniqueId.toString()] = session
-                
+
                 // 启动状态轮询
                 startLoginPolling(player, qrCodeInfo.qrcodeKey)
-                
+
                 player.sendInfo("loginQrCodeSent", "登录二维码已发送")
                 console().sendInfo("loginFlowStarted", player.name, sendMode.displayName)
-                
+
                 true
-                
+
             } catch (e: Exception) {
                 console().sendWarn("loginFlowFailed", player.name, e.message ?: "")
                 false
             }
         }
     }
-    
+
     /**
      * 启动登录状态轮询
      */
@@ -103,39 +103,39 @@ object EnhancedLoginService {
             val maxPollingTime = 5 * 60 * 1000L // 5分钟超时
             val startTime = System.currentTimeMillis()
             val playerUuid = player.uniqueId.toString()
-            
+
             try {
                 while (System.currentTimeMillis() - startTime < maxPollingTime) {
                     // 检查会话是否还存在（玩家可能已经取消）
                     if (!loginSessions.containsKey(playerUuid)) {
                         break
                     }
-                    
+
                     // 设置玩家上下文
                     BilibiliCookieJar.setCurrentPlayer(playerUuid)
-                    
+
                     // 轮询登录状态
                     val status = BilibiliLoginService.pollLoginStatus(qrcodeKey).get()
-                    
+
                     when (status) {
                         LoginStatus.SUCCESS -> {
                             // 登录成功
                             onLoginSuccess(player)
                             return@runAsync
                         }
-                        
+
                         LoginStatus.EXPIRED -> {
                             // 二维码过期
                             onLoginExpired(player)
                             return@runAsync
                         }
-                        
+
                         LoginStatus.FAILED -> {
                             // 登录失败
                             onLoginFailed(player)
                             return@runAsync
                         }
-                        
+
                         LoginStatus.WAITING_FOR_SCAN,
                         LoginStatus.WAITING_FOR_CONFIRM -> {
                             // 继续等待
@@ -143,17 +143,17 @@ object EnhancedLoginService {
                         }
                     }
                 }
-                
+
                 // 超时处理
                 onLoginTimeout(player)
-                
+
             } catch (e: Exception) {
                 console().sendWarn("loginPollingFailed", player.name, e.message ?: "")
                 onLoginFailed(player)
             }
         }
     }
-    
+
     /**
      * 登录成功处理
      */
@@ -161,7 +161,7 @@ object EnhancedLoginService {
         try {
             val playerUuid = player.uniqueId.toString()
             loginSessions.remove(playerUuid)
-            
+
             // 为用户预获取 buvid
             BuvidService.ensureBuvid(playerUuid).thenAccept { buvidSuccess ->
                 if (buvidSuccess) {
@@ -170,16 +170,16 @@ object EnhancedLoginService {
                     console().sendWarn("loginBuvidFailed", player.name)
                 }
             }
-            
+
             val userId = BilibiliCookieJar.getUserId() ?: "未知"
             player.sendInfo("loginSuccessComplete", userId)
             console().sendInfo("loginCompleted", player.name, userId)
-            
+
         } catch (e: Exception) {
             console().sendWarn("loginSuccessHandleFailed", player.name, e.message ?: "")
         }
     }
-    
+
     /**
      * 二维码过期处理
      */
@@ -188,7 +188,7 @@ object EnhancedLoginService {
         player.sendWarn("loginQrCodeExpiredPlayer")
         console().sendWarn("loginExpiredForPlayer", player.name)
     }
-    
+
     /**
      * 登录失败处理
      */
@@ -197,7 +197,7 @@ object EnhancedLoginService {
         player.sendWarn("loginFailedPlayer")
         console().sendWarn("loginFailedForPlayer", player.name)
     }
-    
+
     /**
      * 登录超时处理
      */
@@ -206,7 +206,7 @@ object EnhancedLoginService {
         player.sendWarn("loginTimeout")
         console().sendWarn("loginTimeoutForPlayer", player.name)
     }
-    
+
     /**
      * 取消玩家的登录流程
      */
@@ -219,28 +219,28 @@ object EnhancedLoginService {
         }
         return false
     }
-    
+
     /**
      * 获取玩家的登录会话信息
      */
     fun getLoginSession(player: ProxyPlayer): LoginSession? {
         return loginSessions[player.uniqueId.toString()]
     }
-    
+
     /**
      * 获取所有活跃的登录会话
      */
     fun getActiveLoginSessions(): Map<String, LoginSession> {
         return loginSessions.toMap()
     }
-    
+
     /**
      * 清理过期的登录会话
      */
     fun cleanupExpiredSessions() {
         val currentTime = System.currentTimeMillis()
         val expiredTime = 10 * 60 * 1000L // 10分钟过期
-        
+
         loginSessions.entries.removeIf { (_, session) ->
             val isExpired = currentTime - session.startTime > expiredTime
             if (isExpired) {
