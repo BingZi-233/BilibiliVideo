@@ -27,7 +27,7 @@ class MapQRCodeSender : QRCodeSender {
     ): Boolean {
         return try {
             // 检查是否为Bukkit环境
-            val bukkitPlayer = player.cast<org.bukkit.entity.Player>()
+            val bukkitPlayer = player.castSafely<org.bukkit.entity.Player>()
             if (bukkitPlayer == null) {
                 console().sendWarn("qrcodeMapPlayerNotBukkit", player.name)
                 return false
