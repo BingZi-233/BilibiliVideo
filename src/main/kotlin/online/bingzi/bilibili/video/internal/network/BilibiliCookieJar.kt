@@ -48,6 +48,15 @@ object BilibiliCookieJar : CookieJar {
     }
     
     /**
+     * 切换到指定用户
+     * 这是 setCurrentPlayer 的别名方法，便于理解
+     * @param playerUuid Player的UUID字符串
+     */
+    fun switchUser(playerUuid: String) {
+        setCurrentPlayer(playerUuid)
+    }
+    
+    /**
      * 获取当前活动的 Player UUID
      */
     fun getCurrentPlayerUuid(): String? {

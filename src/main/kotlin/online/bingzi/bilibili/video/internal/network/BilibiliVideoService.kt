@@ -503,9 +503,26 @@ object BilibiliVideoService {
         sort: Int,
         originalOid: String
     ): CompletableFuture<VideoCommentsResponse?> {
-        val url = "https://api.bilibili.com/x/v2/reply?type=1&oid=$avid&pn=$page&ps=$pageSize&sort=$sort"
+        // 使用新的带 WBI 签名的评论 API
+        val baseUrl = "https://api.bilibili.com/x/v2/reply/wbi/main"
+        val params = mapOf(
+            "type" to 1,  // 1 表示视频评论
+            "oid" to avid,
+            "mode" to sort,  // 排序方式：0=时间，1=点赞数，2=回复数
+            "pagination_str" to """{"offset":""}""",  // 首页留空
+            "plat" to 1,  // 平台：1=web端
+            "seek_rpid" to "",  // 跳转到指定评论，留空
+            "web_location" to "1315875"  // 页面定位，固定值
+        )
         
-        return BilibiliApiClient.getAsync(url)
+        // 对于翻页，需要使用 pagination_str 参数
+        val paginationParams = if (page > 1) {
+            params + ("pagination_str" to """{"offset":"${(page - 1) * pageSize}"}""")
+        } else {
+            params
+        }
+        
+        return BilibiliApiClient.getAsyncWithWbi(baseUrl, paginationParams)
             .thenApply { response ->
                 if (response.isSuccess()) {
                     try {
@@ -516,9 +533,9 @@ object BilibiliVideoService {
                             val data = json.getAsJsonObject("data")
                             
                             // 获取分页信息
-                            val page = data.getAsJsonObject("page")
-                            val count = page?.get("count")?.asLong ?: 0L
-                            val size = page?.get("size")?.asInt ?: pageSize
+                            val pageObj = data.getAsJsonObject("page")
+                            val count = pageObj?.get("count")?.asLong ?: 0L
+                            val size = pageObj?.get("size")?.asInt ?: pageSize
                             val pages = if (size > 0) ((count + size - 1) / size).toInt() else 0
                             
                             // 获取游标信息
@@ -549,7 +566,8 @@ object BilibiliVideoService {
                             }
                             
                             // 解析置顶评论
-                            val upperArray = data.getAsJsonArray("upper")?.getAsJsonArray("top")
+                            val upperObj = data.getAsJsonObject("upper")
+                            val upperArray = upperObj?.getAsJsonArray("top")
                             val topComments = mutableListOf<CommentInfo>()
                             
                             upperArray?.forEach { topElement ->
@@ -563,7 +581,7 @@ object BilibiliVideoService {
                                 comments = comments,
                                 total = count,
                                 pages = pages,
-                                currentPage = page,
+                                currentPage = page,  // 修正：使用实际的页码参数
                                 pageSize = pageSize,
                                 cursor = cursor,
                                 hasMore = cursor?.isEnd != true,

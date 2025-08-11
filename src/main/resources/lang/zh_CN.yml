@@ -226,3 +226,23 @@ qqBindingPlayerUnbound: "&a玩家 {0} 成功解绑QQ号"
 # OneBot二维码发送器新增消息  
 qrcodeOneBotSendError: "&c为 {0} 发送OneBot消息时出错: {1}"
 qrcodeOneBotQueryError: "&c为 {0} 查询QQ绑定时出错: {1}"
+
+# WBI 签名相关消息
+wbiNoCurrentUser: "&c没有当前活动用户，无法获取 WBI 密钥"
+wbiKeysUsedCache: "&a使用缓存的 WBI 密钥 (用户: {0})"
+wbiKeysFetched: "&a成功获取 WBI 密钥 (用户: {0})"
+wbiKeysNotFound: "&cWBI 密钥 URL 为空"
+wbiImgNotFound: "&c响应中未找到 wbi_img 对象"
+wbiKeysFetchFailed: "&c获取 WBI 密钥失败: {0}"
+wbiKeysFetchNetworkError: "&c获取 WBI 密钥网络错误: {0}"
+wbiKeysParseError: "&c解析 WBI 密钥失败: {0}"
+wbiSignNoKeys: "&c无法获取 WBI 密钥，签名失败"
+wbiSignSuccess: "&a成功生成 WBI 签名"
+wbiSignError: "&cWBI 签名生成失败: {0}"
+wbiCacheCleared: "&a已清除用户 {0} 的 WBI 密钥缓存"
+wbiAllCacheCleared: "&a已清除所有 WBI 密钥缓存"
+
+# 视频评论相关消息
+videoCommentsGetFailed: "&c获取视频评论失败: {0}"
+videoCommentsParseError: "&c解析视频评论失败: {0}"
+commentParseError: "&c解析单条评论失败: {0}"

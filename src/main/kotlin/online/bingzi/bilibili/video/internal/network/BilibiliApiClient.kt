@@ -67,6 +67,25 @@ object BilibiliApiClient {
     }
 
     /**
+     * 异步执行带 WBI 签名的 GET 请求
+     * @param url 请求地址
+     * @param params 请求参数（将被 WBI 签名）
+     * @param headers 请求头
+     * @return CompletableFuture<ApiResponse>
+     */
+    fun getAsyncWithWbi(
+        url: String,
+        params: Map<String, Any?> = emptyMap(),
+        headers: Map<String, String> = emptyMap()
+    ): CompletableFuture<ApiResponse> {
+        // 构建带签名的 URL
+        return WbiService.buildSignedUrl(url, params)
+            .thenCompose { signedUrl ->
+                getAsync(signedUrl, headers)
+            }
+    }
+
+    /**
      * 异步执行 POST 请求
      * @param url 请求地址
      * @param data 请求数据
