@@ -452,7 +452,8 @@ object BilibiliVideoService {
     }
 
     /**
-     * 获取视频评论区数据
+     * 获取视频评论
+     * 返回精简的评论信息（内容、评论者mid、时间）
      * @param oid 对象ID，可以是视频AV号或BV号
      * @param page 页码，从1开始，默认1
      * @param pageSize 每页数量，默认20，最大49
@@ -464,7 +465,7 @@ object BilibiliVideoService {
         page: Int = 1,
         pageSize: Int = 20,
         sort: Int = 0
-    ): CompletableFuture<VideoCommentsResponse?> {
+    ): CompletableFuture<SimpleCommentsResponse?> {
         val actualPageSize = pageSize.coerceIn(1, 49) // 限制页面大小在1-49之间
         val actualPage = page.coerceAtLeast(1) // 页码至少为1
         val actualSort = sort.coerceIn(0, 2) // 排序方式限制在0-2之间
@@ -478,7 +479,7 @@ object BilibiliVideoService {
                         getVideoCommentsInternal(videoInfo.aid.toString(), actualPage, actualPageSize, actualSort, oid)
                     } else {
                         // 触发评论获取失败事件
-                        VideoCommentsFetchEvent(oid, 1, actualPage, actualPageSize, actualSort.toString(), null, false, "无法获取视频信息").call()
+                        VideoCommentsFetchEvent(oid, actualPage, actualPageSize, actualSort, null, false, "无法获取视频信息").call()
                         CompletableFuture.completedFuture(null)
                     }
                 }
@@ -488,54 +489,12 @@ object BilibiliVideoService {
             oid.startsWith("av") || oid.startsWith("AV") -> oid.substring(2) // 去掉av前缀
             else -> {
                 // 触发评论获取失败事件
-                VideoCommentsFetchEvent(oid, 1, actualPage, actualPageSize, actualSort.toString(), null, false, "无效的视频ID格式").call()
+                VideoCommentsFetchEvent(oid, actualPage, actualPageSize, actualSort, null, false, "无效的视频ID格式").call()
                 return CompletableFuture.completedFuture(null)
             }
         }
 
         return getVideoCommentsInternal(avid, actualPage, actualPageSize, actualSort, oid)
-    }
-
-    /**
-     * 获取精简版视频评论
-     * 只返回必要的评论信息（内容、评论者mid、时间）
-     * @param oid 对象ID，可以是视频AV号或BV号
-     * @param page 页码，从1开始，默认1
-     * @param pageSize 每页数量，默认20，最大49
-     * @param sort 排序方式：0=时间，1=点赞数，2=回复数，默认0
-     * @return 精简版评论响应数据或 null
-     */
-    fun getSimpleVideoComments(
-        oid: String,
-        page: Int = 1,
-        pageSize: Int = 20,
-        sort: Int = 0
-    ): CompletableFuture<SimpleCommentsResponse?> {
-        val actualPageSize = pageSize.coerceIn(1, 49) // 限制页面大小在1-49之间
-        val actualPage = page.coerceAtLeast(1) // 页码至少为1
-        val actualSort = sort.coerceIn(0, 2) // 排序方式限制在0-2之间
-
-        // 首先尝试将oid转换为AV号
-        val avid = when {
-            oid.startsWith("BV") -> {
-                // 如果是BV号，需要先获取视频信息来得到AV号
-                return getVideoInfo(oid).thenCompose { videoInfo ->
-                    if (videoInfo != null) {
-                        getSimpleVideoCommentsInternal(videoInfo.aid.toString(), actualPage, actualPageSize, actualSort, oid)
-                    } else {
-                        CompletableFuture.completedFuture(null)
-                    }
-                }
-            }
-
-            oid.matches(Regex("\\d+")) -> oid // 纯数字，假设是AV号
-            oid.startsWith("av") || oid.startsWith("AV") -> oid.substring(2) // 去掉av前缀
-            else -> {
-                return CompletableFuture.completedFuture(null)
-            }
-        }
-
-        return getSimpleVideoCommentsInternal(avid, actualPage, actualPageSize, actualSort, oid)
     }
 
     /**
@@ -547,217 +506,6 @@ object BilibiliVideoService {
         pageSize: Int,
         sort: Int,
         originalOid: String
-    ): CompletableFuture<VideoCommentsResponse?> {
-        // 使用新的带 WBI 签名的评论 API
-        val baseUrl = "https://api.bilibili.com/x/v2/reply/wbi/main"
-        val params = mapOf(
-            "type" to 1,  // 1 表示视频评论
-            "oid" to avid,
-            "mode" to sort,  // 排序方式：0=时间，1=点赞数，2=回复数
-            "pagination_str" to """{"offset":""}""",  // 首页留空
-            "plat" to 1,  // 平台：1=web端
-            "seek_rpid" to "",  // 跳转到指定评论，留空
-            "web_location" to "1315875"  // 页面定位，固定值
-        )
-
-        // 对于翻页，需要使用 pagination_str 参数
-        val paginationParams = if (page > 1) {
-            params + ("pagination_str" to """{"offset":"${(page - 1) * pageSize}"}""")
-        } else {
-            params
-        }
-
-        return BilibiliApiClient.getAsyncWithWbi(baseUrl, paginationParams)
-            .thenApply { response ->
-                if (response.isSuccess()) {
-                    try {
-                        val json = JsonParser.parseString(response.data).asJsonObject
-                        val code = json.get("code")?.asInt ?: -1
-
-                        if (code == 0) {
-                            val data = json.getAsJsonObject("data")
-
-                            // 获取分页信息
-                            val pageObj = data.getAsJsonObject("page")
-                            val count = pageObj?.get("count")?.asLong ?: 0L
-                            val size = pageObj?.get("size")?.asInt ?: pageSize
-                            val pages = if (size > 0) ((count + size - 1) / size).toInt() else 0
-
-                            // 获取游标信息
-                            val cursorObj = data.getAsJsonObject("cursor")
-                            val cursor = if (cursorObj != null) {
-                                CommentCursor(
-                                    allCount = cursorObj.get("all_count")?.asLong ?: 0L,
-                                    isBegin = cursorObj.get("is_begin")?.asBoolean ?: true,
-                                    prev = cursorObj.get("prev")?.asLong ?: 0L,
-                                    next = cursorObj.get("next")?.asLong ?: 0L,
-                                    isEnd = cursorObj.get("is_end")?.asBoolean ?: true,
-                                    mode = cursorObj.get("mode")?.asInt ?: 0,
-                                    showType = cursorObj.get("show_type")?.asInt ?: 0,
-                                    supportMode = cursorObj.getAsJsonArray("support_mode")?.map { it.asInt } ?: emptyList(),
-                                    name = cursorObj.get("name")?.asString ?: ""
-                                )
-                            } else null
-
-                            // 解析评论列表
-                            val repliesArray = data.getAsJsonArray("replies")
-                            val comments = mutableListOf<CommentInfo>()
-
-                            repliesArray?.forEach { replyElement ->
-                                val commentInfo = parseCommentInfo(replyElement.asJsonObject)
-                                if (commentInfo != null) {
-                                    comments.add(commentInfo)
-                                }
-                            }
-
-                            // 解析置顶评论
-                            val upperObj = data.getAsJsonObject("upper")
-                            val upperArray = upperObj?.getAsJsonArray("top")
-                            val topComments = mutableListOf<CommentInfo>()
-
-                            upperArray?.forEach { topElement ->
-                                val topCommentInfo = parseCommentInfo(topElement.asJsonObject)
-                                if (topCommentInfo != null) {
-                                    topComments.add(topCommentInfo)
-                                }
-                            }
-
-                            val result = VideoCommentsResponse(
-                                comments = comments,
-                                total = count,
-                                pages = pages,
-                                currentPage = page,  // 修正：使用实际的页码参数
-                                pageSize = pageSize,
-                                cursor = cursor,
-                                hasMore = cursor?.isEnd != true,
-                                topComments = topComments
-                            )
-
-                            // 触发评论获取成功事件
-                            VideoCommentsFetchEvent(originalOid, 1, page, pageSize, sort.toString(), result, true).call()
-
-                            return@thenApply result
-
-                        } else {
-                            val message = json.get("message")?.asString ?: "未知错误"
-                            console().sendWarn("videoCommentsGetFailed", message)
-
-                            // 触发评论获取失败事件
-                            VideoCommentsFetchEvent(originalOid, 1, page, pageSize, sort.toString(), null, false, message).call()
-                        }
-                    } catch (e: Exception) {
-                        val errorMsg = e.message ?: "解析响应失败"
-                        console().sendWarn("videoCommentsParseError", errorMsg)
-
-                        // 触发评论获取失败事件
-                        VideoCommentsFetchEvent(originalOid, 1, page, pageSize, sort.toString(), null, false, errorMsg).call()
-                    }
-                } else {
-                    val errorMsg = response.getError() ?: "网络请求失败"
-                    console().sendWarn("networkApiRequestFailed", errorMsg)
-
-                    // 触发评论获取失败事件
-                    VideoCommentsFetchEvent(originalOid, 1, page, pageSize, sort.toString(), null, false, errorMsg).call()
-                }
-                null
-            }
-    }
-
-    /**
-     * 解析评论信息
-     */
-    private fun parseCommentInfo(commentObj: com.google.gson.JsonObject): CommentInfo? {
-        return try {
-            val rpid = commentObj.get("rpid")?.asLong ?: return null
-            val oid = commentObj.get("oid")?.asLong ?: return null
-            val type = commentObj.get("type")?.asInt ?: return null
-            val mid = commentObj.get("mid")?.asLong ?: return null
-            val root = commentObj.get("root")?.asLong ?: 0L
-            val parent = commentObj.get("parent")?.asLong ?: 0L
-            val dialog = commentObj.get("dialog")?.asLong ?: 0L
-            val count = commentObj.get("count")?.asInt ?: 0
-            val rcount = commentObj.get("rcount")?.asInt ?: 0
-            val state = commentObj.get("state")?.asInt ?: 0
-            val fansgrade = commentObj.get("fansgrade")?.asInt ?: 0
-            val attr = commentObj.get("attr")?.asInt ?: 0
-            val ctime = commentObj.get("ctime")?.asLong ?: 0L
-            val like = commentObj.get("like")?.asInt ?: 0
-            val action = commentObj.get("action")?.asInt ?: 0
-            val assist = commentObj.get("assist")?.asInt ?: 0
-            val showFollow = commentObj.get("show_follow")?.asBoolean ?: false
-
-            // 解析member信息
-            val memberObj = commentObj.getAsJsonObject("member")
-            val member = CommentMember(
-                mid = memberObj?.get("mid")?.asString ?: "",
-                uname = memberObj?.get("uname")?.asString ?: "",
-                sex = memberObj?.get("sex")?.asString ?: "",
-                sign = memberObj?.get("sign")?.asString ?: "",
-                avatar = memberObj?.get("avatar")?.asString ?: "",
-                rank = memberObj?.get("rank")?.asString ?: "",
-                displayRank = memberObj?.get("DisplayRank")?.asString ?: "",
-                levelInfo = null, // 简化处理
-                pendant = null,   // 简化处理
-                nameplate = null, // 简化处理
-                officialVerify = null, // 简化处理
-                vip = null,       // 简化处理
-                fansDetail = null, // 简化处理
-                following = memberObj?.get("following")?.asInt ?: 0,
-                isFollowed = memberObj?.get("is_followed")?.asInt ?: 0
-            )
-
-            // 解析content信息
-            val contentObj = commentObj.getAsJsonObject("content")
-            val content = CommentContent(
-                message = contentObj?.get("message")?.asString ?: "",
-                plat = contentObj?.get("plat")?.asInt ?: 0,
-                device = contentObj?.get("device")?.asString ?: "",
-                members = null,  // 简化处理
-                emote = null,    // 简化处理
-                jumpUrl = null,  // 简化处理
-                maxLine = contentObj?.get("max_line")?.asInt ?: 0
-            )
-
-            CommentInfo(
-                rpid = rpid,
-                oid = oid,
-                type = type,
-                mid = mid,
-                root = root,
-                parent = parent,
-                dialog = dialog,
-                count = count,
-                rcount = rcount,
-                state = state,
-                fansgrade = fansgrade,
-                attr = attr,
-                ctime = ctime,
-                like = like,
-                action = action,
-                member = member,
-                content = content,
-                replies = null,  // 简化处理，不解析子回复
-                assist = assist,
-                folder = null,   // 简化处理
-                upAction = null, // 简化处理
-                showFollow = showFollow
-            )
-        } catch (e: Exception) {
-            console().sendWarn("commentParseError", e.message ?: "")
-            null
-        }
-    }
-
-    /**
-     * 获取精简版视频评论的内部实现
-     * 只保留必要的评论信息
-     */
-    private fun getSimpleVideoCommentsInternal(
-        avid: String,
-        page: Int,
-        pageSize: Int,
-        sort: Int,
-        originalOid: String
     ): CompletableFuture<SimpleCommentsResponse?> {
         // 使用新的带 WBI 签名的评论 API
         val baseUrl = "https://api.bilibili.com/x/v2/reply/wbi/main"
@@ -787,7 +535,7 @@ object BilibiliVideoService {
 
                         if (code == 0) {
                             val data = json.getAsJsonObject("data")
-                            
+
                             // 获取分页信息
                             val pageObj = data.getAsJsonObject("page")
                             val count = pageObj?.get("count")?.asLong ?: 0L
@@ -868,24 +616,38 @@ object BilibiliVideoService {
                                 }
                             }
                             
-                            return@thenApply SimpleCommentsResponse(
+                            val result = SimpleCommentsResponse(
                                 comments = simpleComments,
                                 total = count,
                                 currentPage = page,
                                 hasMore = hasMore
                             )
                             
+                            // 触发评论获取成功事件
+                            VideoCommentsFetchEvent(originalOid, page, pageSize, sort, result, true).call()
+                            
+                            return@thenApply result
+
                         } else {
                             val message = json.get("message")?.asString ?: "未知错误"
                             console().sendWarn("videoCommentsGetFailed", message)
+
+                            // 触发评论获取失败事件
+                            VideoCommentsFetchEvent(originalOid, page, pageSize, sort, null, false, message).call()
                         }
                     } catch (e: Exception) {
                         val errorMsg = e.message ?: "解析响应失败"
                         console().sendWarn("videoCommentsParseError", errorMsg)
+
+                        // 触发评论获取失败事件
+                        VideoCommentsFetchEvent(originalOid, page, pageSize, sort, null, false, errorMsg).call()
                     }
                 } else {
                     val errorMsg = response.getError() ?: "网络请求失败"
                     console().sendWarn("networkApiRequestFailed", errorMsg)
+
+                    // 触发评论获取失败事件
+                    VideoCommentsFetchEvent(originalOid, page, pageSize, sort, null, false, errorMsg).call()
                 }
                 null
             }
