@@ -1,6 +1,5 @@
 package online.bingzi.bilibili.video.api.qrcode
 
-import online.bingzi.bilibili.video.internal.qrcode.QRCodeSendMode
 import online.bingzi.bilibili.video.internal.qrcode.QRCodeSender
 import online.bingzi.bilibili.video.internal.qrcode.QRCodeSendService
 
@@ -18,48 +17,48 @@ import online.bingzi.bilibili.video.internal.qrcode.QRCodeSendService
  * }
  * 
  * // 注册发送器
- * QRCodeSenderRegistry.register(QRCodeSendMode.CUSTOM, CustomQRCodeSender())
+ * QRCodeSenderRegistry.register("自定义发送器", CustomQRCodeSender())
  * 
  * // 注销发送器
- * QRCodeSenderRegistry.unregister(QRCodeSendMode.CUSTOM)
+ * QRCodeSenderRegistry.unregister("自定义发送器")
  * ```
  */
 object QRCodeSenderRegistry {
     
     /**
      * 注册二维码发送器
-     * @param mode 发送模式
+     * @param senderName 发送器名称
      * @param sender 发送器实例
      * @return 是否注册成功
      */
-    fun register(mode: QRCodeSendMode, sender: QRCodeSender): Boolean {
-        return QRCodeSendService.registerSender(mode, sender)
+    fun register(senderName: String, sender: QRCodeSender): Boolean {
+        return QRCodeSendService.registerSender(senderName, sender)
     }
     
     /**
      * 注销二维码发送器
-     * @param mode 发送模式
+     * @param senderName 发送器名称
      * @return 是否注销成功
      */
-    fun unregister(mode: QRCodeSendMode): Boolean {
-        return QRCodeSendService.unregisterSender(mode)
+    fun unregister(senderName: String): Boolean {
+        return QRCodeSendService.unregisterSender(senderName)
     }
     
     /**
-     * 检查指定模式是否已注册
-     * @param mode 发送模式
+     * 检查指定发送器是否已注册
+     * @param senderName 发送器名称
      * @return 是否已注册
      */
-    fun isRegistered(mode: QRCodeSendMode): Boolean {
-        return QRCodeSendService.getRegisteredModes().contains(mode)
+    fun isRegistered(senderName: String): Boolean {
+        return QRCodeSendService.getRegisteredSenderNames().contains(senderName)
     }
     
     /**
-     * 获取所有已注册的发送模式
-     * @return 发送模式集合
+     * 获取所有已注册的发送器名称
+     * @return 发送器名称集合
      */
-    fun getRegisteredModes(): Set<QRCodeSendMode> {
-        return QRCodeSendService.getRegisteredModes()
+    fun getRegisteredSenderNames(): Set<String> {
+        return QRCodeSendService.getRegisteredSenderNames()
     }
     
     /**

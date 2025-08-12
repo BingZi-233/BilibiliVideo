@@ -17,45 +17,45 @@ import java.util.concurrent.CompletableFuture
  */
 object QRCodeSendService {
     
-    private val senders = mutableMapOf<QRCodeSendMode, QRCodeSender>()
+    private val senders = mutableMapOf<String, QRCodeSender>()
     
     /**
      * 注册二维码发送器
-     * @param mode 发送模式
+     * @param senderName 发送器名称
      * @param sender 发送器实例
      * @return 是否注册成功
      */
-    fun registerSender(mode: QRCodeSendMode, sender: QRCodeSender): Boolean {
+    fun registerSender(senderName: String, sender: QRCodeSender): Boolean {
         return try {
             // 检查发送器是否可用
             if (!sender.isAvailable()) {
-                console().sendWarn("qrcodeSenderUnavailable", mode.displayName, "发送器不可用")
+                console().sendWarn("qrcodeSenderUnavailable", senderName, "发送器不可用")
                 return false
             }
             
-            // 如果已存在同模式发送器，先注销
-            if (senders.containsKey(mode)) {
-                console().sendWarn("qrcodeSenderReplaced", mode.displayName)
+            // 如果已存在同名发送器，先注销
+            if (senders.containsKey(senderName)) {
+                console().sendWarn("qrcodeSenderReplaced", senderName)
             }
             
             // 注册新发送器
-            senders[mode] = sender
-            console().sendInfo("qrcodeSenderRegistered", mode.displayName)
+            senders[senderName] = sender
+            console().sendInfo("qrcodeSenderRegistered", senderName)
             true
         } catch (e: Exception) {
-            console().sendWarn("qrcodeSenderRegisterFailed", mode.displayName, e.message ?: "")
+            console().sendWarn("qrcodeSenderRegisterFailed", senderName, e.message ?: "")
             false
         }
     }
     
     /**
      * 注销二维码发送器
-     * @param mode 发送模式
+     * @param senderName 发送器名称
      * @return 是否注销成功
      */
-    fun unregisterSender(mode: QRCodeSendMode): Boolean {
-        return if (senders.remove(mode) != null) {
-            console().sendInfo("qrcodeSenderUnregistered", mode.displayName)
+    fun unregisterSender(senderName: String): Boolean {
+        return if (senders.remove(senderName) != null) {
+            console().sendInfo("qrcodeSenderUnregistered", senderName)
             true
         } else {
             false
@@ -69,10 +69,10 @@ object QRCodeSendService {
     fun getRegisteredSenderCount(): Int = senders.size
     
     /**
-     * 获取所有已注册的发送模式
-     * @return 发送模式列表
+     * 获取所有已注册的发送器名称
+     * @return 发送器名称集合
      */
-    fun getRegisteredModes(): Set<QRCodeSendMode> = senders.keys.toSet()
+    fun getRegisteredSenderNames(): Set<String> = senders.keys.toSet()
     
     /**
      * 发送二维码给玩家
@@ -80,7 +80,7 @@ object QRCodeSendService {
      * @param qrCodeImage 二维码图片
      * @param title 二维码标题
      * @param description 二维码描述
-     * @param preferredMode 优先发送模式
+     * @param preferredSenderName 优先发送器名称
      * @return 发送是否成功
      */
     fun sendQRCode(
@@ -88,11 +88,11 @@ object QRCodeSendService {
         qrCodeImage: BufferedImage,
         title: String,
         description: String,
-        preferredMode: QRCodeSendMode = QRCodeSendMode.CHAT
+        preferredSenderName: String = QRCodeSenderNames.CHAT
     ): CompletableFuture<Boolean> {
         return CompletableFuture.supplyAsync {
             runCatching {
-                sendQRCodeInternal(player, qrCodeImage, title, description, preferredMode)
+                sendQRCodeInternal(player, qrCodeImage, title, description, preferredSenderName)
             }.getOrElse { e ->
                 console().sendWarn("qrcodeSendFailed", player.name, e.message ?: "")
                 false
@@ -108,10 +108,10 @@ object QRCodeSendService {
         qrCodeImage: BufferedImage,
         title: String,
         description: String,
-        preferredMode: QRCodeSendMode
+        preferredSenderName: String
     ): Boolean {
         // 触发发送前事件
-        val preSendEvent = QRCodePreSendEvent(player, qrCodeImage, title, description, preferredMode)
+        val preSendEvent = QRCodePreSendEvent(player, qrCodeImage, title, description, preferredSenderName)
         if (!preSendEvent.call()) {
             // 事件被取消
             console().sendWarn("qrcodeSendCancelled", player.name)
@@ -120,77 +120,77 @@ object QRCodeSendService {
         
         val startTime = System.currentTimeMillis()
         
-        // 尝试使用优先模式
-        val preferredSender = senders[preferredMode]
+        // 尝试使用优先发送器
+        val preferredSender = senders[preferredSenderName]
         if (preferredSender != null && preferredSender.isAvailable(player)) {
-            console().sendInfo("qrcodeSendAttempt", preferredMode.displayName, player.name)
+            console().sendInfo("qrcodeSendAttempt", preferredSenderName, player.name)
             
             try {
                 if (preferredSender.sendQRCode(player, qrCodeImage, title, description)) {
                     val endTime = System.currentTimeMillis()
-                    console().sendInfo("qrcodeSendSuccess", preferredMode.displayName, player.name)
+                    console().sendInfo("qrcodeSendSuccess", preferredSenderName, player.name)
                     
                     // 触发发送成功事件
                     QRCodeSendSuccessEvent(
-                        player, qrCodeImage, title, description, preferredMode, endTime - startTime
+                        player, qrCodeImage, title, description, preferredSenderName, endTime - startTime
                     ).call()
                     
                     return true
                 } else {
-                    console().sendWarn("qrcodeSendModeFailed", preferredMode.displayName, player.name)
+                    console().sendWarn("qrcodeSendModeFailed", preferredSenderName, player.name)
                     
                     // 触发发送失败事件
                     QRCodeSendFailureEvent(
-                        player, qrCodeImage, title, description, preferredMode, "发送器返回失败", null
+                        player, qrCodeImage, title, description, preferredSenderName, "发送器返回失败", null
                     ).call()
                 }
             } catch (e: Exception) {
-                console().sendWarn("qrcodeSendModeFailed", preferredMode.displayName, player.name)
+                console().sendWarn("qrcodeSendModeFailed", preferredSenderName, player.name)
                 
                 // 触发发送失败事件
                 QRCodeSendFailureEvent(
-                    player, qrCodeImage, title, description, preferredMode, e.message, e
+                    player, qrCodeImage, title, description, preferredSenderName, e.message, e
                 ).call()
             }
         }
         
-        // 优先模式失败，尝试其他可用的发送器
-        for ((mode, sender) in senders) {
-            if (mode == preferredMode) continue // 跳过已尝试的优先模式
+        // 优先发送器失败，尝试其他可用的发送器
+        for ((senderName, sender) in senders) {
+            if (senderName == preferredSenderName) continue // 跳过已尝试的优先发送器
             
             if (sender.isAvailable(player)) {
-                console().sendInfo("qrcodeSendFallback", mode.displayName, player.name)
+                console().sendInfo("qrcodeSendFallback", senderName, player.name)
                 
                 // 触发模式切换事件
                 QRCodeSendModeChangeEvent(
-                    player, qrCodeImage, title, description, preferredMode, mode, "优先模式发送失败"
+                    player, qrCodeImage, title, description, preferredSenderName, senderName, "优先发送器发送失败"
                 ).call()
                 
                 try {
                     if (sender.sendQRCode(player, qrCodeImage, title, description)) {
                         val endTime = System.currentTimeMillis()
-                        console().sendInfo("qrcodeSendSuccess", mode.displayName, player.name)
+                        console().sendInfo("qrcodeSendSuccess", senderName, player.name)
                         
                         // 触发发送成功事件
                         QRCodeSendSuccessEvent(
-                            player, qrCodeImage, title, description, mode, endTime - startTime
+                            player, qrCodeImage, title, description, senderName, endTime - startTime
                         ).call()
                         
                         return true
                     } else {
-                        console().sendWarn("qrcodeSendModeFailed", mode.displayName, player.name)
+                        console().sendWarn("qrcodeSendModeFailed", senderName, player.name)
                         
                         // 触发发送失败事件
                         QRCodeSendFailureEvent(
-                            player, qrCodeImage, title, description, mode, "发送器返回失败", null
+                            player, qrCodeImage, title, description, senderName, "发送器返回失败", null
                         ).call()
                     }
                 } catch (e: Exception) {
-                    console().sendWarn("qrcodeSendModeFailed", mode.displayName, player.name)
+                    console().sendWarn("qrcodeSendModeFailed", senderName, player.name)
                     
                     // 触发发送失败事件
                     QRCodeSendFailureEvent(
-                        player, qrCodeImage, title, description, mode, e.message, e
+                        player, qrCodeImage, title, description, senderName, e.message, e
                     ).call()
                 }
             }
@@ -198,33 +198,33 @@ object QRCodeSendService {
         
         console().sendWarn("qrcodeSendAllFailed", player.name)
         
-        // 触发所有模式都失败的事件
+        // 触发所有发送器都失败的事件
         QRCodeSendFailureEvent(
-            player, qrCodeImage, title, description, preferredMode, "所有发送模式都失败", null
+            player, qrCodeImage, title, description, preferredSenderName, "所有发送器都失败", null
         ).call()
         
         return false
     }
     
     /**
-     * 获取可用的发送模式
+     * 获取可用的发送器名称
      * @param player 目标玩家
-     * @return 可用的发送模式列表
+     * @return 可用的发送器名称列表
      */
-    fun getAvailableModes(player: ProxyPlayer): List<QRCodeSendMode> {
+    fun getAvailableSenderNames(player: ProxyPlayer): List<String> {
         return senders.entries
             .filter { it.value.isAvailable(player) }
             .map { it.key }
     }
     
     /**
-     * 检查特定模式是否可用
-     * @param mode 发送模式
+     * 检查特定发送器是否可用
+     * @param senderName 发送器名称
      * @param player 目标玩家
      * @return 是否可用
      */
-    fun isModeAvailable(mode: QRCodeSendMode, player: ProxyPlayer? = null): Boolean {
-        val sender = senders[mode] ?: return false
+    fun isSenderAvailable(senderName: String, player: ProxyPlayer? = null): Boolean {
+        val sender = senders[senderName] ?: return false
         return sender.isAvailable(player)
     }
     

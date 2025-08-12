@@ -1,7 +1,7 @@
 package online.bingzi.bilibili.video.internal.qrcode.senders
 
 import online.bingzi.bilibili.video.api.qrcode.QRCodeSenderRegistry
-import online.bingzi.bilibili.video.internal.qrcode.QRCodeSendMode
+import online.bingzi.bilibili.video.internal.qrcode.QRCodeSenderNames
 import taboolib.common.LifeCycle
 import taboolib.common.platform.Awake
 import taboolib.common.platform.function.console
@@ -24,7 +24,7 @@ object OneBotQRCodeSenderRegister {
             val sender = OneBotQRCodeSender()
             // 检查OneBot服务是否可用
             if (sender.isAvailable()) {
-                if (QRCodeSenderRegistry.register(QRCodeSendMode.ONEBOT, sender)) {
+                if (QRCodeSenderRegistry.register(QRCodeSenderNames.ONEBOT, sender)) {
                     console().sendInfo("qrcodeSenderAutoRegistered", "OneBot")
                 }
             } else {
@@ -40,6 +40,6 @@ object OneBotQRCodeSenderRegister {
      */
     @Awake(LifeCycle.DISABLE)
     fun unregister() {
-        QRCodeSenderRegistry.unregister(QRCodeSendMode.ONEBOT)
+        QRCodeSenderRegistry.unregister(QRCodeSenderNames.ONEBOT)
     }
 }

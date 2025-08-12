@@ -1,6 +1,5 @@
 package online.bingzi.bilibili.video.api.event.qrcode
 
-import online.bingzi.bilibili.video.internal.qrcode.QRCodeSendMode
 import taboolib.common.platform.ProxyPlayer
 import taboolib.platform.type.BukkitProxyEvent
 import java.awt.image.BufferedImage
@@ -14,5 +13,5 @@ class QRCodePreSendEvent(
     qrCodeImage: BufferedImage,
     title: String,
     description: String,
-    val sendMode: QRCodeSendMode
+    val senderName: String
 ) : QRCodeEvent(player, qrCodeImage, title, description)

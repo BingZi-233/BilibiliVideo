@@ -3,7 +3,7 @@ package online.bingzi.bilibili.video.internal.network
 import online.bingzi.bilibili.video.internal.network.entity.LoginSession
 import online.bingzi.bilibili.video.internal.network.entity.LoginStatus
 import online.bingzi.bilibili.video.internal.qrcode.QRCodeGenerator
-import online.bingzi.bilibili.video.internal.qrcode.QRCodeSendMode
+import online.bingzi.bilibili.video.internal.qrcode.QRCodeSenderNames
 import online.bingzi.bilibili.video.internal.qrcode.QRCodeSendService
 import taboolib.common.platform.ProxyPlayer
 import taboolib.common.platform.function.console
@@ -24,12 +24,12 @@ object EnhancedLoginService {
     /**
      * 为玩家启动登录流程
      * @param player 目标玩家
-     * @param sendMode 二维码发送模式
+     * @param senderName 二维码发送器名称
      * @return 是否成功启动登录流程
      */
     fun startLoginFlow(
         player: ProxyPlayer,
-        sendMode: QRCodeSendMode = QRCodeSendMode.CHAT
+        senderName: String = QRCodeSenderNames.CHAT
     ): CompletableFuture<Boolean> {
         return CompletableFuture.supplyAsync {
             try {
@@ -63,7 +63,7 @@ object EnhancedLoginService {
                     qrCodeImage = qrCodeImage,
                     title = "Bilibili登录",
                     description = "请使用Bilibili手机APP扫描二维码登录",
-                    preferredMode = sendMode
+                    preferredSenderName = senderName
                 ).get()
 
                 if (!sendSuccess) {
@@ -84,7 +84,7 @@ object EnhancedLoginService {
                 startLoginPolling(player, qrCodeInfo.qrcodeKey)
 
                 player.sendInfo("loginQrCodeSent", "登录二维码已发送")
-                console().sendInfo("loginFlowStarted", player.name, sendMode.displayName)
+                console().sendInfo("loginFlowStarted", player.name, senderName)
 
                 true
 
