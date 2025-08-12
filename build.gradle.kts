@@ -55,17 +55,17 @@ dependencies {
     compileOnly(fileTree("libs"))
     // OneBot依赖
     compileOnly("online.bingzi:onebot:1.0.0-97bdc38")
-    compileOnly("com.squareup.okhttp3:okhttp:5.0.0")
-    compileOnly("com.google.code.gson:gson:2.10.1")
+    taboo("com.squareup.okhttp3:okhttp:5.0.0")
+    taboo("com.google.code.gson:gson:2.10.1")
     // 二维码生成库
-    compileOnly("com.google.zxing:core:3.5.3")
-    compileOnly("com.google.zxing:javase:3.5.3")
+    taboo("com.google.zxing:core:3.5.3")
+    taboo("com.google.zxing:javase:3.5.3")
     // OrmLite依赖
-    compileOnly("com.j256.ormlite:ormlite-core:6.1")
-    compileOnly("com.j256.ormlite:ormlite-jdbc:6.1")
+    taboo("com.j256.ormlite:ormlite-core:6.1")
+    taboo("com.j256.ormlite:ormlite-jdbc:6.1")
     // 数据库驱动
-    compileOnly("org.xerial:sqlite-jdbc:3.45.1.0")
-    compileOnly("com.mysql:mysql-connector-j:8.3.0")
+    taboo("org.xerial:sqlite-jdbc:3.45.1.0")
+    taboo("com.mysql:mysql-connector-j:8.3.0")
 }
 
 tasks.withType<JavaCompile> {

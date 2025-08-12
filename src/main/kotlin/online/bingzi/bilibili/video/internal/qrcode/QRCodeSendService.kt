@@ -1,11 +1,9 @@
 package online.bingzi.bilibili.video.internal.qrcode
 
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
-import online.bingzi.bilibili.video.api.event.qrcode.*
-import online.bingzi.bilibili.video.internal.qrcode.senders.ChatQRCodeSender
-import online.bingzi.bilibili.video.internal.qrcode.senders.MapQRCodeSender
-import online.bingzi.bilibili.video.internal.qrcode.senders.OneBotQRCodeSender
+import online.bingzi.bilibili.video.api.event.qrcode.QRCodePreSendEvent
+import online.bingzi.bilibili.video.api.event.qrcode.QRCodeSendFailureEvent
+import online.bingzi.bilibili.video.api.event.qrcode.QRCodeSendModeChangeEvent
+import online.bingzi.bilibili.video.api.event.qrcode.QRCodeSendSuccessEvent
 import taboolib.common.platform.ProxyPlayer
 import taboolib.common.platform.function.console
 import taboolib.module.lang.sendInfo
@@ -22,36 +20,59 @@ object QRCodeSendService {
     private val senders = mutableMapOf<QRCodeSendMode, QRCodeSender>()
     
     /**
-     * 初始化所有发送器
+     * 注册二维码发送器
+     * @param mode 发送模式
+     * @param sender 发送器实例
+     * @return 是否注册成功
      */
-    fun initialize() {
-        try {
-            // 注册聊天框发送器
-            senders[QRCodeSendMode.CHAT] = ChatQRCodeSender()
-            console().sendInfo("qrcodeSenderRegistered", "聊天框")
-            
-            // 注册地图发送器
-            if (MapQRCodeSender().isAvailable()) {
-                senders[QRCodeSendMode.MAP] = MapQRCodeSender()
-                console().sendInfo("qrcodeSenderRegistered", "地图")
-            } else {
-                console().sendWarn("qrcodeSenderUnavailable", "地图", "Bukkit环境不可用")
+    fun registerSender(mode: QRCodeSendMode, sender: QRCodeSender): Boolean {
+        return try {
+            // 检查发送器是否可用
+            if (!sender.isAvailable()) {
+                console().sendWarn("qrcodeSenderUnavailable", mode.displayName, "发送器不可用")
+                return false
             }
             
-            // 注册OneBot发送器
-            if (OneBotQRCodeSender().isAvailable()) {
-                senders[QRCodeSendMode.ONEBOT] = OneBotQRCodeSender()
-                console().sendInfo("qrcodeSenderRegistered", "OneBot")
-            } else {
-                console().sendWarn("qrcodeSenderUnavailable", "OneBot", "OneBot服务不可用")
+            // 如果已存在同模式发送器，先注销
+            if (senders.containsKey(mode)) {
+                console().sendWarn("qrcodeSenderReplaced", mode.displayName)
             }
             
-            console().sendInfo("qrcodeServiceInitialized", senders.size.toString())
-            
+            // 注册新发送器
+            senders[mode] = sender
+            console().sendInfo("qrcodeSenderRegistered", mode.displayName)
+            true
         } catch (e: Exception) {
-            console().sendWarn("qrcodeServiceInitFailed", e.message ?: "")
+            console().sendWarn("qrcodeSenderRegisterFailed", mode.displayName, e.message ?: "")
+            false
         }
     }
+    
+    /**
+     * 注销二维码发送器
+     * @param mode 发送模式
+     * @return 是否注销成功
+     */
+    fun unregisterSender(mode: QRCodeSendMode): Boolean {
+        return if (senders.remove(mode) != null) {
+            console().sendInfo("qrcodeSenderUnregistered", mode.displayName)
+            true
+        } else {
+            false
+        }
+    }
+    
+    /**
+     * 获取已注册的发送器数量
+     * @return 发送器数量
+     */
+    fun getRegisteredSenderCount(): Int = senders.size
+    
+    /**
+     * 获取所有已注册的发送模式
+     * @return 发送模式列表
+     */
+    fun getRegisteredModes(): Set<QRCodeSendMode> = senders.keys.toSet()
     
     /**
      * 发送二维码给玩家
@@ -211,7 +232,8 @@ object QRCodeSendService {
      * 清理资源
      */
     fun shutdown() {
+        val count = senders.size
         senders.clear()
-        console().sendInfo("qrcodeServiceShutdown")
+        console().sendInfo("qrcodeServiceShutdown", count.toString())
     }
 }

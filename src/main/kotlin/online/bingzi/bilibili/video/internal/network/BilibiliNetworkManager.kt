@@ -82,37 +82,9 @@ object BilibiliNetworkManager {
     // ==================== 兼容性方法（向后兼容） ====================
 
     /**
-     * 登录服务实例（兼容性保留）
-     * @deprecated 使用 getPlayerService(playerUuid).xxx 替代
-     */
-    @Deprecated("使用 getPlayerService(playerUuid) 获取Player专属服务")
-    val loginService = BilibiliLoginService
-
-    /**
-     * 用户服务实例（兼容性保留）
-     * @deprecated 使用 getPlayerService(playerUuid).xxx 替代
-     */
-    @Deprecated("使用 getPlayerService(playerUuid) 获取Player专属服务")
-    val userService = BilibiliUserService
-
-    /**
-     * 视频服务实例（兼容性保留）
-     * @deprecated 使用 getPlayerService(playerUuid).xxx 替代
-     */
-    @Deprecated("使用 getPlayerService(playerUuid) 获取Player专属服务")
-    val videoService = BilibiliVideoService
-
-    /**
      * API 客户端实例
      */
     val apiClient = BilibiliApiClient
-
-    /**
-     * Cookie 管理器实例（兼容性保留）
-     * @deprecated 使用新的 BilibiliCookieJar 替代
-     */
-    @Deprecated("使用新的 BilibiliCookieJar 替代")
-    val cookieJar = BilibiliCookieJar
 
     /**
      * 检查网络模块是否就绪
@@ -120,50 +92,6 @@ object BilibiliNetworkManager {
      */
     fun isReady(): Boolean {
         return true
-    }
-
-    /**
-     * 快速登录检查（兼容性保留，使用第一个找到的已登录Player）
-     * @deprecated 使用 isPlayerLoggedIn(playerUuid) 替代
-     * @return 是否已登录
-     */
-    @Deprecated("使用 isPlayerLoggedIn(playerUuid) 替代")
-    fun isLoggedIn(): Boolean {
-        return BilibiliCookieJar.getAllPlayerUuids().any { BilibiliCookieJar.isLoggedIn(it) }
-    }
-
-    /**
-     * 获取当前用户信息（兼容性保留，使用第一个找到的已登录Player）
-     * @deprecated 使用 getPlayerCurrentUser(playerUuid) 替代
-     * @return 用户信息或 null
-     */
-    @Deprecated("使用 getPlayerCurrentUser(playerUuid) 替代")
-    fun getCurrentUser(): CompletableFuture<UserInfo?> {
-        val loggedInPlayer = BilibiliCookieJar.getAllPlayerUuids().find { BilibiliCookieJar.isLoggedIn(it) }
-        return if (loggedInPlayer != null) {
-            getPlayerCurrentUser(loggedInPlayer)
-        } else {
-            CompletableFuture.completedFuture(null)
-        }
-    }
-
-    /**
-     * 快速获取视频信息和一键三连状态（兼容性保留，使用第一个找到的已登录Player）
-     * @deprecated 使用 getVideoWithTripleStatusForPlayer(playerUuid, bvid) 替代
-     * @param bvid BV 号
-     * @return 包含视频信息和三连状态的结果
-     */
-    @Deprecated("使用 getVideoWithTripleStatusForPlayer(playerUuid, bvid) 替代")
-    fun getVideoWithTripleStatus(bvid: String): CompletableFuture<VideoWithTripleStatus?> {
-        val loggedInPlayer = BilibiliCookieJar.getAllPlayerUuids().find { BilibiliCookieJar.isLoggedIn(it) }
-        return if (loggedInPlayer != null) {
-            getVideoWithTripleStatusForPlayer(loggedInPlayer, bvid)
-        } else {
-            // 未登录时，只获取视频信息
-            BilibiliVideoService.getVideoInfo(bvid).thenApply { videoInfo ->
-                if (videoInfo != null) VideoWithTripleStatus(videoInfo, null) else null
-            }
-        }
     }
 
     /**

@@ -1,10 +1,9 @@
 package online.bingzi.bilibili.video
 
-import taboolib.common.env.RuntimeDependencies
-import taboolib.common.env.RuntimeDependency
 import taboolib.common.platform.Plugin
 import taboolib.common.platform.function.info
 
+/*
 
 @RuntimeDependencies(
     // OkHttp 5.0.0 及其依赖
@@ -58,6 +57,8 @@ import taboolib.common.platform.function.info
         relocate = ["!com.mysql", "!online.bingzi.bilibili.video.libs.mysql"]
     )
 )
+*/
+
 object BilibiliVideo : Plugin() {
 
     override fun onEnable() {

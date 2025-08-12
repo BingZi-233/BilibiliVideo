@@ -14,14 +14,16 @@ import taboolib.module.lang.sendInfo
 object QRCodeModule {
     
     /**
-     * 在插件启用阶段自动初始化二维码服务
+     * 在插件启用阶段初始化
+     * 各个发送器会自动注册，不需要在这里手动初始化
      */
-    @Awake(LifeCycle.ENABLE)
+    @Awake(LifeCycle.ACTIVE)
     fun initialize() {
         try {
             console().sendInfo("qrcodeModuleStarting")
-            QRCodeSendService.initialize()
-            console().sendInfo("qrcodeModuleStarted")
+            // 发送器会通过各自的注册器自动注册
+            // 这里只需要输出启动信息
+            console().sendInfo("qrcodeModuleStarted", QRCodeSendService.getRegisteredSenderCount().toString())
         } catch (e: Exception) {
             console().sendInfo("qrcodeModuleStartFailed", e.message ?: "未知错误")
         }
