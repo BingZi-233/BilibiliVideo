@@ -326,3 +326,61 @@ uploaderSearchNoResult: "&7没有找到包含 &e{0} &7的视频"
 uploaderSearchResult: "&6找到 {0} 个包含 &e{1} &6的视频:"
 uploaderSearchItem: "&7- &a{0} &7: &f{1} &7(UP主: &b{2})"
 uploaderSearchMore: "&7... 还有 {0} 个结果未显示"
+
+# QQ绑定命令相关
+qqBindCommandHelp: |
+  &6====== QQ绑定命令 ======
+  &e/qqbind bind <QQ号> &7- 绑定您的QQ号码
+  &e/qqbind unbind &7- 解绑您的QQ号码
+  &e/qqbind info &7- 查看绑定信息
+  &e/qqbind adminUnbind <QQ号> &7- [管理员] 解绑指定QQ号
+qqBindOnlyPlayer: "&c此命令只能由玩家执行"
+qqBindInvalidNumber: "&c无效的QQ号码格式: {0}"
+qqBindAlreadyBound: "&c您已经绑定了QQ号: {0}"
+qqBindNumberAlreadyUsed: "&cQQ号 {0} 已被其他玩家绑定"
+qqBindSuccess: "&a成功绑定QQ号: {0}"
+qqBindFailed: "&c绑定QQ号 {0} 失败"
+qqUnbindSuccess: "&a成功解绑QQ号"
+qqUnbindNoBinding: "&c您没有绑定QQ号"
+qqBindInfo: "&a您绑定的QQ号: &e{0} &7(绑定时间: {1})"
+qqBindInfoNickname: "&7QQ昵称: &f{0}"
+qqBindNoBinding: "&c您尚未绑定QQ号"
+qqAdminUnbindSuccess: "&a成功解绑QQ号: {0}"
+qqAdminUnbindFailed: "&c解绑QQ号 {0} 失败"
+qqAdminUnbindNotFound: "&c未找到QQ号 {0} 的绑定信息"
+qqAdminUnbindPlayerNotSupported: "&c请输入有效的QQ号码进行解绑"
+
+# Bilibili绑定命令相关
+bilibiliBindCommandHelp: |
+  &6====== Bilibili账户绑定命令 ======
+  &e/bilibind bind &7- 绑定您当前登录的Bilibili账户
+  &e/bilibind unbind &7- 解绑您的Bilibili账户
+  &e/bilibind info &7- 查看绑定信息
+  &e/bilibind refresh &7- 刷新账户信息
+  &e/bilibind adminUnbind <UID> &7- [管理员] 解绑指定UID
+  &e/bilibind adminList &7- [管理员] 查看所有绑定
+bilibiliBindOnlyPlayer: "&c此命令只能由玩家执行"
+bilibiliBindAlreadyBound: "&c您已经绑定了Bilibili账户: {0}"
+bilibiliBindNeedLogin: "&c请先使用 /blogin 登录Bilibili账户"
+bilibiliBindGetUserInfoFailed: "&c获取用户信息失败，请重新登录"
+bilibiliBindGetUserInfoError: "&c获取用户信息时出错: {0}"
+bilibiliBindUidAlreadyUsed: "&cBilibili账户 {0} 已被其他玩家绑定"
+bilibiliBindSuccess: "&a成功绑定Bilibili账户: &e{0} &7(UID: {1})"
+bilibiliBindFailed: "&c绑定Bilibili账户 {0} 失败"
+bilibiliUnbindSuccess: "&a成功解绑Bilibili账户"
+bilibiliUnbindNoBinding: "&c您没有绑定Bilibili账户"
+bilibiliBindInfo: "&a您绑定的Bilibili账户: &e{0} &7(UID: {1}, 绑定时间: {2})"
+bilibiliBindInfoLevel: "&7账户等级: &bLv.{0}"
+bilibiliBindInfoExpired: "&c您的绑定已过期，请使用 /bilibind refresh 刷新"
+bilibiliBindNoBinding: "&c您尚未绑定Bilibili账户"
+bilibiliBindRefreshSuccess: "&a成功刷新账户信息: {0}"
+bilibiliBindRefreshFailed: "&c刷新账户信息失败"
+bilibiliBindRefreshSaveFailed: "&c保存刷新的账户信息失败"
+bilibiliBindRefreshError: "&c刷新账户信息时出错: {0}"
+bilibiliAdminUnbindSuccess: "&a成功解绑Bilibili账户: {0}"
+bilibiliAdminUnbindFailed: "&c解绑Bilibili账户 {0} 失败"
+bilibiliAdminUnbindNotFound: "&c未找到UID {0} 的绑定信息"
+bilibiliAdminUnbindPlayerNotSupported: "&c请输入有效的Bilibili UID进行解绑"
+bilibiliAdminListEmpty: "&7当前没有任何Bilibili账户绑定"
+bilibiliAdminListHeader: "&6===== Bilibili账户绑定列表 ({0}) ====="
+bilibiliAdminListItem: "&7玩家: &e{0} &7| 用户: &b{1} &7| UID: &a{2} &7| 状态: &f{3}"
