@@ -37,12 +37,12 @@ object UploaderCommand {
     @CommandBody
     val add = subCommand {
         dynamic("uid") {
-            suggestion<ProxyCommandSender> { _, _ ->
+            suggestion<ProxyCommandSender>(uncheck = true) { _, _ ->
                 listOf("UP主UID")
             }
             
             dynamic("interval", optional = true) {
-                suggestion<ProxyCommandSender> { _, _ ->
+                suggestion<ProxyCommandSender>(uncheck = true) { _, _ ->
                     listOf("24", "12", "6", "48")
                 }
                 
@@ -95,7 +95,7 @@ object UploaderCommand {
     @CommandBody
     val remove = subCommand {
         dynamic("uid") {
-            suggestion<ProxyCommandSender> { _, _ ->
+            suggestion<ProxyCommandSender>(uncheck = true) { _, _ ->
                 // 获取所有监控的UP主UID
                 UploaderVideoDaoService.getAllConfigs().get()
                     .map { it.uploaderUid.toString() }
@@ -169,7 +169,7 @@ object UploaderCommand {
     @CommandBody
     val sync = subCommand {
         dynamic("uid") {
-            suggestion<ProxyCommandSender> { _, _ ->
+            suggestion<ProxyCommandSender>(uncheck = true) { _, _ ->
                 UploaderVideoDaoService.getAllConfigs().get()
                     .map { it.uploaderUid.toString() }
             }
@@ -235,7 +235,7 @@ object UploaderCommand {
     @CommandBody
     val toggle = subCommand {
         dynamic("uid") {
-            suggestion<ProxyCommandSender> { _, _ ->
+            suggestion<ProxyCommandSender>(uncheck = true) { _, _ ->
                 UploaderVideoDaoService.getAllConfigs().get()
                     .map { it.uploaderUid.toString() }
             }

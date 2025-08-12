@@ -1,8 +1,8 @@
 package online.bingzi.bilibili.video.internal.network
 
+import com.google.gson.Gson
 import com.google.gson.JsonObject
 import online.bingzi.bilibili.video.internal.database.entity.UploaderVideo
-import online.bingzi.bilibili.video.internal.network.entity.ApiResponse
 import taboolib.common.platform.function.console
 import taboolib.module.lang.sendInfo
 import taboolib.module.lang.sendWarn
@@ -15,6 +15,7 @@ import java.util.concurrent.CompletableFuture
 object UploaderVideoService {
 
     private val client = BilibiliApiClient
+    private val gson = Gson()
 
     /**
      * 获取UP主的所有视频BV号
@@ -74,7 +75,8 @@ object UploaderVideoService {
             "https://api.bilibili.com/x/space/wbi/arc/search",
             params
         ).thenApply { response ->
-            parseVideoList(response.data, mid)
+            val jsonData = gson.fromJson(response.data, JsonObject::class.java)
+            parseVideoList(jsonData?.getAsJsonObject("data"), mid)
         }
     }
 
@@ -87,10 +89,10 @@ object UploaderVideoService {
         val url = "https://api.bilibili.com/x/space/acc/info?mid=${mid}&jsonp=jsonp"
 
         return client.getAsync(url).thenApply { response ->
-            val nameObj = response.data?.get("name")
-            if (nameObj != null && nameObj.isJsonPrimitive) {
-                nameObj.asString
-            } else {
+            try {
+                val jsonData = gson.fromJson(response.data, JsonObject::class.java)
+                jsonData?.getAsJsonObject("data")?.get("name")?.asString ?: "Unknown"
+            } catch (e: Exception) {
                 "Unknown"
             }
         }
@@ -99,11 +101,11 @@ object UploaderVideoService {
     /**
      * 解析视频列表
      */
-    private fun parseVideoList(response: JsonObject?, uploaderUid: Long): List<UploaderVideo> {
+    private fun parseVideoList(data: JsonObject?, uploaderUid: Long): List<UploaderVideo> {
         val videos = mutableListOf<UploaderVideo>()
 
         try {
-            val list = response?.getAsJsonObject("list")
+            val list = data?.getAsJsonObject("list")
             val vlist = list?.getAsJsonArray("vlist")
 
             vlist?.forEach { element ->
@@ -169,16 +171,17 @@ object UploaderVideoService {
                     
                     val response = client.getAsync(url).get()
                     
-                    val stat = response.data?.getAsJsonObject("stat")
+                    val jsonData = gson.fromJson(response.data, JsonObject::class.java)
+                    val stat = jsonData?.getAsJsonObject("data")?.getAsJsonObject("stat")
                     
                     if (stat != null) {
                         video.updateStats(
-                            viewCount = stat.getAsJsonPrimitive("view")?.asLong ?: 0,
-                            likeCount = stat.getAsJsonPrimitive("like")?.asLong ?: 0,
-                            coinCount = stat.getAsJsonPrimitive("coin")?.asLong ?: 0,
-                            favoriteCount = stat.getAsJsonPrimitive("favorite")?.asLong ?: 0,
-                            shareCount = stat.getAsJsonPrimitive("share")?.asLong ?: 0,
-                            danmakuCount = stat.getAsJsonPrimitive("danmaku")?.asLong ?: 0
+                            viewCount = stat.get("view")?.asLong ?: 0,
+                            likeCount = stat.get("like")?.asLong ?: 0,
+                            coinCount = stat.get("coin")?.asLong ?: 0,
+                            favoriteCount = stat.get("favorite")?.asLong ?: 0,
+                            shareCount = stat.get("share")?.asLong ?: 0,
+                            danmakuCount = stat.get("danmaku")?.asLong ?: 0
                         )
                     }
                     
