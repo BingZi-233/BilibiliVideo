@@ -26,23 +26,30 @@ buvidRequiredForOperation: "&c{0}操作需要 buvid3，但获取失败"
 
 # 二维码模块
 qrcodeModuleStarting: "&7启动二维码模块..."
-qrcodeModuleStarted: "&a二维码模块已启动"
+qrcodeModuleStarted: "&a二维码模块已启动，共注册 {0} 个发送器"
 qrcodeModuleStartFailed: "&c二维码模块启动失败: {0}"
-qrcodeModuleShutdown: "&a二维码模块已关闭"
+qrcodeModuleShutdown: "&a二维码模块已关闭，清理了 {0} 个发送器"
 qrcodeModuleShutdownFailed: "&c二维码模块关闭失败: {0}"
 
 # 二维码相关
 qrcodeSenderRegistered: "&a二维码发送器已注册: {0}"
+qrcodeSenderUnregistered: "&a二维码发送器已注销: {0}"
 qrcodeSenderUnavailable: "&c二维码发送器不可用: {0} - {1}"
+qrcodeSenderReplaced: "&e二维码发送器 {0} 已被替换"
+qrcodeSenderRegisterFailed: "&c二维码发送器 {0} 注册失败: {1}"
+qrcodeSenderAutoRegistered: "&a二维码发送器 {0} 已自动注册"
+qrcodeSenderAutoRegisterFailed: "&c二维码发送器 {0} 自动注册失败: {1}"
+qrcodeSenderSkipped: "&7二维码发送器 {0} 注册跳过: {1}"
 qrcodeServiceInitialized: "&a二维码服务初始化完成，共注册 {0} 个发送器"
 qrcodeServiceInitFailed: "&c二维码服务初始化失败: {0}"
+qrcodeServiceShutdown: "&a二维码服务已关闭，清理了 {0} 个发送器"
+qrcodeSendCancelled: "&e玩家 {0} 的二维码发送被取消"
 qrcodeSendFailed: "&c为 {0} 发送二维码失败: {1}"
 qrcodeSendAttempt: "&7正在尝试使用 {0} 向 {1} 发送二维码"
 qrcodeSendSuccess: "&a成功使用 {0} 向 {1} 发送二维码"
 qrcodeSendModeFailed: "&c{0} 向 {1} 发送二维码失败"
 qrcodeSendFallback: "&7{0} 失败，尝试备用方案 {1} 向 {2} 发送"
 qrcodeSendAllFailed: "&c所有发送方式都失败，无法向 {0} 发送二维码"
-qrcodeServiceShutdown: "&a二维码服务已关闭"
 qrcodeGenerateFailed: "&c生成二维码失败，内容: {0}，错误: {1}"
 
 # 地图二维码
