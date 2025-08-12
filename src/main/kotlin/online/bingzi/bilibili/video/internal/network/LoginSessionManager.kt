@@ -4,6 +4,7 @@ import taboolib.common.LifeCycle
 import taboolib.common.platform.Awake
 import taboolib.common.platform.function.console
 import taboolib.common.platform.function.submit
+import taboolib.common.platform.service.PlatformExecutor
 import taboolib.module.lang.sendInfo
 
 /**
@@ -13,9 +14,9 @@ import taboolib.module.lang.sendInfo
 object LoginSessionManager {
 
     /**
-     * 是否已启动清理任务
+     * 清理任务的引用，用于取消任务
      */
-    private var isCleanupTaskRunning = false
+    private var cleanupTask: PlatformExecutor.PlatformTask? = null
 
     /**
      * 初始化登录会话管理器
@@ -40,31 +41,24 @@ object LoginSessionManager {
      * 每10分钟执行一次过期会话清理
      */
     private fun startCleanupTask() {
-        if (isCleanupTaskRunning) {
-            return
-        }
+        // 如果已有任务在运行，先取消
+        cleanupTask?.cancel()
         
         try {
-            isCleanupTaskRunning = true
-            
             // 使用TabooLib的跨平台任务调度器
             // 延迟10分钟后开始，每10分钟执行一次
-            submit(
+            cleanupTask = submit(
                 async = true,
                 delay = 12000L, // 10分钟 = 600秒 = 12000 ticks
                 period = 12000L
             ) {
-                if (!isCleanupTaskRunning) {
-                    // 如果标志已关闭，停止执行
-                    return@submit
-                }
                 cleanupExpiredSessions()
             }
             
             console().sendInfo("loginSessionManagerStarted")
         } catch (e: Exception) {
             // 如果启动失败，记录日志但不中断插件运行
-            isCleanupTaskRunning = false
+            cleanupTask = null
             console().sendInfo("loginSessionManagerSkipped", e.message ?: "未知错误")
         }
     }
@@ -73,8 +67,9 @@ object LoginSessionManager {
      * 停止清理任务
      */
     private fun stopCleanupTask() {
-        if (isCleanupTaskRunning) {
-            isCleanupTaskRunning = false
+        cleanupTask?.let {
+            it.cancel()
+            cleanupTask = null
             console().sendInfo("loginSessionManagerStopped")
         }
     }
