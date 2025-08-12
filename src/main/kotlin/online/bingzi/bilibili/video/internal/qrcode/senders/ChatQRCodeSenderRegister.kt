@@ -1,7 +1,7 @@
 package online.bingzi.bilibili.video.internal.qrcode.senders
 
+import online.bingzi.bilibili.video.api.qrcode.QRCodeSenderRegistry
 import online.bingzi.bilibili.video.internal.qrcode.QRCodeSendMode
-import online.bingzi.bilibili.video.internal.qrcode.QRCodeSendService
 import taboolib.common.LifeCycle
 import taboolib.common.platform.Awake
 import taboolib.common.platform.function.console
@@ -20,7 +20,7 @@ object ChatQRCodeSenderRegister {
     fun register() {
         try {
             val sender = ChatQRCodeSender()
-            if (QRCodeSendService.registerSender(QRCodeSendMode.CHAT, sender)) {
+            if (QRCodeSenderRegistry.register(QRCodeSendMode.CHAT, sender)) {
                 console().sendInfo("qrcodeSenderAutoRegistered", "聊天框")
             }
         } catch (e: Exception) {
@@ -33,6 +33,6 @@ object ChatQRCodeSenderRegister {
      */
     @Awake(LifeCycle.DISABLE)
     fun unregister() {
-        QRCodeSendService.unregisterSender(QRCodeSendMode.CHAT)
+        QRCodeSenderRegistry.unregister(QRCodeSendMode.CHAT)
     }
 }
