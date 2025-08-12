@@ -1,6 +1,6 @@
 # 二维码配置
 qrcode:
-  # 默认发送模式 (CHAT, MAP, ONEBOT)
+  # 默认发送模式 (CHAT, ONEBOT)
   default-send-mode: CHAT
   
   # 地图模式设置

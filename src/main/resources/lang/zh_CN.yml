@@ -52,12 +52,6 @@ qrcodeSendFallback: "&7{0} 失败，尝试备用方案 {1} 向 {2} 发送"
 qrcodeSendAllFailed: "&c所有发送方式都失败，无法向 {0} 发送二维码"
 qrcodeGenerateFailed: "&c生成二维码失败，内容: {0}，错误: {1}"
 
-# 地图二维码
-qrcodeMapPlayerNotBukkit: "&c玩家 {0} 不在Bukkit环境，无法发送地图二维码"
-qrcodeMapSent: "&a地图二维码已发送: {0}"
-qrcodeMapCreated: "&a为 {0} 创建了地图二维码，地图ID: {1}"
-qrcodeMapFailed: "&c为 {0} 创建地图二维码失败: {1}"
-qrcodeMapRenderFailed: "&c地图二维码渲染失败: {0}"
 
 # 聊天框二维码
 qrcodeChatSent: "&a聊天框二维码已发送: {0}"
@@ -167,7 +161,7 @@ networkModuleCleanup: "&aBilibili 网络模块已清理"
 networkModulePlayerCleanup: "&a已清理Player {0} 的网络模块资源"
 
 # 测试命令相关
-testQrUsage: "&e使用方法: /testqr <chat|map|onebot|modes|custom> [文本]"
+testQrUsage: "&e使用方法: /testqr <chat|onebot|modes|custom> [文本]"
 testQrModeUnavailable: "&c{0} 模式不可用"
 testQrGenerating: "&7正在生成 {0} 二维码..."
 testQrGenerateFailed: "&c二维码生成失败"
