@@ -86,6 +86,11 @@ loginTimeoutForPlayer: "&c{0} 登录超时"
 loginCancelled: "&a登录已取消"
 loginCancelledForPlayer: "&a{0} 取消了登录"
 loginSessionExpired: "&a{0} 的登录会话已过期"
+loginSessionManagerStarted: "&a登录会话管理器已启动，将自动清理过期会话"
+loginSessionManagerSkipped: "&7登录会话管理器启动跳过: {0}"
+loginSessionManagerStopped: "&a登录会话管理器已停止"
+loginSessionsCleaned: "&a已清理 {0} 个过期的登录会话"
+loginSessionCleanupError: "&c清理登录会话时出错: {0}"
 
 # 登录相关
 loginQrCodeGenerateSuccess: "&a二维码生成成功"
