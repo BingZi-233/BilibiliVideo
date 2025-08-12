@@ -13,13 +13,13 @@ import java.util.concurrent.ConcurrentHashMap
  * Bilibili 网络模块管理器
  * 统一管理所有 Bilibili API 相关的网络操作，支持多Player独立会话
  */
-@Awake(LifeCycle.ENABLE)
 object BilibiliNetworkManager {
 
     // Player服务实例缓存
     private val playerServices = ConcurrentHashMap<String, PlayerBilibiliService>()
 
-    init {
+    @Awake(LifeCycle.ENABLE)
+    fun init(){
         console().sendInfo("networkModuleStartup")
     }
 
