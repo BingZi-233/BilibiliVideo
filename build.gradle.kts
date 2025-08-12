@@ -29,8 +29,18 @@ taboolib {
         links {
             name("https://github.com/BingZi-233/BilibiliVideo")
         }
+        dependencies {
+            name("OneBot")
+        }
     }
     version { taboolib = "6.2.3-ee81cb0" }
+    relocate("okhttp3", "online.bingzi.bilibili.video.libs.okhttp3")
+    relocate("okio", "online.bingzi.bilibili.video.libs.okio")
+    relocate("com.google.gson", "online.bingzi.bilibili.video.libs.gson")
+    relocate("com.google.zxing", "online.bingzi.bilibili.video.libs.zxing")
+    relocate("com.j256.ormlite", "online.bingzi.bilibili.video.libs.ormlite")
+    relocate("org.sqlite", "online.bingzi.bilibili.video.libs.sqlite")
+    relocate("com.mysql", "online.bingzi.bilibili.video.libs.mysql")
 }
 
 repositories {
