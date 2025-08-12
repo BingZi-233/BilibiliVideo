@@ -3,11 +3,9 @@ package online.bingzi.bilibili.video.internal.database
 import taboolib.common.LifeCycle
 import taboolib.common.platform.Awake
 import taboolib.common.platform.function.console
-import taboolib.common.platform.function.getDataFolder
-import taboolib.module.configuration.Configuration
+import online.bingzi.bilibili.video.internal.config.ConfigManager
 import taboolib.module.lang.sendInfo
 import taboolib.module.lang.sendWarn
-import java.io.File
 import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
@@ -108,8 +106,7 @@ object DatabaseMaintenance {
      * 加载维护配置
      */
     private fun loadConfig(): MaintenanceConfig {
-        val configFile = File(getDataFolder(), "database.yml")
-        val config = Configuration.loadFromFile(configFile)
+        val config = ConfigManager.databaseConfig
         val maintenanceSection = config.getConfigurationSection("maintenance")
         val cleanupSection = maintenanceSection?.getConfigurationSection("cleanup")
         val thresholdsSection = cleanupSection?.getConfigurationSection("thresholds")

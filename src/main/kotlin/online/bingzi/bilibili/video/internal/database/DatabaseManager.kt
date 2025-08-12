@@ -4,16 +4,11 @@ import com.j256.ormlite.jdbc.JdbcConnectionSource
 import com.j256.ormlite.support.ConnectionSource
 import online.bingzi.bilibili.video.api.event.database.DatabaseConnectionEvent
 import online.bingzi.bilibili.video.api.event.database.DatabaseInitializeEvent
-import online.bingzi.bilibili.video.internal.database.entity.BilibiliBinding
-import online.bingzi.bilibili.video.internal.database.entity.BilibiliCookie
-import online.bingzi.bilibili.video.internal.database.entity.Player
-import online.bingzi.bilibili.video.internal.database.entity.QQBinding
-import online.bingzi.bilibili.video.internal.database.entity.UploaderVideo
-import online.bingzi.bilibili.video.internal.database.entity.UploaderConfig
+import online.bingzi.bilibili.video.internal.config.ConfigManager
+import online.bingzi.bilibili.video.internal.database.entity.*
 import taboolib.common.platform.function.console
 import taboolib.common.platform.function.getDataFolder
 import taboolib.library.configuration.ConfigurationSection
-import taboolib.module.configuration.Configuration
 import taboolib.module.lang.sendInfo
 import taboolib.module.lang.sendWarn
 import java.io.File
@@ -114,17 +109,10 @@ object DatabaseManager {
      * 加载数据库配置
      */
     private fun loadDatabaseConfig(): DatabaseConfig {
-        val configFile = File(getDataFolder(), "database.yml")
-
-        // 如果配置文件不存在，创建默认配置
-        if (!configFile.exists()) {
-            createDefaultConfig(configFile)
-        }
-
-        val config = Configuration.loadFromFile(configFile)
+        val config = ConfigManager.databaseConfig
         val connectionSection = config.getConfigurationSection("connection")
 
-        val tablePrefix = config.getString("tables.prefix", "bv_")!!
+        val tablePrefix = ConfigManager.getTablePrefix()
 
         return if (connectionSection?.getBoolean("enable") == true) {
             // MySQL配置
@@ -254,15 +242,6 @@ object DatabaseManager {
                 source
             }
         }
-    }
-
-    /**
-     * 创建默认配置文件
-     */
-    private fun createDefaultConfig(configFile: File) {
-        configFile.parentFile?.mkdirs()
-        // 这里可以复制默认配置，或者让用户手动创建
-        // 简化处理，如果配置文件不存在就使用硬编码的默认值
     }
 
     /**
