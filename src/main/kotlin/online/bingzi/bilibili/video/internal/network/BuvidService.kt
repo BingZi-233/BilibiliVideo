@@ -2,10 +2,12 @@ package online.bingzi.bilibili.video.internal.network
 
 import com.google.gson.JsonParser
 import okhttp3.*
+import okhttp3.HttpUrl.Companion.toHttpUrl
 import taboolib.common.platform.function.console
 import taboolib.module.lang.sendInfo
 import taboolib.module.lang.sendWarn
 import java.io.IOException
+import java.time.Duration
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.TimeUnit
 
@@ -17,9 +19,9 @@ object BuvidService {
 
     // 专用于获取 buvid 的客户端，避免循环依赖
     private val buvidClient: OkHttpClient = OkHttpClient.Builder()
-        .connectTimeout(30, TimeUnit.SECONDS)
-        .readTimeout(30, TimeUnit.SECONDS)
-        .writeTimeout(30, TimeUnit.SECONDS)
+        .connectTimeout(Duration.ofSeconds(30))
+        .readTimeout(Duration.ofSeconds(30))
+        .writeTimeout(Duration.ofSeconds(30))
         .addInterceptor(BuvidUserAgentInterceptor())
         .build()
 
@@ -31,7 +33,7 @@ object BuvidService {
         val future = CompletableFuture<String?>()
 
         val request = Request.Builder()
-            .url("https://api.bilibili.com/x/web-frontend/getbuvid")
+            .url("https://api.bilibili.com/x/web-frontend/getbuvid".toHttpUrl())
             .get()
             .build()
 
@@ -42,33 +44,35 @@ object BuvidService {
             }
 
             override fun onResponse(call: Call, response: Response) {
-                try {
-                    val body = response.body?.string() ?: ""
-                    if (response.isSuccessful) {
-                        val jsonResponse = JsonParser.parseString(body).asJsonObject
-                        val code = jsonResponse.get("code")?.asInt ?: -1
+                response.use { resp ->
+                    try {
+                        val body = resp.body.string()
+                        if (resp.isSuccessful) {
+                            val jsonResponse = JsonParser.parseString(body).asJsonObject
+                            val code = jsonResponse.get("code")?.asInt ?: -1
 
-                        if (code == 0) {
-                            val data = jsonResponse.getAsJsonObject("data")
-                            val buvid = data?.get("buvid")?.asString
-                            if (buvid != null) {
-                                console().sendInfo("buvidObtained", "buvid3", buvid)
-                                future.complete(buvid)
+                            if (code == 0) {
+                                val data = jsonResponse.getAsJsonObject("data")
+                                val buvid = data?.get("buvid")?.asString
+                                if (buvid != null) {
+                                    console().sendInfo("buvidObtained", "buvid3", buvid)
+                                    future.complete(buvid)
+                                } else {
+                                    console().sendWarn("buvidDataNull", "buvid3")
+                                    future.complete(null)
+                                }
                             } else {
-                                console().sendWarn("buvidDataNull", "buvid3")
+                                console().sendWarn("buvidApiError", "buvid3", code.toString())
                                 future.complete(null)
                             }
                         } else {
-                            console().sendWarn("buvidApiError", "buvid3", code.toString())
+                            console().sendWarn("buvidHttpError", "buvid3", resp.code.toString())
                             future.complete(null)
                         }
-                    } else {
-                        console().sendWarn("buvidHttpError", "buvid3", response.code.toString())
+                    } catch (e: Exception) {
+                        console().sendWarn("buvidParseFailed", "buvid3", e.message ?: "")
                         future.complete(null)
                     }
-                } catch (e: Exception) {
-                    console().sendWarn("buvidParseFailed", "buvid3", e.message ?: "")
-                    future.complete(null)
                 }
             }
         })
@@ -84,7 +88,7 @@ object BuvidService {
         val future = CompletableFuture<Pair<String?, String?>>()
 
         val request = Request.Builder()
-            .url("https://api.bilibili.com/x/frontend/finger/spi")
+            .url("https://api.bilibili.com/x/frontend/finger/spi".toHttpUrl())
             .get()
             .build()
 
@@ -95,35 +99,37 @@ object BuvidService {
             }
 
             override fun onResponse(call: Call, response: Response) {
-                try {
-                    val body = response.body?.string() ?: ""
-                    if (response.isSuccessful) {
-                        val jsonResponse = JsonParser.parseString(body).asJsonObject
-                        val code = jsonResponse.get("code")?.asInt ?: -1
+                response.use { resp ->
+                    try {
+                        val body = resp.body.string()
+                        if (resp.isSuccessful) {
+                            val jsonResponse = JsonParser.parseString(body).asJsonObject
+                            val code = jsonResponse.get("code")?.asInt ?: -1
 
-                        if (code == 0) {
-                            val data = jsonResponse.getAsJsonObject("data")
-                            val buvid3 = data?.get("b_3")?.asString
-                            val buvid4 = data?.get("b_4")?.asString
+                            if (code == 0) {
+                                val data = jsonResponse.getAsJsonObject("data")
+                                val buvid3 = data?.get("b_3")?.asString
+                                val buvid4 = data?.get("b_4")?.asString
 
-                            if (buvid3 != null || buvid4 != null) {
-                                console().sendInfo("buvidObtained", "buvid3/buvid4", "$buvid3, $buvid4")
-                                future.complete(Pair(buvid3, buvid4))
+                                if (buvid3 != null || buvid4 != null) {
+                                    console().sendInfo("buvidObtained", "buvid3/buvid4", "$buvid3, $buvid4")
+                                    future.complete(Pair(buvid3, buvid4))
+                                } else {
+                                    console().sendWarn("buvidDataNull", "buvid3/buvid4")
+                                    future.complete(Pair(null, null))
+                                }
                             } else {
-                                console().sendWarn("buvidDataNull", "buvid3/buvid4")
+                                console().sendWarn("buvidApiError", "buvid3/buvid4", code.toString())
                                 future.complete(Pair(null, null))
                             }
                         } else {
-                            console().sendWarn("buvidApiError", "buvid3/buvid4", code.toString())
+                            console().sendWarn("buvidHttpError", "buvid3/buvid4", resp.code.toString())
                             future.complete(Pair(null, null))
                         }
-                    } else {
-                        console().sendWarn("buvidHttpError", "buvid3/buvid4", response.code.toString())
+                    } catch (e: Exception) {
+                        console().sendWarn("buvidParseFailed", "buvid3/buvid4", e.message ?: "")
                         future.complete(Pair(null, null))
                     }
-                } catch (e: Exception) {
-                    console().sendWarn("buvidParseFailed", "buvid3/buvid4", e.message ?: "")
-                    future.complete(Pair(null, null))
                 }
             }
         })
@@ -139,7 +145,7 @@ object BuvidService {
         val future = CompletableFuture<String?>()
 
         val request = Request.Builder()
-            .url("https://www.bilibili.com/")
+            .url("https://www.bilibili.com/".toHttpUrl())
             .head() // 使用 HEAD 请求减少数据传输
             .build()
 
@@ -150,21 +156,23 @@ object BuvidService {
             }
 
             override fun onResponse(call: Call, response: Response) {
-                try {
-                    val setCookieHeaders = response.headers("Set-Cookie")
-                    for (setCookieHeader in setCookieHeaders) {
-                        if (setCookieHeader.startsWith("buvid3=")) {
-                            val buvid3 = setCookieHeader.substringAfter("buvid3=").substringBefore(";")
-                            console().sendInfo("buvidObtained", "buvid3 (header)", buvid3)
-                            future.complete(buvid3)
-                            return
+                response.use { resp ->
+                    try {
+                        val setCookieHeaders = resp.headers("Set-Cookie")
+                        for (setCookieHeader in setCookieHeaders) {
+                            if (setCookieHeader.startsWith("buvid3=")) {
+                                val buvid3 = setCookieHeader.substringAfter("buvid3=").substringBefore(";")
+                                console().sendInfo("buvidObtained", "buvid3 (header)", buvid3)
+                                future.complete(buvid3)
+                                return
+                            }
                         }
+                        console().sendWarn("buvidNotFoundInHeader")
+                        future.complete(null)
+                    } catch (e: Exception) {
+                        console().sendWarn("buvidHeaderParseFailed", e.message ?: "")
+                        future.complete(null)
                     }
-                    console().sendWarn("buvidNotFoundInHeader")
-                    future.complete(null)
-                } catch (e: Exception) {
-                    console().sendWarn("buvidHeaderParseFailed", e.message ?: "")
-                    future.complete(null)
                 }
             }
         })

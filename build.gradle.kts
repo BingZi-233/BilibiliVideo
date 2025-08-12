@@ -43,21 +43,19 @@ dependencies {
     compileOnly("ink.ptms.core:v12004:12004:universal")
     compileOnly(kotlin("stdlib"))
     compileOnly(fileTree("libs"))
-    implementation("com.squareup.okhttp3:okhttp:4.12.0")
-    implementation("com.google.code.gson:gson:2.10.1")
-    // 二维码生成库
-    implementation("com.google.zxing:core:3.5.3")
-    implementation("com.google.zxing:javase:3.5.3")
-    // Kotlin协程库
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
     // OneBot依赖
-    implementation("online.bingzi:onebot:1.0.0-97bdc38")
+    compileOnly("online.bingzi:onebot:1.0.0-97bdc38")
+    compileOnly("com.squareup.okhttp3:okhttp:5.0.0")
+    compileOnly("com.google.code.gson:gson:2.10.1")
+    // 二维码生成库
+    compileOnly("com.google.zxing:core:3.5.3")
+    compileOnly("com.google.zxing:javase:3.5.3")
     // OrmLite依赖
-    implementation("com.j256.ormlite:ormlite-core:6.1")
-    implementation("com.j256.ormlite:ormlite-jdbc:6.1")
+    compileOnly("com.j256.ormlite:ormlite-core:6.1")
+    compileOnly("com.j256.ormlite:ormlite-jdbc:6.1")
     // 数据库驱动
-    implementation("org.xerial:sqlite-jdbc:3.45.1.0")
-    implementation("com.mysql:mysql-connector-j:8.3.0")
+    compileOnly("org.xerial:sqlite-jdbc:3.45.1.0")
+    compileOnly("com.mysql:mysql-connector-j:8.3.0")
 }
 
 tasks.withType<JavaCompile> {

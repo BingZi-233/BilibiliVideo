@@ -1,12 +1,14 @@
 package online.bingzi.bilibili.video.internal.network
 
 import okhttp3.*
+import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody.Companion.toRequestBody
 import online.bingzi.bilibili.video.internal.network.entity.ApiResponse
 import taboolib.common.platform.function.console
 import taboolib.module.lang.sendWarn
 import java.io.IOException
+import java.time.Duration
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.TimeUnit
 
@@ -17,9 +19,9 @@ import java.util.concurrent.TimeUnit
 object BilibiliApiClient {
 
     private val client: OkHttpClient = OkHttpClient.Builder()
-        .connectTimeout(30, TimeUnit.SECONDS)
-        .readTimeout(30, TimeUnit.SECONDS)
-        .writeTimeout(30, TimeUnit.SECONDS)
+        .connectTimeout(Duration.ofSeconds(30))
+        .readTimeout(Duration.ofSeconds(30))
+        .writeTimeout(Duration.ofSeconds(30))
         .cookieJar(BilibiliCookieJar)
         .addInterceptor(BuvidInterceptor())
         .build()
@@ -33,12 +35,15 @@ object BilibiliApiClient {
     fun getAsync(url: String, headers: Map<String, String> = emptyMap()): CompletableFuture<ApiResponse> {
         val future = CompletableFuture<ApiResponse>()
 
-        val requestBuilder = Request.Builder().url(url)
-        headers.forEach { (key, value) ->
-            requestBuilder.addHeader(key, value)
-        }
-
-        val request = requestBuilder.build()
+        // 使用 OkHttp 5.0 新的构建方式
+        val request = Request.Builder()
+            .url(url.toHttpUrl())
+            .apply {
+                headers.forEach { (key, value) ->
+                    addHeader(key, value)
+                }
+            }
+            .build()
 
         client.newCall(request).enqueue(object : Callback {
             override fun onFailure(call: Call, e: IOException) {
@@ -47,17 +52,20 @@ object BilibiliApiClient {
             }
 
             override fun onResponse(call: Call, response: Response) {
-                try {
-                    val body = response.body?.string() ?: ""
-                    if (response.isSuccessful) {
-                        future.complete(ApiResponse.success(body, response.headers))
-                    } else {
-                        console().sendWarn("httpStatusCode", response.code.toString())
-                        future.complete(ApiResponse.failure("HTTP ${response.code}: ${response.message}"))
+                response.use { resp ->
+                    try {
+                        // OkHttp 5.0 中 response.body 是非空的
+                        val body = resp.body.string()
+                        if (resp.isSuccessful) {
+                            future.complete(ApiResponse.success(body, resp.headers))
+                        } else {
+                            console().sendWarn("httpStatusCode", resp.code.toString())
+                            future.complete(ApiResponse.failure("HTTP ${resp.code}: ${resp.message}"))
+                        }
+                    } catch (e: Exception) {
+                        console().sendWarn("networkResponseParseFailed", e.message ?: "")
+                        future.complete(ApiResponse.failure(e.message ?: "响应处理失败"))
                     }
-                } catch (e: Exception) {
-                    console().sendWarn("networkResponseParseFailed", e.message ?: "")
-                    future.complete(ApiResponse.failure(e.message ?: "响应处理失败"))
                 }
             }
         })
@@ -100,15 +108,16 @@ object BilibiliApiClient {
     ): CompletableFuture<ApiResponse> {
         val future = CompletableFuture<ApiResponse>()
 
-        val requestBuilder = Request.Builder()
-            .url(url)
+        // 使用 OkHttp 5.0 新的构建方式
+        val request = Request.Builder()
+            .url(url.toHttpUrl())
             .post(data.toRequestBody(contentType.toMediaType()))
-
-        headers.forEach { (key, value) ->
-            requestBuilder.addHeader(key, value)
-        }
-
-        val request = requestBuilder.build()
+            .apply {
+                headers.forEach { (key, value) ->
+                    addHeader(key, value)
+                }
+            }
+            .build()
 
         client.newCall(request).enqueue(object : Callback {
             override fun onFailure(call: Call, e: IOException) {
@@ -117,17 +126,20 @@ object BilibiliApiClient {
             }
 
             override fun onResponse(call: Call, response: Response) {
-                try {
-                    val body = response.body?.string() ?: ""
-                    if (response.isSuccessful) {
-                        future.complete(ApiResponse.success(body, response.headers))
-                    } else {
-                        console().sendWarn("httpStatusCode", response.code.toString())
-                        future.complete(ApiResponse.failure("HTTP ${response.code}: ${response.message}"))
+                response.use { resp ->
+                    try {
+                        // OkHttp 5.0 中 response.body 是非空的
+                        val body = resp.body.string()
+                        if (resp.isSuccessful) {
+                            future.complete(ApiResponse.success(body, resp.headers))
+                        } else {
+                            console().sendWarn("httpStatusCode", resp.code.toString())
+                            future.complete(ApiResponse.failure("HTTP ${resp.code}: ${resp.message}"))
+                        }
+                    } catch (e: Exception) {
+                        console().sendWarn("networkResponseParseFailed", e.message ?: "")
+                        future.complete(ApiResponse.failure(e.message ?: "响应处理失败"))
                     }
-                } catch (e: Exception) {
-                    console().sendWarn("networkResponseParseFailed", e.message ?: "")
-                    future.complete(ApiResponse.failure(e.message ?: "响应处理失败"))
                 }
             }
         })

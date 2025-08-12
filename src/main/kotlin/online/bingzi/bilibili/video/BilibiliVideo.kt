@@ -1,23 +1,38 @@
 package online.bingzi.bilibili.video
 
 import online.bingzi.bilibili.video.internal.network.EnhancedLoginService
+import taboolib.common.env.RuntimeDependencies
+import taboolib.common.env.RuntimeDependency
 import taboolib.common.platform.Plugin
 import taboolib.common.platform.function.info
 import taboolib.platform.BukkitPlugin
 
+
+@RuntimeDependencies(
+    RuntimeDependency(
+        value = "com.squareup.okhttp3:okhttp-jvm:1.8.21",
+        test = "!okhttp3.OkHttpClient",
+        relocate = ["!kotlin.", "!kotlin220."]
+    ),
+    RuntimeDependency(
+        value = "com.squareup.okio:okio-jvm:3.6.0",
+        test = "!okio.SegmentPool",
+        relocate = ["!kotlin.", "!kotlin220."]
+    )
+)
 object BilibiliVideo : Plugin() {
 
     override fun onEnable() {
         info("Successfully running BilibiliVideo!")
-        
+
         // 启动定时任务清理过期的登录会话
         startLoginSessionCleanupTask()
     }
-    
+
     override fun onDisable() {
         info("BilibiliVideo has been disabled.")
     }
-    
+
     /**
      * 启动登录会话清理任务
      */
