@@ -147,9 +147,9 @@ object PlayerRewardStatsDaoService {
                 dao.queryBuilder()
                     .where()
                     .eq("player_uuid", playerUuid)
-                    .orderBy("reward_date", false)
-                    .limit(limit.toLong())
                     .query()
+                    .sortedByDescending { it.rewardDate }
+                    .take(limit)
             } catch (e: SQLException) {
                 console().sendWarn("playerRewardStatsQueryError", playerUuid, e.message ?: "Unknown error")
                 emptyList()
@@ -166,8 +166,8 @@ object PlayerRewardStatsDaoService {
                 val latestStats = dao.queryBuilder()
                     .where()
                     .eq("player_uuid", playerUuid)
-                    .orderBy("updated_at", false)
-                    .queryForFirst()
+                    .query()
+                    .maxByOrNull { it.updatedAt }
                 
                 latestStats?.totalRewardCount ?: 0L
             } catch (e: SQLException) {

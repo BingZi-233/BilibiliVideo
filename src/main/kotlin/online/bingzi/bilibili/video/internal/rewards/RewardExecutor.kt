@@ -136,7 +136,7 @@ object RewardExecutor {
     /**
      * 执行Kether脚本
      */
-    private data class KetherExecuteResult(
+    data class KetherExecuteResult(
         val success: Boolean,
         val message: String,
         val error: Throwable? = null
@@ -202,7 +202,7 @@ object RewardExecutor {
             
         } catch (e: Exception) {
             // 打印Kether错误信息到控制台
-            console().printKetherErrorMessage(e)
+            e.printKetherErrorMessage()
             
             val errorMsg = "Kether脚本执行失败: ${e.message}"
             console().sendWarn("rewardKetherExecuteError", player.name, script, e.message ?: "Unknown error")

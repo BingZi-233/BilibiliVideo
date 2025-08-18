@@ -98,10 +98,10 @@ object TripleRewardService {
                     RewardServiceResult(
                         success = true,
                         message = "奖励领取成功",
-                        details = mapOf(
+                        details = mapOf<String, Any>(
                             "video" to videoInfo,
                             "reward" to rewardConfig,
-                            "record" to executeResult.record
+                            "record" to (executeResult.record ?: "")
                         )
                     )
                 } else {

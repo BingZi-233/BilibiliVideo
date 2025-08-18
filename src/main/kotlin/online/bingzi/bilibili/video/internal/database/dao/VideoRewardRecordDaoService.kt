@@ -77,9 +77,9 @@ object VideoRewardRecordDaoService {
                 dao.queryBuilder()
                     .where()
                     .eq("player_uuid", playerUuid)
-                    .orderBy("reward_claimed_at", false)
-                    .limit(limit.toLong())
                     .query()
+                    .sortedByDescending { it.rewardClaimedAt }
+                    .take(limit)
             } catch (e: SQLException) {
                 console().sendWarn("videoRewardRecordQueryError", e.message ?: "Unknown error")
                 emptyList()
@@ -96,8 +96,8 @@ object VideoRewardRecordDaoService {
                 dao.queryBuilder()
                     .where()
                     .eq("bv_id", bvId)
-                    .orderBy("reward_claimed_at", false)
                     .query()
+                    .sortedByDescending { it.rewardClaimedAt }
             } catch (e: SQLException) {
                 console().sendWarn("videoRewardRecordQueryError", e.message ?: "Unknown error")
                 emptyList()
@@ -114,9 +114,9 @@ object VideoRewardRecordDaoService {
                 dao.queryBuilder()
                     .where()
                     .eq("uploader_uid", uploaderUid)
-                    .orderBy("reward_claimed_at", false)
-                    .limit(limit.toLong())
                     .query()
+                    .sortedByDescending { it.rewardClaimedAt }
+                    .take(limit)
             } catch (e: SQLException) {
                 console().sendWarn("videoRewardRecordQueryError", e.message ?: "Unknown error")
                 emptyList()
@@ -215,10 +215,9 @@ object VideoRewardRecordDaoService {
     fun getRecentRecords(limit: Int = 20): CompletableFuture<List<VideoRewardRecord>> {
         return CompletableFuture.supplyAsync {
             try {
-                dao.queryBuilder()
-                    .orderBy("reward_claimed_at", false)
-                    .limit(limit.toLong())
-                    .query()
+                dao.queryForAll()
+                    .sortedByDescending { it.rewardClaimedAt }
+                    .take(limit)
             } catch (e: SQLException) {
                 console().sendWarn("videoRewardRecordQueryError", e.message ?: "Unknown error")
                 emptyList()
@@ -239,8 +238,8 @@ object VideoRewardRecordDaoService {
                     .like("bv_id", "%$keyword%")
                     .or()
                     .like("player_uuid", "%$keyword%")
-                    .orderBy("reward_claimed_at", false)
                     .query()
+                    .sortedByDescending { it.rewardClaimedAt }
             } catch (e: SQLException) {
                 console().sendWarn("videoRewardRecordSearchError", keyword, e.message ?: "Unknown error")
                 emptyList()

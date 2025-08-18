@@ -1,6 +1,6 @@
 package online.bingzi.bilibili.video.api.event.reward
 
-import taboolib.common.platform.event.ProxyEvent
+import taboolib.platform.type.BukkitProxyEvent
 
 /**
  * 奖励检查事件
@@ -31,7 +31,7 @@ class RewardCheckEvent(
      * 事件时间戳
      */
     val timestamp: Long = System.currentTimeMillis()
-) : ProxyEvent() {
+) : BukkitProxyEvent() {
 
     /**
      * 检查类型枚举
@@ -100,9 +100,5 @@ class RewardCheckEvent(
      */
     fun getDescription(): String {
         return "奖励检查事件：玩家 $playerUuid，视频 $bvId，类型 $checkType"
-    }
-
-    override fun toString(): String {
-        return "RewardCheckEvent(playerUuid='$playerUuid', bvId='$bvId', checkType=$checkType, result=$result)"
     }
 }

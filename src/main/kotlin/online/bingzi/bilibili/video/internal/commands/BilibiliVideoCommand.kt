@@ -1,8 +1,6 @@
 package online.bingzi.bilibili.video.internal.commands
 
-import online.bingzi.bilibili.video.internal.commands.subcommands.BilibiliBindSubCommand
 import online.bingzi.bilibili.video.internal.commands.subcommands.InfoSubCommand
-import online.bingzi.bilibili.video.internal.commands.subcommands.QQBindSubCommand
 import online.bingzi.bilibili.video.internal.commands.subcommands.RewardSubCommand
 import online.bingzi.bilibili.video.internal.commands.subcommands.RewardAdminSubCommand
 import taboolib.common.platform.ProxyCommandSender
@@ -32,18 +30,6 @@ object BilibiliVideoCommand {
             sender.sendInfo("bilibiliVideoCommandHelp")
         }
     }
-    
-    /**
-     * QQ绑定子命令
-     */
-    @CommandBody
-    val qqbind = QQBindSubCommand.qqbind
-    
-    /**
-     * Bilibili绑定子命令
-     */
-    @CommandBody
-    val bilibind = BilibiliBindSubCommand.bilibind
     
     /**
      * 信息查看子命令

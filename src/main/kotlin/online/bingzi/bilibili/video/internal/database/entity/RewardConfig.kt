@@ -76,12 +76,12 @@ data class RewardConfig(
         uploaderName: String,
         rewardScript: String,
         isEnabled: Boolean = true
-    ) : this(
-        uploaderUid = uploaderUid,
-        uploaderName = uploaderName,
-        rewardScript = rewardScript,
-        isEnabled = isEnabled
-    )
+    ) : this() {
+        this.uploaderUid = uploaderUid
+        this.uploaderName = uploaderName
+        this.rewardScript = rewardScript
+        this.isEnabled = isEnabled
+    }
 
     /**
      * 检查视频是否在有效的年龄范围内

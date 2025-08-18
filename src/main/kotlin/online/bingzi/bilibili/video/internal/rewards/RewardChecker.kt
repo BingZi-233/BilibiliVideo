@@ -77,7 +77,7 @@ object RewardChecker {
                 }
 
                 // 8. 检查玩家是否完成了三连操作
-                val tripleStatus = BilibiliVideoService.getTripleStatus(videoInfo.aid).get()
+                val tripleStatus = BilibiliVideoService.getTripleActionStatus(videoInfo.aid).get()
                 if (!isTripleRequirementMet(tripleStatus)) {
                     return@supplyAsync RewardCheckResult(false, "未完成必要的三连操作", videoInfo, rewardConfig, tripleStatus)
                 }

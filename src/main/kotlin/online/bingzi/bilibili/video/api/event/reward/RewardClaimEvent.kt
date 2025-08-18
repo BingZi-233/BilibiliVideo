@@ -1,7 +1,7 @@
 package online.bingzi.bilibili.video.api.event.reward
 
 import online.bingzi.bilibili.video.internal.database.entity.VideoRewardRecord
-import taboolib.common.platform.event.ProxyEvent
+import taboolib.platform.type.BukkitProxyEvent
 
 /**
  * 奖励领取事件
@@ -47,7 +47,7 @@ class RewardClaimEvent(
      * 事件时间戳
      */
     val timestamp: Long = System.currentTimeMillis()
-) : ProxyEvent() {
+) : BukkitProxyEvent() {
 
     /**
      * 是否是成功事件
@@ -68,9 +68,5 @@ class RewardClaimEvent(
         } else {
             "玩家 $playerUuid 领取视频 $bvId 的奖励失败：${errorMessage ?: "未知错误"}"
         }
-    }
-
-    override fun toString(): String {
-        return "RewardClaimEvent(playerUuid='$playerUuid', bvId='$bvId', uploaderUid=$uploaderUid, success=$success)"
     }
 }
