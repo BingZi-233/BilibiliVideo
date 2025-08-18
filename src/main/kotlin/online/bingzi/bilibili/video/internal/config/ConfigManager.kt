@@ -122,4 +122,55 @@ object ConfigManager {
     fun getSlowQueryThreshold(): Long {
         return databaseConfig.getLong("debug.slow-query-threshold", 1000)
     }
+    
+    // =============== 奖励系统配置 ===============
+    
+    /**
+     * 是否启用奖励系统
+     */
+    fun isRewardSystemEnabled(): Boolean {
+        return mainConfig.getBoolean("reward.enabled", true)
+    }
+    
+    /**
+     * 获取每日奖励限制
+     */
+    fun getRewardDailyLimit(): Int {
+        return mainConfig.getInt("reward.daily-limit", 3)
+    }
+    
+    /**
+     * 获取视频有效天数
+     */
+    fun getRewardVideoValidDays(): Int {
+        return mainConfig.getInt("reward.video-valid-days", 7)
+    }
+    
+    /**
+     * 获取默认奖励脚本
+     */
+    fun getRewardDefaultScript(): String {
+        return mainConfig.getString("reward.default-reward-script", "tell player '恭喜获得三连奖励！'")!!
+    }
+    
+    /**
+     * 获取奖励检查间隔（分钟）
+     */
+    fun getRewardCheckInterval(): Int {
+        return mainConfig.getInt("reward.check-interval", 60)
+    }
+    
+    /**
+     * 是否需要完整三连
+     */
+    fun isRewardRequireFullTriple(): Boolean {
+        return mainConfig.getBoolean("reward.require-full-triple", false)
+    }
+    
+    /**
+     * 获取最低要求操作
+     */
+    fun getRewardMinimumActions(): List<String> {
+        return mainConfig.getStringList("reward.minimum-actions") ?: listOf("LIKE", "COIN")
+    }
 }

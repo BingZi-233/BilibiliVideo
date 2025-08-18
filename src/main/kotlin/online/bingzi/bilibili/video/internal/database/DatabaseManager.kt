@@ -38,7 +38,10 @@ object DatabaseManager {
         BilibiliBinding::class.java,
         BilibiliCookie::class.java,
         UploaderVideo::class.java,
-        UploaderConfig::class.java
+        UploaderConfig::class.java,
+        VideoRewardRecord::class.java,
+        RewardConfig::class.java,
+        PlayerRewardStats::class.java
     )
 
     /**

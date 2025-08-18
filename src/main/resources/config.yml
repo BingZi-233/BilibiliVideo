@@ -25,3 +25,28 @@ login:
   polling-interval: 3
   # 会话清理间隔（分钟）
   session-cleanup-interval: 10
+
+# 三连奖励系统配置
+reward:
+  # 是否启用奖励系统
+  enabled: true
+  
+  # 每日奖励限制
+  daily-limit: 3
+  
+  # 视频有效天数（新视频定义）
+  video-valid-days: 7
+  
+  # 默认奖励脚本
+  default-reward-script: "tell player '恭喜获得三连奖励！'"
+  
+  # 奖励检查间隔（分钟）
+  check-interval: 60
+  
+  # 是否需要完整三连（点赞+投币+收藏）
+  require-full-triple: false
+  
+  # 最低要求操作（支持：LIKE, COIN, FAVORITE 的组合）
+  minimum-actions: 
+    - "LIKE"
+    - "COIN"

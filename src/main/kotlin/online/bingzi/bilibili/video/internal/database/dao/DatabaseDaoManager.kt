@@ -8,9 +8,12 @@ import online.bingzi.bilibili.video.internal.database.DatabaseManager
 import online.bingzi.bilibili.video.internal.database.entity.BilibiliBinding
 import online.bingzi.bilibili.video.internal.database.entity.BilibiliCookie
 import online.bingzi.bilibili.video.internal.database.entity.Player
+import online.bingzi.bilibili.video.internal.database.entity.PlayerRewardStats
 import online.bingzi.bilibili.video.internal.database.entity.QQBinding
+import online.bingzi.bilibili.video.internal.database.entity.RewardConfig
 import online.bingzi.bilibili.video.internal.database.entity.UploaderVideo
 import online.bingzi.bilibili.video.internal.database.entity.UploaderConfig
+import online.bingzi.bilibili.video.internal.database.entity.VideoRewardRecord
 import taboolib.common.LifeCycle
 import taboolib.common.platform.Awake
 import taboolib.common.platform.function.console
@@ -43,6 +46,15 @@ object DatabaseDaoManager {
     lateinit var uploaderConfigDao: Dao<UploaderConfig, Long>
         private set
 
+    lateinit var videoRewardRecordDao: Dao<VideoRewardRecord, Long>
+        private set
+
+    lateinit var rewardConfigDao: Dao<RewardConfig, Long>
+        private set
+
+    lateinit var playerRewardStatsDao: Dao<PlayerRewardStats, Long>
+        private set
+
     /**
      * 初始化所有DAO
      */
@@ -62,6 +74,9 @@ object DatabaseDaoManager {
             bilibiliCookieDao = DaoManager.createDao(connectionSource, BilibiliCookie::class.java)
             uploaderVideoDao = DaoManager.createDao(connectionSource, UploaderVideo::class.java)
             uploaderConfigDao = DaoManager.createDao(connectionSource, UploaderConfig::class.java)
+            videoRewardRecordDao = DaoManager.createDao(connectionSource, VideoRewardRecord::class.java)
+            rewardConfigDao = DaoManager.createDao(connectionSource, RewardConfig::class.java)
+            playerRewardStatsDao = DaoManager.createDao(connectionSource, PlayerRewardStats::class.java)
 
             // 创建表结构（如果不存在）
             createTablesIfNotExists()
