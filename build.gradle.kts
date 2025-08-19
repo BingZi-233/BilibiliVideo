@@ -54,7 +54,7 @@ dependencies {
     compileOnly(kotlin("stdlib"))
     compileOnly(fileTree("libs"))
     // OneBot依赖
-    compileOnly("online.bingzi:onebot:1.0.0-97bdc38")
+    compileOnly("online.bingzi:onebot:1.2.0-e9aeb2f")
     taboo("com.squareup.okhttp3:okhttp:5.0.0")
     taboo("com.google.code.gson:gson:2.10.1")
     // 二维码生成库

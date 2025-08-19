@@ -44,13 +44,13 @@ class OneBotQRCodeSender : QRCodeSender {
                         val message = buildOneBotMessage(title, description, base64Image)
                         
                         // 使用OneBot API发送私聊消息
-                        val success = OneBotAPI.sendPrivateMessage(qqNumber, message)
-                        
-                        if (success) {
-                            player.sendInfo("qrcodeOneBotSent", title, qqNumber.toString())
-                            console().sendInfo("qrcodeOneBotCreated", player.name, qqNumber.toString())
-                        } else {
-                            player.sendWarn("qrcodeOneBotSendFailed")
+                        OneBotAPI.sendPrivateMessage(qqNumber, message) { success ->
+                            if (success) {
+                                player.sendInfo("qrcodeOneBotSent", title, qqNumber.toString())
+                                console().sendInfo("qrcodeOneBotCreated", player.name, qqNumber.toString())
+                            } else {
+                                player.sendWarn("qrcodeOneBotSendFailed")
+                            }
                         }
                     } catch (e: Exception) {
                         console().sendWarn("qrcodeOneBotSendError", player.name, e.message ?: "")

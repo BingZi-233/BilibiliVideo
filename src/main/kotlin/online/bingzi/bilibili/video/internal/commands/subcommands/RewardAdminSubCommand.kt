@@ -52,16 +52,17 @@ object RewardAdminSubCommand {
                         listOf("tell player \"恭喜获得奖励！\"")
                     }
                     execute<ProxyCommandSender> { sender, context, argument ->
-                        val uploaderUid = context.argument(-2).toLongOrNull()
-                        val uploaderName = context.argument(-1)
+                        // 使用现代化的参数访问方式替代已弃用的 context.argument() 方法
+                        val uploaderUid = context["uploader_uid"].toLongOrNull()
+                        val uploaderName = context["uploader_name"]
                         val rewardScript = if (argument.isNotBlank()) argument else RewardExecutor.getDefaultRewardScript()
 
                         if (uploaderUid == null) {
-                            sender.sendError("rewardAdminInvalidUid", context.argument(-2))
+                            sender.sendError("rewardAdminInvalidUid", context["uploader_uid"])
                             return@execute
                         }
 
-                        if (uploaderName.isBlank()) {
+                        if (uploaderName.isNullOrBlank()) {
                             sender.sendError("rewardAdminInvalidName")
                             return@execute
                         }
@@ -81,16 +82,17 @@ object RewardAdminSubCommand {
                     }
                 }
                 execute<ProxyCommandSender> { sender, context, _ ->
-                    val uploaderUid = context.argument(-1).toLongOrNull()
-                    val uploaderName = context.argument(0)
+                    // 使用现代化的参数访问方式替代已弃用的 context.argument() 方法
+                    val uploaderUid = context["uploader_uid"].toLongOrNull()
+                    val uploaderName = context["uploader_name"]
                     val rewardScript = RewardExecutor.getDefaultRewardScript()
 
                     if (uploaderUid == null) {
-                        sender.sendError("rewardAdminInvalidUid", context.argument(-1))
+                        sender.sendError("rewardAdminInvalidUid", context["uploader_uid"])
                         return@execute
                     }
 
-                    if (uploaderName.isBlank()) {
+                    if (uploaderName.isNullOrBlank()) {
                         sender.sendError("rewardAdminInvalidName")
                         return@execute
                     }
@@ -198,11 +200,12 @@ object RewardAdminSubCommand {
                     listOf("true", "false")
                 }
                 execute<ProxyCommandSender> { sender, context, argument ->
-                    val uploaderUid = context.argument(-1).toLongOrNull()
+                    // 使用现代化的参数访问方式替代已弃用的 context.argument() 方法
+                    val uploaderUid = context["uploader_uid"].toLongOrNull()
                     val enabled = argument.toBooleanStrictOrNull()
 
                     if (uploaderUid == null) {
-                        sender.sendError("rewardAdminInvalidUid", context.argument(-1))
+                        sender.sendError("rewardAdminInvalidUid", context["uploader_uid"])
                         return@execute
                     }
 
