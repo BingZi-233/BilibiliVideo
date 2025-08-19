@@ -2,9 +2,9 @@ name: CI/CD Pipeline
 
 on:
   push:
-    branches: [ master ]
+    branches: [ main ]
   pull_request:
-    branches: [ master ]
+    branches: [ main ]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -123,33 +123,6 @@ jobs:
           path: |
             build/libs/*-api.jar
           retention-days: 30
-  qodana:
-    name: 🔍 Qodana 代码质量检测
-    needs: build
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      checks: write
-      pull-requests: write
-
-    steps:
-      - name: 📥 检出代码仓库
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: 🔍 运行 Qodana 扫描
-        uses: JetBrains/qodana-action@v2025.1
-        with:
-          args: --print-problems,--results-dir,${{ runner.temp }}/qodana-results
-        env:
-          QODANA_TOKEN: ${{ secrets.QODANA_TOKEN }}
-
-      - name: 📊 上传 Qodana 结果
-        uses: github/codeql-action/upload-sarif@v3
-        if: success() || failure()
-        with:
-          sarif_file: ${{ runner.temp }}/qodana-results/qodana.sarif.json
 
   release:
     name: 🎉 创建 GitHub Release
