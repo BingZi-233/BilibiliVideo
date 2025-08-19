@@ -1,5 +1,6 @@
 package online.bingzi.bilibili.video.internal.commands.subcommands
 
+import online.bingzi.bilibili.video.internal.cache.CommandSuggestionService
 import online.bingzi.bilibili.video.internal.database.dao.BilibiliBindingDaoService
 import online.bingzi.bilibili.video.internal.database.dao.BilibiliCookieDaoService
 import online.bingzi.bilibili.video.internal.database.dao.QQBindingDaoService
@@ -247,7 +248,13 @@ object BindSubCommand {
     val qq = subCommand {
         dynamic("qqNumber") {
             suggestion<ProxyCommandSender>(uncheck = true) { _, _ ->
-                listOf("请输入QQ号码")
+                // 获取最近绑定的QQ号码作为建议
+                try {
+                    CommandSuggestionService.getQQBindingSuggestions(10).get()
+                } catch (e: Exception) {
+                    // 降级处理：提供格式示例
+                    listOf("1234567890", "9876543210", "请输入QQ号码")
+                }
             }
             
             restrict<ProxyCommandSender> { _, _, argument ->
@@ -366,8 +373,21 @@ object BindSubCommand {
             }
             
             dynamic("target") {
-                suggestion<ProxyCommandSender>(uncheck = true) { _, _ ->
-                    listOf("Bilibili UID或QQ号码")
+                suggestion<ProxyCommandSender>(uncheck = true) { sender, context ->
+                    val type = context["type"]
+                    when (type) {
+                        "bilibili" -> try {
+                            CommandSuggestionService.getBilibiliUidSuggestions(10).get()
+                        } catch (e: Exception) {
+                            listOf("Bilibili UID")
+                        }
+                        "qq" -> try {
+                            CommandSuggestionService.getActiveQQBindingSuggestions(10).get()
+                        } catch (e: Exception) {
+                            listOf("QQ号码")
+                        }
+                        else -> listOf("请先选择类型")
+                    }
                 }
                 
                 execute<ProxyCommandSender> { sender, context, argument ->

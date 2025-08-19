@@ -533,3 +533,11 @@ bindAdminListInvalidType: "&c无效的绑定类型，请使用 bilibili 或 qq"
 bindAdminListHeader: "&6===== {0} 绑定列表 ({1}) ====="
 bindAdminListMore: "&7... 还有 {0} 个结果未显示"
 qqAdminListNotImplemented: "&eQQ绑定列表功能尚未实现"
+
+# 命令建议系统错误消息
+commandSuggestionCacheError: "&c获取命令建议缓存失败: {0}"
+commandSuggestionTimeout: "&c命令建议获取超时"
+commandSuggestionServiceUnavailable: "&c命令建议服务暂时不可用"
+commandSuggestionDataError: "&c建议数据获取失败: {0} - {1}"
+commandSuggestionCacheCleared: "&a命令建议缓存已清理"
+commandSuggestionCachePreloadError: "&c命令建议缓存预加载失败: {0}"

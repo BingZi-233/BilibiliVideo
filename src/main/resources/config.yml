@@ -26,6 +26,37 @@ login:
   # 会话清理间隔（分钟）
   session-cleanup-interval: 10
 
+# 命令建议系统配置
+command-suggestion:
+  # 缓存TTL（分钟）
+  cache-ttl-minutes: 5
+  # 最大建议数量
+  max-suggestions: 10
+  # 响应超时（毫秒）
+  response-timeout-ms: 100
+  # 是否启用缓存
+  cache-enabled: true
+  
+  # 降级示例数据配置
+  fallback-examples:
+    # QQ号码示例（格式参考）
+    qq-numbers:
+      - "1234567890"
+      - "9876543210"
+      - "1122334455"
+    
+    # UP主UID示例（知名UP主）
+    uploader-uids:
+      - "703007996"  # 某知名UP主
+      - "546195"     # 某知名UP主
+      - "37663924"   # 某知名UP主
+    
+    # BV号示例（格式参考）
+    bv-numbers:
+      - "BV1xx411c7mD"
+      - "BV1yy411c7mE"
+      - "BV1zz411c7mF"
+
 # 三连奖励系统配置
 reward:
   # 是否启用奖励系统

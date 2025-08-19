@@ -1,5 +1,6 @@
 package online.bingzi.bilibili.video.internal.commands.subcommands
 
+import online.bingzi.bilibili.video.internal.cache.QRCodeSenderSuggestionService
 import online.bingzi.bilibili.video.internal.network.BilibiliNetworkManager
 import online.bingzi.bilibili.video.internal.network.EnhancedLoginService
 import online.bingzi.bilibili.video.internal.qrcode.QRCodeSendService
@@ -23,9 +24,15 @@ object LoginSubCommand {
     val login = subCommand {
         // 可选的登录模式参数
         dynamic("mode", optional = true) {
-            suggestion<ProxyCommandSender>(uncheck = true) { _, _ ->
-                // 获取可用的二维码发送模式
-                QRCodeSendService.getRegisteredSenderNames().toList()
+            suggestion<ProxyCommandSender>(uncheck = true) { sender, _ ->
+                // 获取可用的二维码发送器建议
+                val player = if (sender is ProxyPlayer) sender else null
+                try {
+                    QRCodeSenderSuggestionService.getAvailableSenders(player).get()
+                } catch (e: Exception) {
+                    // 降级处理：使用原有方法
+                    QRCodeSendService.getRegisteredSenderNames().toList()
+                }
             }
             
             execute<ProxyCommandSender> { sender, _, argument ->

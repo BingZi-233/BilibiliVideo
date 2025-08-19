@@ -6,6 +6,7 @@ import online.bingzi.bilibili.video.internal.database.entity.UploaderConfig
 import taboolib.common.platform.function.console
 import taboolib.module.lang.sendWarn
 import java.sql.SQLException
+import java.util.*
 import java.util.concurrent.CompletableFuture
 
 /**
@@ -255,6 +256,67 @@ object UploaderVideoDaoService {
             } catch (e: SQLException) {
                 console().sendWarn("uploaderVideoCountError", e.message ?: "Unknown error")
                 0L
+            }
+        }
+    }
+
+    /**
+     * 获取热门UP主UID（用于命令建议）
+     * 根据视频数量排序获取最活跃的UP主
+     * 
+     * @param limit 返回数量限制
+     * @return UP主UID列表
+     */
+    fun getPopularUploaderUids(limit: Int): CompletableFuture<List<String>> {
+        return CompletableFuture.supplyAsync {
+            try {
+                // 获取有视频的UP主UID，按视频数量排序
+                val uidCounts = mutableMapOf<Long, Int>()
+                
+                // 统计每个UP主的视频数量
+                val allVideos = videoDao.queryBuilder()
+                    .where()
+                    .eq("is_active", true)
+                    .query()
+                
+                allVideos.forEach { video ->
+                    uidCounts[video.uploaderUid] = uidCounts.getOrDefault(video.uploaderUid, 0) + 1
+                }
+                
+                // 按视频数量排序并返回UID
+                uidCounts.toList()
+                    .sortedByDescending { it.second }
+                    .take(limit)
+                    .map { it.first.toString() }
+                    
+            } catch (e: SQLException) {
+                console().sendWarn("commandSuggestionDataError", "Popular Uploader UIDs", e.message ?: "Unknown error")
+                emptyList()
+            }
+        }
+    }
+
+    /**
+     * 获取玩家可以领取奖励的最近视频（用于命令建议）
+     * 
+     * @param playerUuid 玩家UUID  
+     * @param limit 返回数量限制
+     * @return 视频列表
+     */
+    fun getRecentVideosForReward(playerUuid: UUID, limit: Int): CompletableFuture<List<UploaderVideo>> {
+        return CompletableFuture.supplyAsync {
+            try {
+                // 获取最近发布的活跃视频
+                videoDao.queryBuilder()
+                    .orderBy("publish_time", false) // 按发布时间倒序
+                    .where()
+                    .eq("is_active", true)
+                    .query()
+                    .take(limit)
+                    
+            } catch (e: SQLException) {
+                console().sendWarn("commandSuggestionDataError", "Recent Videos for ${playerUuid}", e.message ?: "Unknown error")
+                emptyList()
             }
         }
     }

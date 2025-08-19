@@ -1,5 +1,6 @@
 package online.bingzi.bilibili.video.internal.commands.subcommands
 
+import online.bingzi.bilibili.video.internal.cache.CommandSuggestionService
 import online.bingzi.bilibili.video.internal.database.dao.UploaderVideoDaoService
 import online.bingzi.bilibili.video.internal.scheduler.UploaderVideoScheduler
 import taboolib.common.platform.ProxyCommandSender
@@ -30,7 +31,13 @@ object UploaderSubCommand {
     val add = subCommand {
         dynamic("uid") {
             suggestion<ProxyCommandSender>(uncheck = true) { _, _ ->
-                listOf("UP主UID")
+                // 获取热门UP主UID作为建议
+                try {
+                    CommandSuggestionService.getUploaderUidSuggestions(10).get()
+                } catch (e: Exception) {
+                    // 降级处理：提供知名UP主示例
+                    listOf("703007996", "546195", "37663924", "请输入UP主UID")
+                }
             }
             
             dynamic("interval", optional = true) {
@@ -87,9 +94,18 @@ object UploaderSubCommand {
     val remove = subCommand {
         dynamic("uid") {
             suggestion<ProxyCommandSender>(uncheck = true) { _, _ ->
-                // 获取所有监控的UP主UID
-                UploaderVideoDaoService.getAllConfigs().get()
-                    .map { it.uploaderUid.toString() }
+                // 获取所有已监控的UP主UID作为建议
+                try {
+                    CommandSuggestionService.getMonitoredUploaderSuggestions(10).get()
+                } catch (e: Exception) {
+                    // 降级处理：从数据库直接获取
+                    try {
+                        UploaderVideoDaoService.getAllConfigs().get()
+                            .map { "${it.uploaderUid} (${it.uploaderName})" }
+                    } catch (ex: Exception) {
+                        listOf("请输入已监控的UP主UID")
+                    }
+                }
             }
             
             execute<ProxyCommandSender> { sender, _, argument ->
@@ -159,8 +175,18 @@ object UploaderSubCommand {
     val sync = subCommand {
         dynamic("uid") {
             suggestion<ProxyCommandSender>(uncheck = true) { _, _ ->
-                UploaderVideoDaoService.getAllConfigs().get()
-                    .map { it.uploaderUid.toString() }
+                // 获取所有已监控的UP主UID作为建议
+                try {
+                    CommandSuggestionService.getMonitoredUploaderSuggestions(10).get()
+                } catch (e: Exception) {
+                    // 降级处理：从数据库直接获取
+                    try {
+                        UploaderVideoDaoService.getAllConfigs().get()
+                            .map { "${it.uploaderUid} (${it.uploaderName})" }
+                    } catch (ex: Exception) {
+                        listOf("请输入已监控的UP主UID")
+                    }
+                }
             }
             
             execute<ProxyCommandSender> { sender, _, argument ->
@@ -223,8 +249,18 @@ object UploaderSubCommand {
     val toggle = subCommand {
         dynamic("uid") {
             suggestion<ProxyCommandSender>(uncheck = true) { _, _ ->
-                UploaderVideoDaoService.getAllConfigs().get()
-                    .map { it.uploaderUid.toString() }
+                // 获取所有已监控的UP主UID作为建议
+                try {
+                    CommandSuggestionService.getMonitoredUploaderSuggestions(10).get()
+                } catch (e: Exception) {
+                    // 降级处理：从数据库直接获取
+                    try {
+                        UploaderVideoDaoService.getAllConfigs().get()
+                            .map { "${it.uploaderUid} (${it.uploaderName})" }
+                    } catch (ex: Exception) {
+                        listOf("请输入已监控的UP主UID")
+                    }
+                }
             }
             
             execute<ProxyCommandSender> { sender, _, argument ->

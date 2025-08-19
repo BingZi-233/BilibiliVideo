@@ -93,6 +93,50 @@ object QQBindingDaoService {
     }
 
     /**
+     * 获取最近绑定的QQ号码（用于命令建议）
+     * 
+     * @param limit 返回数量限制
+     * @return QQ号码列表
+     */
+    fun getRecentQQNumbers(limit: Int): CompletableFuture<List<String>> {
+        return CompletableFuture.supplyAsync {
+            try {
+                dao.queryBuilder()
+                    .orderBy("bind_time", false) // 按绑定时间倒序
+                    .where()
+                    .eq("is_active", true)
+                    .query()
+                    .take(limit)
+                    .map { it.qqNumber }
+                    .distinct() // 去重
+            } catch (e: SQLException) {
+                console().sendWarn("commandSuggestionDataError", "QQ Numbers", e.message ?: "Unknown error")
+                emptyList()
+            }
+        }
+    }
+
+    /**
+     * 获取所有活跃的QQ绑定（用于管理员命令建议）
+     * 
+     * @return QQ绑定列表
+     */
+    fun getAllActiveQQBindings(): CompletableFuture<List<QQBinding>> {
+        return CompletableFuture.supplyAsync {
+            try {
+                dao.queryBuilder()
+                    .orderBy("bind_time", false) // 按绑定时间倒序
+                    .where()
+                    .eq("is_active", true)
+                    .query()
+            } catch (e: SQLException) {
+                console().sendWarn("commandSuggestionDataError", "Active QQ Bindings", e.message ?: "Unknown error")
+                emptyList()
+            }
+        }
+    }
+
+    /**
      * 删除QQ绑定
      */
     fun deleteQQBinding(playerUuid: UUID): CompletableFuture<Boolean> {

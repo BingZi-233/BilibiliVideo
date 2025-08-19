@@ -1,5 +1,6 @@
 package online.bingzi.bilibili.video.internal.commands.subcommands
 
+import online.bingzi.bilibili.video.internal.cache.CommandSuggestionService
 import online.bingzi.bilibili.video.internal.rewards.TripleRewardService
 import taboolib.common.platform.ProxyCommandSender
 import taboolib.common.platform.ProxyPlayer
@@ -38,9 +39,14 @@ object RewardSubCommand {
     val claim = subCommand {
         literal("claim")
         dynamic("bvid") {
-            suggestion<ProxyPlayer> { _, _ ->
-                // 这里可以提供BV号的建议，暂时返回空列表
-                emptyList()
+            suggestion<ProxyPlayer> { player, _ ->
+                // 获取玩家可以领取奖励的最近视频作为建议
+                try {
+                    CommandSuggestionService.getBvIdSuggestions(player.uniqueId, 10).get()
+                } catch (e: Exception) {
+                    // 降级处理：从配置获取BV号格式示例
+                    CommandSuggestionService.getFallbackBvExamples()
+                }
             }
             execute<ProxyPlayer> { player, _, argument ->
                 val bvId = argument
