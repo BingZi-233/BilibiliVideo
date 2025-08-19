@@ -99,7 +99,6 @@ rewardAdminListItem: "&7{0}. &e{1} &7(UID: {2}) - {3} &7(有效期: {4})"
 rewardAdminListFooter: "&7共 &e{0}&7 个配置"
 rewardAdminListError: "&c获取配置列表失败：{0}"
 rewardAdminToggleProcessing: "&7正在{1}UP主 {0} 的奖励配置..."
-rewardAdminConfigToggled: "&a已{1}UP主 {0} 的奖励配置"
 rewardAdminToggleFailed: "&c切换配置状态失败：{0}"
 rewardAdminToggleError: "&c切换状态过程中发生错误：{0}"
 rewardAdminStatusLoading: "&7正在获取系统状态..."
@@ -145,12 +144,12 @@ playerRewardStatsCountError: "&c统计奖励数据失败：{0}"
 # 奖励处理错误消息
 rewardCheckError: "&c检查玩家 {0} 视频 {1} 奖励资格失败：{2}"
 rewardBatchCheckError: "&c批量检查玩家 {0} 视频 {1} 奖励失败：{2}"
-rewardStatsError: "&c获取玩家 {0} 奖励统计失败：{1}"
-rewardExecuteError: "&c执行玩家 {0} 视频 {1} 奖励失败：{2}"
+rewardInternalStatsError: "&c获取玩家 {0} 奖励统计失败：{1}"
+rewardInternalExecuteError: "&c执行玩家 {0} 视频 {1} 奖励失败：{2}"
 rewardKetherExecuteError: "&c玩家 {0} Kether脚本执行失败（脚本：{1}）：{2}"
 rewardStatsUpdateFailed: "&c更新玩家 {0} 奖励统计失败"
-rewardClaimError: "&c玩家 {0} 领取视频 {1} 奖励失败：{2}"
-rewardListError: "&c获取玩家 {0} 奖励列表失败：{1}"
+rewardInternalClaimError: "&c玩家 {0} 领取视频 {1} 奖励失败：{2}"
+rewardInternalListError: "&c获取玩家 {0} 奖励列表失败：{1}"
 rewardConfigError: "&c处理UP主 {0} 奖励配置失败：{1}"
 rewardSystemStatusError: "&c获取奖励系统状态失败：{0}"
 qrcodeSendFallback: "&7{0} 失败，尝试备用方案 {1} 向 {2} 发送"
@@ -273,7 +272,6 @@ testQrGenerateFailed: "&c二维码生成失败"
 testQrSendSuccess: "&a{0} 二维码发送成功"
 testQrSendFailed: "&c{0} 二维码发送失败"
 testQrException: "&c二维码操作异常: {0}"
-testQrNoAvailableModes: "&c当前没有可用的二维码发送模式"
 testQrAvailableModes: "&a可用的二维码发送模式: {0}"
 testQrGeneratingCustom: "&7正在生成自定义二维码: {0}"
 testQrTextTooLong: "&c文本过长，最大长度: {0} 字符"
@@ -324,9 +322,7 @@ playerBindingInactive: "&c您的绑定已被禁用"
 playerBindingComplete: "&a您的绑定信息完整: QQ({0}) -> Bilibili({1})"
 
 # QQ绑定服务相关消息
-qqBindingSuccess: "&a成功绑定QQ号: {0}"
 qqBindingFailed: "&c绑定QQ号失败"
-qqUnbindingSuccess: "&a成功解绑QQ号"
 qqUnbindingFailed: "&c解绑QQ号失败"
 qqBindingAlreadyBound: "&cQQ号 {0} 已被玩家 {1} 绑定"
 qqBindingInvalidNumber: "&c无效的QQ号: {0}"
@@ -440,7 +436,6 @@ qqBindCommandHelp: |
   &e/qqbind unbind &7- 解绑您的QQ号码
   &e/qqbind info &7- 查看绑定信息
   &e/qqbind adminUnbind <QQ号> &7- [管理员] 解绑指定QQ号
-qqBindOnlyPlayer: "&c此命令只能由玩家执行"
 qqBindInvalidNumber: "&c无效的QQ号码格式: {0}"
 qqBindAlreadyBound: "&c您已经绑定了QQ号: {0}"
 qqBindNumberAlreadyUsed: "&cQQ号 {0} 已被其他玩家绑定"
@@ -465,7 +460,6 @@ bilibiliBindCommandHelp: |
   &e/bilibind refresh &7- 刷新账户信息
   &e/bilibind adminUnbind <UID> &7- [管理员] 解绑指定UID
   &e/bilibind adminList &7- [管理员] 查看所有绑定
-bilibiliBindOnlyPlayer: "&c此命令只能由玩家执行"
 bilibiliBindAlreadyBound: "&c您已经绑定了Bilibili账户: {0}"
 bilibiliBindNeedLogin: "&c请先使用 /blogin 登录Bilibili账户"
 bilibiliBindGetUserInfoFailed: "&c获取用户信息失败，请重新登录"
@@ -491,21 +485,51 @@ bilibiliAdminListEmpty: "&7当前没有任何Bilibili账户绑定"
 bilibiliAdminListHeader: "&6===== Bilibili账户绑定列表 ({0}) ====="
 bilibiliAdminListItem: "&7玩家: &e{0} &7| 用户: &b{1} &7| UID: &a{2} &7| 状态: &f{3}"
 
-# DeepWiki集成相关消息
-deepWikiQueryStarted: "&7正在查询TabooLib API文档..."
-deepWikiQuerySuccess: "&aAPI文档查询成功"
-deepWikiQueryFailed: "&cAPI文档查询失败: {0}"
-deepWikiCacheHit: "&7使用缓存的API文档"
-
 # 命令迁移相关消息
 commandMigrationSuccess: "&a命令API迁移成功"
 commandParameterError: "&c命令参数解析错误: {0}"
 commandHelperApiMigrated: "&a已使用新的CommandHelper API"
 commandHelperDeprecatedWarning: "&e检测到使用已弃用的CommandHelper API: {0}"
 
-# TabooLib API助手相关消息
-taboolibApiHelperInit: "&aTabooLib API助手初始化完成"
-taboolibApiMigrationAdvice: "&e建议迁移API: {0} -> {1}"
-taboolibApiDeprecatedDetected: "&c检测到已弃用的API: {0}"
-taboolibApiParameterAccessSuccess: "&a参数访问成功"
-taboolibApiParameterAccessError: "&c参数访问失败: {0}"
+# BilibiliVideo插件主命令帮助
+bilibiliVideoCommandHelp: |
+  &6====== BilibiliVideo插件命令 ======
+  &e/bilibilivideo info &7- 查看视频信息
+  &e/bilibilivideo reward &7- 三连奖励系统
+  &e/bilibilivideo login [mode] &7- 登录Bilibili账户
+  &e/bilibilivideo bind &7- 账户绑定管理
+  &e/bilibilivideo uploader &7- UP主监控管理
+  &7使用 &e/bilibilivideo <子命令> &7查看详细帮助
+
+# 命令执行权限相关
+bindOnlyPlayer: "&c此命令只能由玩家执行"
+loginOnlyPlayer: "&c此命令只能由玩家执行"
+
+# 登录相关命令
+loginCommandHelp: |
+  &6====== 登录命令 ======
+  &e/bilibilivideo login [mode] &7- 使用指定模式登录
+  &e/bilibilivideo login cancel &7- 取消当前登录
+  &e/bilibilivideo login status &7- 查看登录状态
+  &e/bilibilivideo login logout &7- 登出账户
+  &7可用模式：chat, onebot
+
+# 绑定相关命令
+bindCommandHelp: |
+  &6====== 账户绑定命令 ======
+  &e/bilibilivideo bind bilibili &7- 绑定Bilibili账户
+  &e/bilibilivideo bind bilibili unbind &7- 解绑Bilibili账户
+  &e/bilibilivideo bind bilibili info &7- 查看Bilibili绑定信息
+  &e/bilibilivideo bind bilibili refresh &7- 刷新Bilibili账户信息
+  &e/bilibilivideo bind qq <QQ号> &7- 绑定QQ号码
+  &e/bilibilivideo bind qq unbind &7- 解绑QQ号码
+  &e/bilibilivideo bind qq info &7- 查看QQ绑定信息
+  &7管理员命令：
+  &e/bilibilivideo bind admin-unbind <类型> <目标> &7- 解绑指定账户
+  &e/bilibilivideo bind admin-list [类型] &7- 查看所有绑定
+
+# 绑定相关消息
+bindAdminListInvalidType: "&c无效的绑定类型，请使用 bilibili 或 qq"
+bindAdminListHeader: "&6===== {0} 绑定列表 ({1}) ====="
+bindAdminListMore: "&7... 还有 {0} 个结果未显示"
+qqAdminListNotImplemented: "&eQQ绑定列表功能尚未实现"

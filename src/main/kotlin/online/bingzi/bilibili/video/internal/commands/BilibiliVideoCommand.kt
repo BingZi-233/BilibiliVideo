@@ -3,6 +3,9 @@ package online.bingzi.bilibili.video.internal.commands
 import online.bingzi.bilibili.video.internal.commands.subcommands.InfoSubCommand
 import online.bingzi.bilibili.video.internal.commands.subcommands.RewardSubCommand
 import online.bingzi.bilibili.video.internal.commands.subcommands.RewardAdminSubCommand
+import online.bingzi.bilibili.video.internal.commands.subcommands.LoginSubCommand
+import online.bingzi.bilibili.video.internal.commands.subcommands.BindSubCommand
+import online.bingzi.bilibili.video.internal.commands.subcommands.UploaderSubCommand
 import taboolib.common.platform.ProxyCommandSender
 import taboolib.common.platform.command.CommandBody
 import taboolib.common.platform.command.CommandHeader
@@ -75,4 +78,82 @@ object BilibiliVideoCommand {
     
     @CommandBody
     val rewardAdminExamples = RewardAdminSubCommand.examples
+    
+    /**
+     * 登录相关子命令
+     */
+    @CommandBody
+    val login = LoginSubCommand.login
+    
+    @CommandBody
+    val loginCancel = LoginSubCommand.cancel
+    
+    @CommandBody
+    val loginStatus = LoginSubCommand.status
+    
+    @CommandBody
+    val loginLogout = LoginSubCommand.logout
+    
+    /**
+     * 绑定相关子命令
+     */
+    @CommandBody
+    val bind = BindSubCommand.main
+    
+    @CommandBody
+    val bindBilibili = BindSubCommand.bilibili
+    
+    @CommandBody
+    val bindBilibiliUnbind = BindSubCommand.bilibiliUnbind
+    
+    @CommandBody
+    val bindBilibiliInfo = BindSubCommand.bilibiliInfo
+    
+    @CommandBody
+    val bindBilibiliRefresh = BindSubCommand.bilibiliRefresh
+    
+    @CommandBody
+    val bindQq = BindSubCommand.qq
+    
+    @CommandBody
+    val bindQqUnbind = BindSubCommand.qqUnbind
+    
+    @CommandBody
+    val bindQqInfo = BindSubCommand.qqInfo
+    
+    @CommandBody(permission = "bilibilivideo.admin.bind")
+    val bindAdminUnbind = BindSubCommand.adminUnbind
+    
+    @CommandBody(permission = "bilibilivideo.admin.bind")
+    val bindAdminList = BindSubCommand.adminList
+    
+    /**
+     * UP主监控相关子命令
+     */
+    @CommandBody
+    val uploader = UploaderSubCommand.main
+    
+    @CommandBody
+    val uploaderAdd = UploaderSubCommand.add
+    
+    @CommandBody
+    val uploaderRemove = UploaderSubCommand.remove
+    
+    @CommandBody
+    val uploaderList = UploaderSubCommand.list
+    
+    @CommandBody
+    val uploaderSync = UploaderSubCommand.sync
+    
+    @CommandBody
+    val uploaderSyncAll = UploaderSubCommand.syncAll
+    
+    @CommandBody
+    val uploaderToggle = UploaderSubCommand.toggle
+    
+    @CommandBody
+    val uploaderStatus = UploaderSubCommand.status
+    
+    @CommandBody
+    val uploaderSearch = UploaderSubCommand.search
 }

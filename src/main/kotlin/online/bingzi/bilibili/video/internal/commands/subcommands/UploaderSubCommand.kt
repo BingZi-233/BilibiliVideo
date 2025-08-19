@@ -1,40 +1,32 @@
-package online.bingzi.bilibili.video.internal.commands
+package online.bingzi.bilibili.video.internal.commands.subcommands
 
 import online.bingzi.bilibili.video.internal.database.dao.UploaderVideoDaoService
 import online.bingzi.bilibili.video.internal.scheduler.UploaderVideoScheduler
 import taboolib.common.platform.ProxyCommandSender
-import taboolib.common.platform.command.CommandBody
-import taboolib.common.platform.command.CommandHeader
-import taboolib.common.platform.command.mainCommand
 import taboolib.common.platform.command.subCommand
 import taboolib.common.platform.function.submit
+import taboolib.module.lang.sendError
 import taboolib.module.lang.sendInfo
 import taboolib.module.lang.sendWarn
-import taboolib.module.lang.sendError
 
 /**
- * UP主监控命令
- * 用于管理UP主视频监控功能
+ * UP主监控相关子命令
+ * 处理 UP主视频监控功能
  */
-@CommandHeader(
-    name = "uploader",
-    aliases = ["up"],
-    description = "UP主视频监控管理",
-    permission = "bilibilivideo.command.uploader"
-)
-object UploaderCommand {
-
-    @CommandBody
-    val main = mainCommand {
+object UploaderSubCommand {
+    
+    /**
+     * UP主监控主命令 - /bilibilivideo uploader
+     */
+    val main = subCommand {
         execute<ProxyCommandSender> { sender, _, _ ->
             sender.sendInfo("uploaderCommandHelp")
         }
     }
-
+    
     /**
-     * 添加UP主监控
+     * 添加UP主监控 - /bilibilivideo uploader add <uid> [interval]
      */
-    @CommandBody
     val add = subCommand {
         dynamic("uid") {
             suggestion<ProxyCommandSender>(uncheck = true) { _, _ ->
@@ -88,11 +80,10 @@ object UploaderCommand {
             }
         }
     }
-
+    
     /**
-     * 移除UP主监控
+     * 移除UP主监控 - /bilibilivideo uploader remove <uid>
      */
-    @CommandBody
     val remove = subCommand {
         dynamic("uid") {
             suggestion<ProxyCommandSender>(uncheck = true) { _, _ ->
@@ -119,11 +110,10 @@ object UploaderCommand {
             }
         }
     }
-
+    
     /**
-     * 列出所有监控的UP主
+     * 列出所有监控的UP主 - /bilibilivideo uploader list
      */
-    @CommandBody
     val list = subCommand {
         execute<ProxyCommandSender> { sender, _, _ ->
             submit(async = true) {
@@ -162,11 +152,10 @@ object UploaderCommand {
             }
         }
     }
-
+    
     /**
-     * 手动同步UP主
+     * 手动同步UP主 - /bilibilivideo uploader sync <uid>
      */
-    @CommandBody
     val sync = subCommand {
         dynamic("uid") {
             suggestion<ProxyCommandSender>(uncheck = true) { _, _ ->
@@ -199,11 +188,10 @@ object UploaderCommand {
             }
         }
     }
-
+    
     /**
-     * 同步所有UP主
+     * 同步所有UP主 - /bilibilivideo uploader syncall
      */
-    @CommandBody
     val syncAll = subCommand {
         execute<ProxyCommandSender> { sender, _, _ ->
             submit(async = true) {
@@ -228,11 +216,10 @@ object UploaderCommand {
             }
         }
     }
-
+    
     /**
-     * 启用/禁用UP主监控
+     * 启用/禁用UP主监控 - /bilibilivideo uploader toggle <uid>
      */
-    @CommandBody
     val toggle = subCommand {
         dynamic("uid") {
             suggestion<ProxyCommandSender>(uncheck = true) { _, _ ->
@@ -272,11 +259,10 @@ object UploaderCommand {
             }
         }
     }
-
+    
     /**
-     * 查看同步状态
+     * 查看同步状态 - /bilibilivideo uploader status
      */
-    @CommandBody
     val status = subCommand {
         execute<ProxyCommandSender> { sender, _, _ ->
             val status = UploaderVideoScheduler.getSyncStatus()
@@ -294,11 +280,10 @@ object UploaderCommand {
             }
         }
     }
-
+    
     /**
-     * 搜索视频
+     * 搜索视频 - /bilibilivideo uploader search <keyword>
      */
-    @CommandBody
     val search = subCommand {
         dynamic("keyword") {
             execute<ProxyCommandSender> { sender, _, argument ->

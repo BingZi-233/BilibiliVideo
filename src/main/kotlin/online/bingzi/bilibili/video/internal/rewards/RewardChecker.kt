@@ -157,7 +157,7 @@ object RewardChecker {
                     remaining = todayStats.getRemainingRewards(dailyLimit)
                 )
             } catch (e: Exception) {
-                console().sendWarn("rewardStatsError", playerUuid, e.message ?: "Unknown error")
+                console().sendWarn("rewardInternalStatsError", playerUuid, e.message ?: "Unknown error")
                 RewardStatsSummary(0, getRewardDailyLimit(), 0, getRewardDailyLimit())
             }
         }

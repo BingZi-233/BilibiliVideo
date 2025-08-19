@@ -64,7 +64,7 @@ object PlayerQQBindingService {
         return bindPlayerQQ(player.uniqueId, qqNumber, qqNickname)
             .thenApply { success ->
                 if (success) {
-                    player.sendInfo("qqBindingSuccess", qqNumber.toString())
+                    player.sendInfo("qqBindSuccess", qqNumber.toString())
                     console().sendInfo("qqBindingPlayerBound", player.name, qqNumber.toString())
                 } else {
                     player.sendError("qqBindingFailed")
@@ -129,7 +129,7 @@ object PlayerQQBindingService {
         return unbindPlayerQQ(player.uniqueId)
             .thenApply { success ->
                 if (success) {
-                    player.sendInfo("qqUnbindingSuccess")
+                    player.sendInfo("qqUnbindSuccess")
                     console().sendInfo("qqBindingPlayerUnbound", player.name)
                 } else {
                     player.sendError("qqUnbindingFailed")

@@ -219,7 +219,7 @@ object RewardAdminSubCommand {
 
                     TripleRewardService.toggleRewardConfig(uploaderUid, enabled).thenAccept { result ->
                         if (result.success) {
-                            sender.sendInfo("rewardAdminConfigToggled", uploaderUid.toString(), action)
+                            sender.sendInfo("rewardConfigToggled", uploaderUid.toString(), action)
                         } else {
                             sender.sendError("rewardAdminToggleFailed", result.message)
                         }
@@ -242,7 +242,7 @@ object RewardAdminSubCommand {
 
                 TripleRewardService.toggleRewardConfig(uploaderUid, true).thenAccept { result ->
                     if (result.success) {
-                        sender.sendInfo("rewardAdminConfigToggled", uploaderUid.toString(), "启用")
+                        sender.sendInfo("rewardConfigToggled", uploaderUid.toString(), "启用")
                     } else {
                         sender.sendError("rewardAdminToggleFailed", result.message)
                     }

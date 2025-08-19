@@ -122,8 +122,8 @@ object TripleRewardService {
 
             } catch (e: Exception) {
                 val errorMsg = "奖励领取过程中发生错误：${e.message}"
-                console().sendWarn("rewardClaimError", player.name, bvId, e.message ?: "Unknown error")
-                player.sendError("rewardExecuteError", errorMsg)
+                console().sendWarn("rewardInternalClaimError", player.name, bvId, e.message ?: "Unknown error")
+                player.sendError("rewardClaimError", errorMsg)
                 
                 RewardServiceResult(false, errorMsg)
             }
@@ -173,7 +173,7 @@ object TripleRewardService {
                             }
                         }
                     } catch (e: Exception) {
-                        console().sendWarn("rewardListError", config.uploaderUid.toString(), e.message ?: "Unknown error")
+                        console().sendWarn("rewardInternalListError", config.uploaderUid.toString(), e.message ?: "Unknown error")
                     }
                 }
 
@@ -181,7 +181,7 @@ object TripleRewardService {
                 availableRewards.sortedByDescending { it.publishTime }
 
             } catch (e: Exception) {
-                console().sendWarn("rewardListError", player.name, e.message ?: "Unknown error")
+                console().sendWarn("rewardInternalListError", player.name, e.message ?: "Unknown error")
                 emptyList()
             }
         }

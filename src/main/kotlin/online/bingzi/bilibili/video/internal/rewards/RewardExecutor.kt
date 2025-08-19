@@ -93,7 +93,7 @@ object RewardExecutor {
 
             } catch (e: Exception) {
                 val errorMsg = "奖励执行过程中发生错误：${e.message}"
-                console().sendWarn("rewardExecuteError", player.name, videoInfo.bvid, e.message ?: "Unknown error")
+                console().sendWarn("rewardInternalExecuteError", player.name, videoInfo.bvid, e.message ?: "Unknown error")
                 RewardExecuteResult(false, errorMsg, error = e)
             }
         }
