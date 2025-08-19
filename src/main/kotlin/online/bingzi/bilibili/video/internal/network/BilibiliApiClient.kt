@@ -55,7 +55,7 @@ object BilibiliApiClient {
                 response.use { resp ->
                     try {
                         // OkHttp 5.0 中 response.body 是非空的
-                        val body = resp.body.string()
+                        val body = resp.body?.string() ?: ""
                         if (resp.isSuccessful) {
                             future.complete(ApiResponse.success(body, resp.headers))
                         } else {
@@ -129,7 +129,7 @@ object BilibiliApiClient {
                 response.use { resp ->
                     try {
                         // OkHttp 5.0 中 response.body 是非空的
-                        val body = resp.body.string()
+                        val body = resp.body?.string() ?: ""
                         if (resp.isSuccessful) {
                             future.complete(ApiResponse.success(body, resp.headers))
                         } else {

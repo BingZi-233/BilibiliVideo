@@ -25,7 +25,7 @@ class ReceivedCookiesInterceptor : Interceptor {
         // 检查响应头部中是否存在 Set-Cookie 信息
         if (originalResponse.headers("Set-Cookie").isNotEmpty()) {
             // 获取请求的 URL 中的查询参数 qrcode_key
-            chain.request().url().queryParameter("qrcode_key")?.let {
+            chain.request().url.queryParameter("qrcode_key")?.let {
                 // 将 Set-Cookie 信息缓存，与 qrcode_key 关联
                 qrCodeKeyCache.put(it, originalResponse.headers("Set-Cookie"))
             }

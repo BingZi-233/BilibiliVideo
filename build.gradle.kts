@@ -20,6 +20,7 @@ taboolib {
         install(Kether)
         install(BukkitHook)
         install(BukkitUtil)
+        install("database")
     }
     description {
         name = "BilibiliVideo"
@@ -37,10 +38,12 @@ taboolib {
     relocate("okhttp3", "online.bingzi.bilibili.video.libs.okhttp3")
     relocate("okio", "online.bingzi.bilibili.video.libs.okio")
     relocate("com.google.gson", "online.bingzi.bilibili.video.libs.gson")
+    relocate("com.squareup.retrofit2", "online.bingzi.bilibili.video.libs.retrofit2")
     relocate("com.google.zxing", "online.bingzi.bilibili.video.libs.zxing")
     relocate("com.j256.ormlite", "online.bingzi.bilibili.video.libs.ormlite")
     relocate("org.sqlite", "online.bingzi.bilibili.video.libs.sqlite")
     relocate("com.mysql", "online.bingzi.bilibili.video.libs.mysql")
+    relocate("com.github.benmanes.caffeine", "online.bingzi.bilibili.video.libs.caffeine")
 }
 
 repositories {
@@ -55,8 +58,11 @@ dependencies {
     compileOnly(fileTree("libs"))
     // OneBot依赖
     compileOnly("online.bingzi:onebot:1.2.0-e9aeb2f")
-    taboo("com.squareup.okhttp3:okhttp:5.0.0")
+    taboo("com.squareup.okhttp3:okhttp:4.12.0")
     taboo("com.google.code.gson:gson:2.10.1")
+    // Retrofit依赖
+    taboo("com.squareup.retrofit2:retrofit:2.9.0")
+    taboo("com.squareup.retrofit2:converter-gson:2.9.0")
     // 二维码生成库
     taboo("com.google.zxing:core:3.5.3")
     taboo("com.google.zxing:javase:3.5.3")
@@ -66,6 +72,8 @@ dependencies {
     // 数据库驱动
     taboo("org.xerial:sqlite-jdbc:3.45.1.0")
     taboo("com.mysql:mysql-connector-j:8.3.0")
+    // 缓存库
+    taboo("com.github.ben-manes.caffeine:caffeine:2.9.3")
 }
 
 tasks.withType<JavaCompile> {

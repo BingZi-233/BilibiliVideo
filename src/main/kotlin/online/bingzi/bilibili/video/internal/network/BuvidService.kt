@@ -46,7 +46,7 @@ object BuvidService {
             override fun onResponse(call: Call, response: Response) {
                 response.use { resp ->
                     try {
-                        val body = resp.body.string()
+                        val body = resp.body?.string() ?: ""
                         if (resp.isSuccessful) {
                             val jsonResponse = JsonParser.parseString(body).asJsonObject
                             val code = jsonResponse.get("code")?.asInt ?: -1
@@ -101,7 +101,7 @@ object BuvidService {
             override fun onResponse(call: Call, response: Response) {
                 response.use { resp ->
                     try {
-                        val body = resp.body.string()
+                        val body = resp.body?.string() ?: ""
                         if (resp.isSuccessful) {
                             val jsonResponse = JsonParser.parseString(body).asJsonObject
                             val code = jsonResponse.get("code")?.asInt ?: -1
