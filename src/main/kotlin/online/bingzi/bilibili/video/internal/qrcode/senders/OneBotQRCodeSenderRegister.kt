@@ -2,8 +2,10 @@ package online.bingzi.bilibili.video.internal.qrcode.senders
 
 import online.bingzi.bilibili.video.api.qrcode.QRCodeSenderRegistry
 import online.bingzi.bilibili.video.internal.qrcode.QRCodeSenderNames
+import online.bingzi.onebot.api.event.status.OneBotConnectedEvent
 import taboolib.common.LifeCycle
 import taboolib.common.platform.Awake
+import taboolib.common.platform.event.SubscribeEvent
 import taboolib.common.platform.function.console
 import taboolib.module.lang.sendInfo
 import taboolib.module.lang.sendWarn
@@ -18,8 +20,8 @@ object OneBotQRCodeSenderRegister {
      * 在插件激活时注册OneBot发送器
      * 使用ACTIVE生命周期，确保OneBot服务已初始化
      */
-    @Awake(LifeCycle.ACTIVE)
-    fun register() {
+   @SubscribeEvent
+    fun register(event: OneBotConnectedEvent) {
         try {
             val sender = OneBotQRCodeSender()
             // 检查OneBot服务是否可用
