@@ -173,4 +173,99 @@ object ConfigManager {
     fun getRewardMinimumActions(): List<String> {
         return mainConfig.getStringList("reward.minimum-actions") ?: listOf("LIKE", "COIN")
     }
+    
+    // =============== 二维码生成配置 ===============
+    
+    /**
+     * 获取二维码前景色（ARGB格式）
+     */
+    fun getQRCodeForegroundColor(): Int {
+        val hexString = mainConfig.getString("qrcode.generation.colors.foreground", "0xFF000000")!!
+        return hexString.replace("0x", "").toLong(16).toInt()
+    }
+    
+    /**
+     * 获取二维码背景色（ARGB格式）
+     */
+    fun getQRCodeBackgroundColor(): Int {
+        val hexString = mainConfig.getString("qrcode.generation.colors.background", "0xFFFFFFFF")!!
+        return hexString.replace("0x", "").toLong(16).toInt()
+    }
+    
+    /**
+     * 获取二维码默认尺寸
+     */
+    fun getQRCodeDefaultSize(): Int {
+        return mainConfig.getInt("qrcode.generation.image.default-size", 256)
+    }
+    
+    /**
+     * 获取二维码边距大小
+     */
+    fun getQRCodeMargin(): Int {
+        return mainConfig.getInt("qrcode.generation.image.margin", 2)
+    }
+    
+    /**
+     * 获取二维码纠错级别
+     */
+    fun getQRCodeErrorCorrection(): String {
+        return mainConfig.getString("qrcode.generation.image.error-correction", "M")!!
+    }
+    
+    /**
+     * 获取二维码字符编码
+     */
+    fun getQRCodeCharacterSet(): String {
+        return mainConfig.getString("qrcode.generation.image.character-set", "UTF-8")!!
+    }
+    
+    /**
+     * 获取短内容推荐尺寸
+     */
+    fun getQRCodeShortContentSize(): Int {
+        return mainConfig.getInt("qrcode.generation.size-recommendation.thresholds.short-content", 200)
+    }
+    
+    /**
+     * 获取中等内容推荐尺寸
+     */
+    fun getQRCodeMediumContentSize(): Int {
+        return mainConfig.getInt("qrcode.generation.size-recommendation.thresholds.medium-content", 256)
+    }
+    
+    /**
+     * 获取长内容推荐尺寸
+     */
+    fun getQRCodeLongContentSize(): Int {
+        return mainConfig.getInt("qrcode.generation.size-recommendation.thresholds.long-content", 300)
+    }
+    
+    /**
+     * 获取超长内容推荐尺寸
+     */
+    fun getQRCodeExtraLongContentSize(): Int {
+        return mainConfig.getInt("qrcode.generation.size-recommendation.thresholds.extra-long-content", 400)
+    }
+    
+    /**
+     * 获取短内容长度上限
+     */
+    fun getQRCodeShortContentLimit(): Int {
+        return mainConfig.getInt("qrcode.generation.size-recommendation.boundaries.short-limit", 50)
+    }
+    
+    /**
+     * 获取中等内容长度上限
+     */
+    fun getQRCodeMediumContentLimit(): Int {
+        return mainConfig.getInt("qrcode.generation.size-recommendation.boundaries.medium-limit", 100)
+    }
+    
+    /**
+     * 获取长内容长度上限
+     */
+    fun getQRCodeLongContentLimit(): Int {
+        return mainConfig.getInt("qrcode.generation.size-recommendation.boundaries.long-limit", 200)
+    }
 }

@@ -1,5 +1,6 @@
 package online.bingzi.bilibili.video
 
+import online.bingzi.bilibili.video.internal.qrcode.QRCodeGeneratorManager
 import taboolib.common.platform.Plugin
 import taboolib.common.platform.function.info
 
@@ -63,6 +64,9 @@ object BilibiliVideo : Plugin() {
 
     override fun onEnable() {
         info("Successfully running BilibiliVideo!")
+        
+        // 初始化二维码生成器
+        QRCodeGeneratorManager.initialize()
     }
 
     override fun onDisable() {

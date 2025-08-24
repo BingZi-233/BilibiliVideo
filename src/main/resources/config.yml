@@ -16,6 +16,47 @@ qrcode:
     enabled: true
     # 聊天框二维码显示大小
     display-size: 25
+  
+  # 二维码生成配置
+  generation:
+    # 颜色配置 (使用ARGB格式的十六进制值)
+    colors:
+      # 前景色（黑色，用于二维码方块）
+      foreground: 0xFF000000
+      # 背景色（白色，用于二维码背景）
+      background: 0xFFFFFFFF
+    
+    # 图像处理参数
+    image:
+      # 默认二维码尺寸（像素）
+      default-size: 256
+      # 边距大小（模块数量），用于确保二维码完整性
+      margin: 2
+      # 纠错级别 (L=低, M=中, Q=高, H=最高)
+      error-correction: M
+      # 字符编码
+      character-set: UTF-8
+    
+    # 尺寸推荐配置
+    size-recommendation:
+      # 内容长度阈值与对应推荐尺寸
+      thresholds:
+        # 短内容（<50字符）推荐尺寸
+        short-content: 200
+        # 中等内容（50-100字符）推荐尺寸
+        medium-content: 256
+        # 长内容（100-200字符）推荐尺寸
+        long-content: 300
+        # 超长内容（>200字符）推荐尺寸
+        extra-long-content: 400
+      # 内容长度边界值
+      boundaries:
+        # 短内容上限
+        short-limit: 50
+        # 中等内容上限
+        medium-limit: 100
+        # 长内容上限
+        long-limit: 200
 
 # 登录配置
 login:

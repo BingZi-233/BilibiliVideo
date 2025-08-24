@@ -155,6 +155,10 @@ rewardSystemStatusError: "&c获取奖励系统状态失败：{0}"
 qrcodeSendFallback: "&7{0} 失败，尝试备用方案 {1} 向 {2} 发送"
 qrcodeSendAllFailed: "&c所有发送方式都失败，无法向 {0} 发送二维码"
 qrcodeGenerateFailed: "&c生成二维码失败，内容: {0}，错误: {1}"
+qrcodeConfigurationError: "&c二维码配置错误: {0}"
+qrcodeColorParseError: "&c解析二维码颜色配置失败: {0}"
+qrcodeErrorCorrectionInvalid: "&c无效的纠错级别: {0}，将使用默认值 M"
+qrcodeGeneratorInitialized: "&a二维码生成器初始化完成，使用配置化参数"
 
 
 # 聊天框二维码
