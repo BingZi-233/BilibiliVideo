@@ -1,0 +1,39 @@
+# BilibiliVideo 插件数据库配置文件
+# 支持 MySQL 和 SQLite 数据库
+
+# 数据库配置
+database:
+  # 是否启用数据库 (true: 使用 MySQL, false: 使用 SQLite)
+  enable: true
+  
+  # MySQL 数据库配置
+  mysql:
+    # 数据库服务器地址
+    host: localhost
+    # 数据库服务器端口
+    port: 3306
+    # 数据库名称
+    database: bilibili_video
+    # 数据库用户名
+    username: root
+    # 数据库密码
+    password: ""
+    # 使用 SSL 连接
+    use-ssl: false
+    # 字符编码
+    charset: utf8mb4
+    
+  # SQLite 数据库配置
+  sqlite:
+    # SQLite 数据库文件路径（相对于插件数据目录）
+    file: data/database.db
+    
+  # 数据表配置
+  table:
+    # 表名前缀
+    prefix: "bv_"
+    
+  # 高级配置
+  advanced:
+    # 是否启用自动重连
+    auto-reconnect: true

@@ -20,7 +20,7 @@ taboolib {
         install(MinecraftChat)
         install(Bukkit)
         install(Kether)
-        install(DatabasePlayer)
+        install(Database)
     }
     description {
         name = "BilibiliVideo"
