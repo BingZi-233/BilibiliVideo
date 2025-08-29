@@ -1,17 +1,20 @@
 package online.bingzi.bilibili.bilibilivideo.internal.command.handler
 
-import online.bingzi.bilibili.bilibilivideo.api.qrcode.registry.QRCodeSenderRegistry
 import online.bingzi.bilibili.bilibilivideo.api.qrcode.options.SendOptions
+import online.bingzi.bilibili.bilibilivideo.api.qrcode.registry.QRCodeSenderRegistry
+import online.bingzi.bilibili.bilibilivideo.api.qrcode.result.SendResult
 import online.bingzi.bilibili.bilibilivideo.internal.bilibili.api.QrCodeApi
 import online.bingzi.bilibili.bilibilivideo.internal.bilibili.model.LoginStatus
 import online.bingzi.bilibili.bilibilivideo.internal.bilibili.model.QrCodePollData
 import online.bingzi.bilibili.bilibilivideo.internal.database.service.DatabaseService
 import online.bingzi.bilibili.bilibilivideo.internal.session.SessionManager
 import org.bukkit.entity.Player
-import taboolib.common.platform.function.submitTask
-import taboolib.module.lang.*
+import taboolib.expansion.DispatcherType
+import taboolib.expansion.DurationType
+import taboolib.expansion.chain
 import taboolib.platform.util.sendError
 import taboolib.platform.util.sendInfo
+import taboolib.platform.util.sendWarn
 import java.util.concurrent.ConcurrentHashMap
 
 object LoginCommandHandler {
@@ -39,15 +42,21 @@ object LoginCommandHandler {
                 // 发送二维码给玩家
                 val senders = QRCodeSenderRegistry.getAvailableSenders()
                 if (senders.isNotEmpty()) {
-                    val sender = senders.first()
+                    val sender = senders.values.first()
                     val options = SendOptions()
                     
                     sender.sendAsync(player, qrData.url, options) { result ->
-                        if (result.isSuccess) {
-                            player.sendInfo("commandsLoginQrCodeSent")
-                            startPolling(player, qrData.qrcodeKey)
-                        } else {
-                            player.sendError("commandsLoginQrCodeSendFailed", result.errorMessage)
+                        when (result) {
+                            is SendResult.Success -> {
+                                player.sendInfo("commandsLoginQrCodeSent")
+                                startPolling(player, qrData.qrcodeKey)
+                            }
+                            is SendResult.Failure -> {
+                                player.sendError("commandsLoginQrCodeSendFailed", "errorMessage" to result.reason)
+                            }
+                            is SendResult.Partial -> {
+                                player.sendWarn("commandsLoginQrCodePartialSuccess", "details" to result.details)
+                            }
                         }
                     }
                 } else {
@@ -74,11 +83,11 @@ object LoginCommandHandler {
             return
         }
         
-        QrCodeApi.pollQrCodeStatus(task.qrcodeKey) { status, pollData ->
+        QrCodeApi.pollQrCodeStatus(task.qrcodeKey) { status, pollData, loginInfo ->
             when (status) {
                 LoginStatus.SUCCESS -> {
-                    if (pollData != null) {
-                        handleLoginSuccess(task.player, pollData)
+                    if (pollData != null && loginInfo != null) {
+                        handleLoginSuccess(task.player, pollData, loginInfo)
                     } else {
                         task.player.sendError("commandsLoginFailedNoUserInfo")
                     }
@@ -88,14 +97,16 @@ object LoginCommandHandler {
                 LoginStatus.SCANNED_WAITING -> {
                     task.player.sendInfo("commandsLoginQrCodeScanned")
                     // 继续轮询
-                    submitTask(delay = 40L) { // 2秒后再次轮询
+                    chain(DispatcherType.SYNC) {
+                        wait(40, DurationType.MINECRAFT_TICK) // 等待2秒
                         pollQrCodeStatus(task)
                     }
                 }
                 
                 LoginStatus.NOT_SCANNED -> {
                     // 继续轮询
-                    submitTask(delay = 60L) { // 3秒后再次轮询
+                    chain(DispatcherType.SYNC) {
+                        wait(60, DurationType.MINECRAFT_TICK) // 等待3秒
                         pollQrCodeStatus(task)
                     }
                 }
@@ -108,48 +119,46 @@ object LoginCommandHandler {
         }
     }
     
-    private fun handleLoginSuccess(player: Player, pollData: QrCodePollData) {
+    private fun handleLoginSuccess(player: Player, pollData: QrCodePollData, loginInfo: QrCodeApi.LoginInfo) {
         player.sendInfo("commandsLoginSuccess")
         
-        // 这里需要从response中提取Cookie信息
-        // 由于OkHttp的限制，我们需要通过其他方式获取Cookie
-        // 暂时使用模拟数据，实际实现时需要正确提取Cookie
-        val mid = extractMidFromUrl(pollData.url)
-        if (mid != null) {
-            // 从数据库加载已有的账户信息或创建新的
-            DatabaseService.getBilibiliAccount(mid) { account ->
-                if (account != null) {
-                    // 创建会话
-                    SessionManager.createSession(
-                        player = player,
-                        mid = account.mid,
-                        nickname = account.nickname,
-                        sessdata = account.sessdata,
-                        buvid3 = account.buvid3,
-                        biliJct = account.biliJct,
-                        refreshToken = account.refreshToken
-                    )
-                    
-                    player.sendInfo("commandsLoginSuccessWelcome", account.nickname)
-                } else {
-                    player.sendError("commandsLoginFailedIncompleteInfo")
+        // 使用从Cookie中提取的信息直接保存账户
+        DatabaseService.saveBilibiliAccount(
+            mid = loginInfo.mid,
+            nickname = "", // 暂时为空，后续可以通过API获取
+            sessdata = loginInfo.sessdata,
+            buvid3 = loginInfo.buvid3,
+            biliJct = loginInfo.biliJct,
+            refreshToken = loginInfo.refreshToken,
+            playerName = player.name
+        ) { success ->
+            if (success) {
+                // 绑定玩家账户
+                DatabaseService.bindPlayer(
+                    playerUuid = player.uniqueId.toString(),
+                    mid = loginInfo.mid,
+                    playerName = player.name
+                ) { bindSuccess ->
+                    if (bindSuccess) {
+                        // 创建会话
+                        SessionManager.createSession(
+                            player = player,
+                            mid = loginInfo.mid,
+                            nickname = "用户${loginInfo.mid}", // 临时昵称
+                            sessdata = loginInfo.sessdata,
+                            buvid3 = loginInfo.buvid3,
+                            biliJct = loginInfo.biliJct,
+                            refreshToken = loginInfo.refreshToken
+                        )
+                        
+                        player.sendInfo("commandsLoginSuccessWelcome", "nickname" to "用户${loginInfo.mid}")
+                    } else {
+                        player.sendError("commandsLoginFailedIncompleteInfo")
+                    }
                 }
+            } else {
+                player.sendError("commandsLoginFailedIncompleteInfo")
             }
-        } else {
-            player.sendError("commandsLoginFailedNoUserId")
-        }
-    }
-    
-    private fun extractMidFromUrl(url: String?): Long? {
-        // 从登录成功的URL中提取MID
-        // 这是一个简化实现，实际需要根据具体的URL格式解析
-        return try {
-            url?.let {
-                // TODO: 实际的URL解析逻辑
-                null
-            }
-        } catch (e: Exception) {
-            null
         }
     }
     
