@@ -2,6 +2,7 @@ package online.bingzi.bilibili.bilibilivideo.internal.bilibili.client
 
 import okhttp3.*
 import okhttp3.logging.HttpLoggingInterceptor
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
 
 object HttpClientFactory {
@@ -10,7 +11,7 @@ object HttpClientFactory {
             "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
     
     private val cookieJar = object : CookieJar {
-        private val cookieStore = mutableMapOf<String, List<Cookie>>()
+        private val cookieStore = ConcurrentHashMap<String, List<Cookie>>()
         
         override fun saveFromResponse(url: HttpUrl, cookies: List<Cookie>) {
             cookieStore[url.host] = cookies
