@@ -11,8 +11,7 @@ import taboolib.common.platform.ProxyPlayer
 import taboolib.common.platform.command.*
 import taboolib.expansion.createHelper
 import taboolib.module.lang.sendError
-import taboolib.platform.util.sendError
-import taboolib.platform.util.sendInfo
+import taboolib.module.lang.sendInfo
 
 @CommandHeader(
     name = "bili",
