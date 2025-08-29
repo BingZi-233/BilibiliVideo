@@ -2,13 +2,12 @@ package online.bingzi.bilibili.bilibilivideo.internal.database.factory
 
 import online.bingzi.bilibili.bilibilivideo.internal.config.DatabaseConfig
 import online.bingzi.bilibili.bilibilivideo.internal.database.dao.*
-import online.bingzi.bilibili.bilibilivideo.internal.database.impl.mysql.*
-import online.bingzi.bilibili.bilibilivideo.internal.database.impl.sqlite.*
 import javax.sql.DataSource
 
 /**
  * DAO工厂类
  * 根据数据库配置返回相应的DAO实现（MySQL或SQLite）
+ * TODO: 需要实现具体的DAO实现类
  */
 object DaoFactory {
     
@@ -23,46 +22,34 @@ object DaoFactory {
     
     /**
      * 获取PlayerBindingDao实现
+     * TODO: 需要实现MySQL和SQLite的具体实现
      */
     fun getPlayerBindingDao(): PlayerBindingDao {
-        return if (DatabaseConfig.enable) {
-            PlayerBindingDaoMySQLImpl(dataSource)
-        } else {
-            PlayerBindingDaoSQLiteImpl(dataSource)
-        }
+        throw NotImplementedError("PlayerBindingDao 的 MySQL/SQLite 实现尚未创建")
     }
     
     /**
      * 获取BilibiliAccountDao实现
+     * TODO: 需要实现MySQL和SQLite的具体实现
      */
     fun getBilibiliAccountDao(): BilibiliAccountDao {
-        return if (DatabaseConfig.enable) {
-            BilibiliAccountDaoMySQLImpl(dataSource)
-        } else {
-            BilibiliAccountDaoSQLiteImpl(dataSource)
-        }
+        throw NotImplementedError("BilibiliAccountDao 的 MySQL/SQLite 实现尚未创建")
     }
     
     /**
      * 获取VideoTripleStatusDao实现
+     * TODO: 需要实现MySQL和SQLite的具体实现
      */
     fun getVideoTripleStatusDao(): VideoTripleStatusDao {
-        return if (DatabaseConfig.enable) {
-            VideoTripleStatusDaoMySQLImpl(dataSource)
-        } else {
-            VideoTripleStatusDaoSQLiteImpl(dataSource)
-        }
+        throw NotImplementedError("VideoTripleStatusDao 的 MySQL/SQLite 实现尚未创建")
     }
     
     /**
      * 获取UpFollowStatusDao实现
+     * TODO: 需要实现MySQL和SQLite的具体实现
      */
     fun getUpFollowStatusDao(): UpFollowStatusDao {
-        return if (DatabaseConfig.enable) {
-            UpFollowStatusDaoMySQLImpl(dataSource)
-        } else {
-            UpFollowStatusDaoSQLiteImpl(dataSource)
-        }
+        throw NotImplementedError("UpFollowStatusDao 的 MySQL/SQLite 实现尚未创建")
     }
     
     /**

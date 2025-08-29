@@ -9,6 +9,7 @@ import javax.sql.DataSource
 /**
  * 表工厂类
  * 负责创建和初始化所有数据表
+ * 使用统一的表实现，根据Host类型自动适配MySQL或SQLite
  */
 object TableFactory {
     
@@ -16,23 +17,19 @@ object TableFactory {
     
     /**
      * 创建所有表
+     * 使用统一的表实现，根据Host类型自动适配MySQL或SQLite
      */
     fun createTables(host: Host<*>): List<Table<*, *>> {
         if (tables.isNotEmpty()) {
             return tables
         }
         
-        // 创建所有表
-        val playerBindingTable = PlayerBindingTable.createTable(host)
-        val bilibiliAccountTable = BilibiliAccountTable.createTable(host)
-        val videoTripleStatusTable = VideoTripleStatusTable.createTable(host)
-        val upFollowStatusTable = UpFollowStatusTable.createTable(host)
-        
+        // 使用统一的表实现，类型推断在createTable方法内部进行
         tables.addAll(listOf(
-            playerBindingTable,
-            bilibiliAccountTable,
-            videoTripleStatusTable,
-            upFollowStatusTable
+            PlayerBindingTable.createTable(host),
+            BilibiliAccountTable.createTable(host),
+            VideoTripleStatusTable.createTable(host),
+            UpFollowStatusTable.createTable(host)
         ))
         
         return tables
@@ -49,9 +46,9 @@ object TableFactory {
         allTables.forEach { table ->
             try {
                 table.createTable(dataSource)
-                taboolib.common.platform.function.info("成功创建表: ${table.tableName}")
+                taboolib.common.platform.function.info("成功创建表: ${table.name}")
             } catch (e: Exception) {
-                taboolib.common.platform.function.severe("创建表失败: ${table.tableName}, 错误: ${e.message}")
+                taboolib.common.platform.function.severe("创建表失败: ${table.name}, 错误: ${e.message}")
             }
         }
     }
@@ -60,6 +57,6 @@ object TableFactory {
      * 获取表名列表
      */
     fun getTableNames(): List<String> {
-        return tables.map { it.tableName }
+        return tables.map { it.name }
     }
 }
