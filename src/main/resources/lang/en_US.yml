@@ -1,5 +1,8 @@
 # ===== Common Messages =====
 commonPlayerOnly: "&cOnly players can use this command!"
+noPermissionForOthers: "&cYou don't have permission to execute this command for other players!"
+playerNotFound: "&cThe specified player was not found!"
+executedForPlayer: "&aCommand executed for player {player}."
 
 # ===== Login Related Messages =====
 commandsLoginAlreadyLoggedIn: "&cYou are already logged into your Bilibili account!"
