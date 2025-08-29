@@ -44,7 +44,7 @@ object QrCodeApi {
         }
     }
     
-    fun pollQrCodeStatus(qrcodeKey: String, callback: (LoginStatus, QrCodePollData?) -> Unit) {
+    fun pollQrCodeStatus(qrcodeKey: String, callback: (LoginStatus, QrCodePollData?, LoginInfo?) -> Unit) {
         submitAsync {
             try {
                 val request = Request.Builder()
@@ -61,12 +61,14 @@ object QrCodeApi {
                         
                         if (pollResponse.data != null) {
                             val status = LoginStatus.fromCode(pollResponse.data.code)
-                            callback(status, pollResponse.data)
                             
-                            // 如果登录成功，保存Cookie
+                            // 如果登录成功，提取Cookie信息
                             if (status == LoginStatus.SUCCESS) {
                                 val cookies = response.headers("Set-Cookie")
-                                saveCookiesFromResponse(cookies, pollResponse.data.refreshToken)
+                                val loginInfo = extractLoginInfo(pollResponse.data, cookies)
+                                callback(status, pollResponse.data, loginInfo)
+                            } else {
+                                callback(status, pollResponse.data, null)
                             }
                             
                             return@submitAsync
@@ -74,10 +76,10 @@ object QrCodeApi {
                     }
                 }
                 
-                callback(LoginStatus.EXPIRED, null)
+                callback(LoginStatus.EXPIRED, null, null)
             } catch (e: Exception) {
                 e.printStackTrace()
-                callback(LoginStatus.EXPIRED, null)
+                callback(LoginStatus.EXPIRED, null, null)
             }
         }
     }
