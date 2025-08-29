@@ -1,5 +1,8 @@
 # ===== 通用消息 =====
 commonPlayerOnly: "&c只有玩家才能使用此命令！"
+noPermissionForOthers: "&c你没有权限为其他玩家执行此命令！"
+playerNotFound: "&c找不到指定的玩家！"
+executedForPlayer: "&a已为玩家 {player} 执行命令。"
 
 # ===== 登录相关消息 =====
 commandsLoginAlreadyLoggedIn: "&c您已经登录了Bilibili账户！"

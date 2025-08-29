@@ -1,6 +1,5 @@
 package online.bingzi.bilibili.bilibilivideo.internal.database
 
-import online.bingzi.bilibili.bilibilivideo.internal.database.factory.DaoFactory
 import online.bingzi.bilibili.bilibilivideo.internal.database.factory.TableFactory
 import taboolib.common.LifeCycle
 import taboolib.common.platform.Awake
@@ -28,16 +27,11 @@ object DatabaseManager {
         try {
             info("开始初始化数据库...")
             
-            // 1. 初始化DaoFactory的DataSource
-            DaoFactory.initialize()
-            info("DaoFactory初始化完成")
-            
-            // 2. 创建所有数据表
-            val dataSource = DaoFactory.getDataSource()
-            TableFactory.initializeTables(dataSource)
+            // 创建并初始化所有数据表
+            TableFactory.initializeTables()
             info("数据表初始化完成")
             
-            // 3. 输出初始化信息
+            // 输出初始化信息
             val tableNames = TableFactory.getTableNames()
             info("成功初始化 ${tableNames.size} 个数据表: ${tableNames.joinToString(", ")}")
             
