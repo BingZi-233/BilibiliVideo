@@ -4,9 +4,9 @@ import online.bingzi.bilibili.bilibilivideo.internal.bilibili.api.UserApi
 import online.bingzi.bilibili.bilibilivideo.internal.database.service.DatabaseService
 import online.bingzi.bilibili.bilibilivideo.internal.session.SessionManager
 import org.bukkit.entity.Player
-import taboolib.platform.util.sendError
 import taboolib.platform.util.sendInfo
 import taboolib.platform.util.sendWarn
+import taboolib.platform.util.sendError
 
 object FollowStatusCommandHandler {
     
@@ -18,7 +18,7 @@ object FollowStatusCommandHandler {
             return
         }
         
-        player.sendInfo("commandsFollowQuerying", mid)
+        player.sendInfo("commandsFollowQuerying", "mid" to mid)
         
         // 调用API查询关注状态
         UserApi.getFollowStatus(
@@ -43,8 +43,8 @@ object FollowStatusCommandHandler {
                     if (success) {
                         // 发送结果给玩家
                         player.sendInfo("commandsFollowQueryComplete")
-                        player.sendInfo("commandsFollowUpmaster", updatedFollowData.upName, updatedFollowData.upMid)
-                        player.sendInfo("commandsFollowStatus", updatedFollowData.getStatusMessage())
+                        player.sendInfo("commandsFollowUpmaster", "upName" to updatedFollowData.upName, "upMid" to updatedFollowData.upMid)
+                        player.sendInfo("commandsFollowStatus", "status" to updatedFollowData.getStatusMessage())
                         
                         if (updatedFollowData.isFollowing) {
                             player.sendInfo("commandsFollowFollowing")
