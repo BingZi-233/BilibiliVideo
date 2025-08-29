@@ -33,13 +33,13 @@ taboolib {
 
 repositories {
     mavenCentral()
-    maven("https://repo.aeoliancloud.com/repository/releases/")
 }
 
 dependencies {
-    compileOnly("online.bingzi:onebot:1.2.0-e9aeb2f")
     compileOnly("ink.ptms.core:v12004:12004:mapped")
     compileOnly("ink.ptms.core:v12004:12004:universal")
+    compileOnly("com.squareup.okhttp3:okhttp:4.12.0")
+    compileOnly("com.google.code.gson:gson:2.10.1")
     compileOnly(kotlin("stdlib"))
     compileOnly(fileTree("libs"))
 }
