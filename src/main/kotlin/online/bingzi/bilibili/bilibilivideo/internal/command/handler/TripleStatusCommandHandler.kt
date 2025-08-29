@@ -2,6 +2,7 @@ package online.bingzi.bilibili.bilibilivideo.internal.command.handler
 
 import online.bingzi.bilibili.bilibilivideo.internal.bilibili.api.VideoApi
 import online.bingzi.bilibili.bilibilivideo.internal.database.service.DatabaseService
+import online.bingzi.bilibili.bilibilivideo.internal.event.EventManager
 import online.bingzi.bilibili.bilibilivideo.internal.session.SessionManager
 import org.bukkit.entity.Player
 import taboolib.platform.util.sendInfo
@@ -55,8 +56,8 @@ object TripleStatusCommandHandler {
                             player.sendWarn("commandsTripleIncomplete")
                         }
                         
-                        // TODO: 触发VideoTripleStatusCheckEvent事件
-                        // EventManager.callVideoTripleStatusCheckEvent(player, updatedTripleData)
+                        // 触发VideoTripleStatusCheckEvent事件
+                        EventManager.callVideoTripleStatusCheckEvent(player, updatedTripleData)
                     } else {
                         player.sendError("commandsTripleSaveFailed")
                     }

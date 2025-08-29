@@ -1,5 +1,6 @@
 package online.bingzi.bilibili.bilibilivideo.internal.command.handler
 
+import online.bingzi.bilibili.bilibilivideo.internal.event.EventManager
 import online.bingzi.bilibili.bilibilivideo.internal.session.SessionManager
 import org.bukkit.entity.Player
 import taboolib.platform.util.sendError
@@ -20,6 +21,9 @@ object LogoutCommandHandler {
         // 获取用户昵称用于提示
         val nickname = session.nickname
         
+        // 触发BilibiliLogoutEvent事件
+        EventManager.callBilibiliLogoutEvent(player, session)
+        
         // 清除内存中的会话缓存
         SessionManager.removeSession(player)
         
@@ -28,8 +32,5 @@ object LogoutCommandHandler {
         
         player.sendInfo("commandsLogoutSuccess", "nickname" to nickname)
         player.sendInfo("commandsLogoutNote")
-        
-        // TODO: 触发BilibiliLogoutEvent事件
-        // EventManager.callBilibiliLogoutEvent(player, session)
     }
 }

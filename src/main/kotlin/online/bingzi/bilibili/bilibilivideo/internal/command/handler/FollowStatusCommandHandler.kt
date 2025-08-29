@@ -2,6 +2,7 @@ package online.bingzi.bilibili.bilibilivideo.internal.command.handler
 
 import online.bingzi.bilibili.bilibilivideo.internal.bilibili.api.UserApi
 import online.bingzi.bilibili.bilibilivideo.internal.database.service.DatabaseService
+import online.bingzi.bilibili.bilibilivideo.internal.event.EventManager
 import online.bingzi.bilibili.bilibilivideo.internal.session.SessionManager
 import org.bukkit.entity.Player
 import taboolib.platform.util.sendInfo
@@ -52,8 +53,8 @@ object FollowStatusCommandHandler {
                             player.sendWarn("commandsFollowNotFollowing")
                         }
                         
-                        // TODO: 触发UpFollowStatusCheckEvent事件
-                        // EventManager.callUpFollowStatusCheckEvent(player, updatedFollowData)
+                        // 触发UpFollowStatusCheckEvent事件
+                        EventManager.callUpFollowStatusCheckEvent(player, updatedFollowData)
                     } else {
                         player.sendError("commandsFollowSaveFailed")
                     }

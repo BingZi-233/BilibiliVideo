@@ -7,6 +7,7 @@ import online.bingzi.bilibili.bilibilivideo.internal.bilibili.api.QrCodeApi
 import online.bingzi.bilibili.bilibilivideo.internal.bilibili.model.LoginStatus
 import online.bingzi.bilibili.bilibilivideo.internal.bilibili.model.QrCodePollData
 import online.bingzi.bilibili.bilibilivideo.internal.database.service.DatabaseService
+import online.bingzi.bilibili.bilibilivideo.internal.event.EventManager
 import online.bingzi.bilibili.bilibilivideo.internal.session.SessionManager
 import org.bukkit.entity.Player
 import taboolib.expansion.DispatcherType
@@ -141,7 +142,7 @@ object LoginCommandHandler {
                 ) { bindSuccess ->
                     if (bindSuccess) {
                         // 创建会话
-                        SessionManager.createSession(
+                        val session = SessionManager.createSession(
                             player = player,
                             mid = loginInfo.mid,
                             nickname = "用户${loginInfo.mid}", // 临时昵称
@@ -150,6 +151,9 @@ object LoginCommandHandler {
                             biliJct = loginInfo.biliJct,
                             refreshToken = loginInfo.refreshToken
                         )
+                        
+                        // 触发BilibiliLoginEvent事件
+                        EventManager.callBilibiliLoginEvent(player, session)
                         
                         player.sendInfo("commandsLoginSuccessWelcome", "nickname" to "用户${loginInfo.mid}")
                     } else {
