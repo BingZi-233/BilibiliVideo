@@ -14,6 +14,8 @@ import javax.sql.DataSource
 object TableFactory {
     
     private val tables = mutableListOf<Table<*, *>>()
+    private lateinit var host: Host<*>
+    private lateinit var dataSource: DataSource
     
     /**
      * 创建所有表
@@ -38,8 +40,10 @@ object TableFactory {
     /**
      * 初始化所有表到数据库
      */
-    fun initializeTables(dataSource: DataSource) {
-        val host = DatabaseConfig.createHost()
+    fun initializeTables() {
+        host = DatabaseConfig.createHost()
+        dataSource = DatabaseConfig.createDataSource()
+        
         val allTables = createTables(host)
         
         // 创建表到数据库
@@ -58,5 +62,42 @@ object TableFactory {
      */
     fun getTableNames(): List<String> {
         return tables.map { it.name }
+    }
+    
+    /**
+     * 获取DataSource
+     */
+    fun getDataSource(): DataSource = dataSource
+    
+    /**
+     * 获取玩家绑定表
+     */
+    fun getPlayerBindingTable(): Table<*, *> {
+        return tables.find { it.name.endsWith("player_binding") } 
+            ?: PlayerBindingTable.createTable(host)
+    }
+    
+    /**
+     * 获取B站账户表
+     */
+    fun getBilibiliAccountTable(): Table<*, *> {
+        return tables.find { it.name.endsWith("bilibili_account") }
+            ?: BilibiliAccountTable.createTable(host)
+    }
+    
+    /**
+     * 获取视频三连状态表
+     */
+    fun getVideoTripleStatusTable(): Table<*, *> {
+        return tables.find { it.name.endsWith("video_triple_status") }
+            ?: VideoTripleStatusTable.createTable(host)
+    }
+    
+    /**
+     * 获取UP主关注状态表
+     */
+    fun getUpFollowStatusTable(): Table<*, *> {
+        return tables.find { it.name.endsWith("up_follow_status") }
+            ?: UpFollowStatusTable.createTable(host)
     }
 }

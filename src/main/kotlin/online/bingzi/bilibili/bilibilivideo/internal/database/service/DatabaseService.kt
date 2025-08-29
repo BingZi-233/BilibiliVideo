@@ -1,20 +1,14 @@
 package online.bingzi.bilibili.bilibilivideo.internal.database.service
 
 import online.bingzi.bilibili.bilibilivideo.internal.database.entity.*
-import online.bingzi.bilibili.bilibilivideo.internal.database.factory.DaoFactory
+import online.bingzi.bilibili.bilibilivideo.internal.database.factory.TableFactory
 import taboolib.common.platform.function.submitAsync
 
 /**
  * 数据库服务类
- * 提供统一的数据库操作API，整合所有DAO功能
+ * 提供统一的数据库操作API，直接使用Table API进行操作
  */
 object DatabaseService {
-    
-    // DAO实例（延迟初始化）
-    private val playerBindingDao by lazy { DaoFactory.getPlayerBindingDao() }
-    private val bilibiliAccountDao by lazy { DaoFactory.getBilibiliAccountDao() }
-    private val videoTripleStatusDao by lazy { DaoFactory.getVideoTripleStatusDao() }
-    private val upFollowStatusDao by lazy { DaoFactory.getUpFollowStatusDao() }
     
     // ===== 玩家绑定相关操作 =====
     
@@ -27,18 +21,41 @@ object DatabaseService {
      */
     fun bindPlayer(playerUuid: String, mid: Long, playerName: String, callback: (Boolean) -> Unit) {
         submitAsync {
-            val currentTime = System.currentTimeMillis()
-            val binding = PlayerBinding(
-                playerUuid = playerUuid,
-                mid = mid,
-                createTime = currentTime,
-                updateTime = currentTime,
-                createPlayer = playerName,
-                updatePlayer = playerName
-            )
-            
-            val result = playerBindingDao.insertOrUpdate(binding)
-            callback(result)
+            try {
+                val table = TableFactory.getPlayerBindingTable()
+                val dataSource = TableFactory.getDataSource()
+                val currentTime = System.currentTimeMillis()
+                
+                // 使用插入或更新逻辑
+                val existingRecord = table.select(dataSource) {
+                    where("player_uuid", playerUuid)
+                }.firstOrNull()
+                
+                val result = if (existingRecord != null) {
+                    // 更新现有记录
+                    table.update(dataSource) {
+                        set("mid", mid)
+                        set("update_time", currentTime)
+                        set("update_player", playerName)
+                        where("player_uuid", playerUuid)
+                    } > 0
+                } else {
+                    // 插入新记录
+                    table.insert(dataSource) {
+                        value("player_uuid", playerUuid)
+                        value("mid", mid)
+                        value("create_time", currentTime)
+                        value("update_time", currentTime)
+                        value("create_player", playerName)
+                        value("update_player", playerName)
+                    } > 0
+                }
+                
+                callback(result)
+            } catch (e: Exception) {
+                e.printStackTrace()
+                callback(false)
+            }
         }
     }
     
@@ -49,8 +66,21 @@ object DatabaseService {
      */
     fun getPlayerMid(playerUuid: String, callback: (Long?) -> Unit) {
         submitAsync {
-            val binding = playerBindingDao.findByPlayerUuid(playerUuid)
-            callback(binding?.mid)
+            try {
+                val table = TableFactory.getPlayerBindingTable()
+                val dataSource = TableFactory.getDataSource()
+                
+                val result = table.select(dataSource) {
+                    where("player_uuid", playerUuid)
+                }.firstOrNull()?.let { row ->
+                    row["mid"].asLong()
+                }
+                
+                callback(result)
+            } catch (e: Exception) {
+                e.printStackTrace()
+                callback(null)
+            }
         }
     }
     
@@ -61,8 +91,21 @@ object DatabaseService {
      */
     fun getPlayerByMid(mid: Long, callback: (String?) -> Unit) {
         submitAsync {
-            val binding = playerBindingDao.findByMid(mid)
-            callback(binding?.playerUuid)
+            try {
+                val table = TableFactory.getPlayerBindingTable()
+                val dataSource = TableFactory.getDataSource()
+                
+                val result = table.select(dataSource) {
+                    where("mid", mid)
+                }.firstOrNull()?.let { row ->
+                    row["player_uuid"].asString()
+                }
+                
+                callback(result)
+            } catch (e: Exception) {
+                e.printStackTrace()
+                callback(null)
+            }
         }
     }
     
@@ -73,8 +116,19 @@ object DatabaseService {
      */
     fun unbindPlayer(playerUuid: String, callback: (Boolean) -> Unit) {
         submitAsync {
-            val result = playerBindingDao.delete(playerUuid)
-            callback(result)
+            try {
+                val table = TableFactory.getPlayerBindingTable()
+                val dataSource = TableFactory.getDataSource()
+                
+                val result = table.delete(dataSource) {
+                    where("player_uuid", playerUuid)
+                } > 0
+                
+                callback(result)
+            } catch (e: Exception) {
+                e.printStackTrace()
+                callback(false)
+            }
         }
     }
     
@@ -102,22 +156,49 @@ object DatabaseService {
         callback: (Boolean) -> Unit
     ) {
         submitAsync {
-            val currentTime = System.currentTimeMillis()
-            val account = BilibiliAccount(
-                mid = mid,
-                nickname = nickname,
-                sessdata = sessdata,
-                buvid3 = buvid3,
-                biliJct = biliJct,
-                refreshToken = refreshToken,
-                createTime = currentTime,
-                updateTime = currentTime,
-                createPlayer = playerName,
-                updatePlayer = playerName
-            )
-            
-            val result = bilibiliAccountDao.insertOrUpdate(account)
-            callback(result)
+            try {
+                val table = TableFactory.getBilibiliAccountTable()
+                val dataSource = TableFactory.getDataSource()
+                val currentTime = System.currentTimeMillis()
+                
+                // 使用插入或更新逻辑
+                val existingRecord = table.select(dataSource) {
+                    where("mid", mid)
+                }.firstOrNull()
+                
+                val result = if (existingRecord != null) {
+                    // 更新现有记录
+                    table.update(dataSource) {
+                        set("nickname", nickname)
+                        set("sessdata", sessdata)
+                        set("buvid3", buvid3)
+                        set("bili_jct", biliJct)
+                        set("refresh_token", refreshToken)
+                        set("update_time", currentTime)
+                        set("update_player", playerName)
+                        where("mid", mid)
+                    } > 0
+                } else {
+                    // 插入新记录
+                    table.insert(dataSource) {
+                        value("mid", mid)
+                        value("nickname", nickname)
+                        value("sessdata", sessdata)
+                        value("buvid3", buvid3)
+                        value("bili_jct", biliJct)
+                        value("refresh_token", refreshToken)
+                        value("create_time", currentTime)
+                        value("update_time", currentTime)
+                        value("create_player", playerName)
+                        value("update_player", playerName)
+                    } > 0
+                }
+                
+                callback(result)
+            } catch (e: Exception) {
+                e.printStackTrace()
+                callback(false)
+            }
         }
     }
     
@@ -128,8 +209,32 @@ object DatabaseService {
      */
     fun getBilibiliAccount(mid: Long, callback: (BilibiliAccount?) -> Unit) {
         submitAsync {
-            val account = bilibiliAccountDao.findByMid(mid)
-            callback(account)
+            try {
+                val table = TableFactory.getBilibiliAccountTable()
+                val dataSource = TableFactory.getDataSource()
+                
+                val result = table.select(dataSource) {
+                    where("mid", mid)
+                }.firstOrNull()?.let { row ->
+                    BilibiliAccount(
+                        mid = row["mid"].asLong(),
+                        nickname = row["nickname"].asString(),
+                        sessdata = row["sessdata"].asString(),
+                        buvid3 = row["buvid3"].asString(),
+                        biliJct = row["bili_jct"].asString(),
+                        refreshToken = row["refresh_token"].asString(),
+                        createTime = row["create_time"].asLong(),
+                        updateTime = row["update_time"].asLong(),
+                        createPlayer = row["create_player"].asString(),
+                        updatePlayer = row["update_player"].asString()
+                    )
+                }
+                
+                callback(result)
+            } catch (e: Exception) {
+                e.printStackTrace()
+                callback(null)
+            }
         }
     }
     
@@ -153,10 +258,26 @@ object DatabaseService {
         callback: (Boolean) -> Unit
     ) {
         submitAsync {
-            val result = bilibiliAccountDao.updateCookies(
-                mid, sessdata, buvid3, biliJct, refreshToken, playerName
-            )
-            callback(result)
+            try {
+                val table = TableFactory.getBilibiliAccountTable()
+                val dataSource = TableFactory.getDataSource()
+                val currentTime = System.currentTimeMillis()
+                
+                val result = table.update(dataSource) {
+                    set("sessdata", sessdata)
+                    set("buvid3", buvid3)
+                    set("bili_jct", biliJct)
+                    set("refresh_token", refreshToken)
+                    set("update_time", currentTime)
+                    set("update_player", playerName)
+                    where("mid", mid)
+                } > 0
+                
+                callback(result)
+            } catch (e: Exception) {
+                e.printStackTrace()
+                callback(false)
+            }
         }
     }
     
@@ -184,22 +305,51 @@ object DatabaseService {
         callback: (Boolean) -> Unit
     ) {
         submitAsync {
-            val currentTime = System.currentTimeMillis()
-            val status = VideoTripleStatus(
-                bvid = bvid,
-                mid = mid,
-                playerUuid = playerUuid,
-                isLiked = isLiked,
-                isCoined = isCoined,
-                isFavorited = isFavorited,
-                createTime = currentTime,
-                updateTime = currentTime,
-                createPlayer = playerName,
-                updatePlayer = playerName
-            )
-            
-            val result = videoTripleStatusDao.insertOrUpdate(status)
-            callback(result)
+            try {
+                val table = TableFactory.getVideoTripleStatusTable()
+                val dataSource = TableFactory.getDataSource()
+                val currentTime = System.currentTimeMillis()
+                
+                // 使用插入或更新逻辑
+                val existingRecord = table.select(dataSource) {
+                    where("bvid", bvid)
+                    where("mid", mid)
+                    where("player_uuid", playerUuid)
+                }.firstOrNull()
+                
+                val result = if (existingRecord != null) {
+                    // 更新现有记录
+                    table.update(dataSource) {
+                        set("is_liked", if (isLiked) 1 else 0)
+                        set("is_coined", if (isCoined) 1 else 0)
+                        set("is_favorited", if (isFavorited) 1 else 0)
+                        set("update_time", currentTime)
+                        set("update_player", playerName)
+                        where("bvid", bvid)
+                        where("mid", mid)
+                        where("player_uuid", playerUuid)
+                    } > 0
+                } else {
+                    // 插入新记录
+                    table.insert(dataSource) {
+                        value("bvid", bvid)
+                        value("mid", mid)
+                        value("player_uuid", playerUuid)
+                        value("is_liked", if (isLiked) 1 else 0)
+                        value("is_coined", if (isCoined) 1 else 0)
+                        value("is_favorited", if (isFavorited) 1 else 0)
+                        value("create_time", currentTime)
+                        value("update_time", currentTime)
+                        value("create_player", playerName)
+                        value("update_player", playerName)
+                    } > 0
+                }
+                
+                callback(result)
+            } catch (e: Exception) {
+                e.printStackTrace()
+                callback(false)
+            }
         }
     }
     
@@ -217,8 +367,34 @@ object DatabaseService {
         callback: (VideoTripleStatus?) -> Unit
     ) {
         submitAsync {
-            val status = videoTripleStatusDao.findByBvidMidAndPlayer(bvid, mid, playerUuid)
-            callback(status)
+            try {
+                val table = TableFactory.getVideoTripleStatusTable()
+                val dataSource = TableFactory.getDataSource()
+                
+                val result = table.select(dataSource) {
+                    where("bvid", bvid)
+                    where("mid", mid)
+                    where("player_uuid", playerUuid)
+                }.firstOrNull()?.let { row ->
+                    VideoTripleStatus(
+                        bvid = row["bvid"].asString(),
+                        mid = row["mid"].asLong(),
+                        playerUuid = row["player_uuid"].asString(),
+                        isLiked = row["is_liked"].asInt() == 1,
+                        isCoined = row["is_coined"].asInt() == 1,
+                        isFavorited = row["is_favorited"].asInt() == 1,
+                        createTime = row["create_time"].asLong(),
+                        updateTime = row["update_time"].asLong(),
+                        createPlayer = row["create_player"].asString(),
+                        updatePlayer = row["update_player"].asString()
+                    )
+                }
+                
+                callback(result)
+            } catch (e: Exception) {
+                e.printStackTrace()
+                callback(null)
+            }
         }
     }
     
@@ -242,20 +418,47 @@ object DatabaseService {
         callback: (Boolean) -> Unit
     ) {
         submitAsync {
-            val currentTime = System.currentTimeMillis()
-            val status = UpFollowStatus(
-                upMid = upMid,
-                followerMid = followerMid,
-                playerUuid = playerUuid,
-                isFollowing = isFollowing,
-                createTime = currentTime,
-                updateTime = currentTime,
-                createPlayer = playerName,
-                updatePlayer = playerName
-            )
-            
-            val result = upFollowStatusDao.insertOrUpdate(status)
-            callback(result)
+            try {
+                val table = TableFactory.getUpFollowStatusTable()
+                val dataSource = TableFactory.getDataSource()
+                val currentTime = System.currentTimeMillis()
+                
+                // 使用插入或更新逻辑
+                val existingRecord = table.select(dataSource) {
+                    where("up_mid", upMid)
+                    where("follower_mid", followerMid)
+                    where("player_uuid", playerUuid)
+                }.firstOrNull()
+                
+                val result = if (existingRecord != null) {
+                    // 更新现有记录
+                    table.update(dataSource) {
+                        set("is_following", if (isFollowing) 1 else 0)
+                        set("update_time", currentTime)
+                        set("update_player", playerName)
+                        where("up_mid", upMid)
+                        where("follower_mid", followerMid)
+                        where("player_uuid", playerUuid)
+                    } > 0
+                } else {
+                    // 插入新记录
+                    table.insert(dataSource) {
+                        value("up_mid", upMid)
+                        value("follower_mid", followerMid)
+                        value("player_uuid", playerUuid)
+                        value("is_following", if (isFollowing) 1 else 0)
+                        value("create_time", currentTime)
+                        value("update_time", currentTime)
+                        value("create_player", playerName)
+                        value("update_player", playerName)
+                    } > 0
+                }
+                
+                callback(result)
+            } catch (e: Exception) {
+                e.printStackTrace()
+                callback(false)
+            }
         }
     }
     
@@ -273,8 +476,32 @@ object DatabaseService {
         callback: (UpFollowStatus?) -> Unit
     ) {
         submitAsync {
-            val status = upFollowStatusDao.findByUpMidFollowerAndPlayer(upMid, followerMid, playerUuid)
-            callback(status)
+            try {
+                val table = TableFactory.getUpFollowStatusTable()
+                val dataSource = TableFactory.getDataSource()
+                
+                val result = table.select(dataSource) {
+                    where("up_mid", upMid)
+                    where("follower_mid", followerMid)
+                    where("player_uuid", playerUuid)
+                }.firstOrNull()?.let { row ->
+                    UpFollowStatus(
+                        upMid = row["up_mid"].asLong(),
+                        followerMid = row["follower_mid"].asLong(),
+                        playerUuid = row["player_uuid"].asString(),
+                        isFollowing = row["is_following"].asInt() == 1,
+                        createTime = row["create_time"].asLong(),
+                        updateTime = row["update_time"].asLong(),
+                        createPlayer = row["create_player"].asString(),
+                        updatePlayer = row["update_player"].asString()
+                    )
+                }
+                
+                callback(result)
+            } catch (e: Exception) {
+                e.printStackTrace()
+                callback(null)
+            }
         }
     }
     
@@ -287,8 +514,19 @@ object DatabaseService {
      */
     fun isPlayerBound(playerUuid: String, callback: (Boolean) -> Unit) {
         submitAsync {
-            val result = playerBindingDao.exists(playerUuid)
-            callback(result)
+            try {
+                val table = TableFactory.getPlayerBindingTable()
+                val dataSource = TableFactory.getDataSource()
+                
+                val result = table.select(dataSource) {
+                    where("player_uuid", playerUuid)
+                }.isNotEmpty()
+                
+                callback(result)
+            } catch (e: Exception) {
+                e.printStackTrace()
+                callback(false)
+            }
         }
     }
     
@@ -299,8 +537,19 @@ object DatabaseService {
      */
     fun isMidBound(mid: Long, callback: (Boolean) -> Unit) {
         submitAsync {
-            val result = playerBindingDao.midExists(mid)
-            callback(result)
+            try {
+                val table = TableFactory.getPlayerBindingTable()
+                val dataSource = TableFactory.getDataSource()
+                
+                val result = table.select(dataSource) {
+                    where("mid", mid)
+                }.isNotEmpty()
+                
+                callback(result)
+            } catch (e: Exception) {
+                e.printStackTrace()
+                callback(false)
+            }
         }
     }
 }
