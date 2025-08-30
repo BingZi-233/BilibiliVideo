@@ -407,4 +407,204 @@ fun safeDataOperation(player: Player) {
 }
 ```
 
-Database 模块为 TabooLib 插件提供了完整的数据持久化解决方案，通过简单的 API 即可实现复杂的数据库操作，是开发功能丰富插件的重要基础。
+## 统一数据库服务层
+
+在 BilibiliVideo 项目中，我们通过 `DatabaseService` 对象提供统一的数据库操作 API，封装了所有异步数据库操作的复杂性。
+
+### DatabaseService 设计模式
+
+#### 核心特性
+- **object 单例模式**：确保全局唯一的数据库服务实例
+- **回调式异步 API**：所有操作使用 `callback: (Result) -> Unit` 模式
+- **自动异步处理**：内部使用 `submitAsync` 执行数据库操作
+- **统一错误处理**：捕获异常并使用 `severe()` 记录错误日志
+- **主线程回调**：使用 `submit` 确保回调在主线程执行
+
+#### API 设计模式示例
+
+```kotlin
+object DatabaseService {
+    
+    /**
+     * 标准的异步数据库操作模式
+     */
+    fun bindPlayer(playerUuid: String, mid: Long, playerName: String, callback: (Boolean) -> Unit) {
+        submitAsync {
+            try {
+                val table = TableFactory.getPlayerBindingTable()
+                val dataSource = TableFactory.getDataSource()
+                val currentTime = System.currentTimeMillis()
+                
+                // 查询是否已存在记录
+                val existingRecords = table.select(dataSource) {
+                    where { "player_uuid" eq playerUuid }
+                }
+                
+                val result = if (existingRecords.find()) {
+                    // 更新现有记录
+                    table.update(dataSource) {
+                        set("mid", mid)
+                        set("update_time", currentTime)
+                        set("update_player", playerName)
+                        where { "player_uuid" eq playerUuid }
+                    } > 0
+                } else {
+                    // 插入新记录
+                    table.insert(dataSource) {
+                        value("player_uuid", playerUuid)
+                        value("mid", mid)
+                        value("create_time", currentTime)
+                        value("update_time", currentTime)
+                        value("create_player", playerName)
+                        value("update_player", playerName)
+                    } > 0
+                }
+                
+                submit { callback(result) }
+            } catch (e: Exception) {
+                submit {
+                    severe("绑定玩家失败: ${e.message}")
+                    callback(false)
+                }
+            }
+        }
+    }
+}
+```
+
+### 实体对象构建模式
+
+在 `DatabaseService` 中，复杂实体对象通过 `firstOrNull` 扩展函数构建：
+
+```kotlin
+val account = results.firstOrNull {
+    BilibiliAccount(
+        mid = getLong("mid"),
+        nickname = getString("nickname"),
+        sessdata = getString("sessdata"),
+        buvid3 = getString("buvid3"),
+        biliJct = getString("bili_jct"),
+        refreshToken = getString("refresh_token"),
+        createTime = getLong("create_time"),
+        updateTime = getLong("update_time"),
+        createPlayer = getString("create_player"),
+        updatePlayer = getString("update_player")
+    )
+}
+```
+
+### 联合查询条件
+
+支持多字段联合查询条件：
+
+```kotlin
+val existingRecords = table.select(dataSource) {
+    where { "bvid" eq bvid; "mid" eq mid; "player_uuid" eq playerUuid }
+}
+```
+
+### 完整的 CRUD 操作集
+
+#### 1. 玩家绑定管理
+```kotlin
+// 绑定/更新玩家MID
+DatabaseService.bindPlayer(playerUuid, mid, playerName) { success ->
+    if (success) sendMessage("绑定成功")
+}
+
+// 查询玩家MID
+DatabaseService.getPlayerMid(playerUuid) { mid ->
+    mid?.let { sendMessage("玩家MID: $it") }
+}
+
+// 根据MID查询玩家
+DatabaseService.getPlayerByMid(mid) { playerUuid ->
+    playerUuid?.let { sendMessage("绑定玩家: $it") }
+}
+
+// 解除绑定
+DatabaseService.unbindPlayer(playerUuid) { success ->
+    if (success) sendMessage("已解除绑定")
+}
+```
+
+#### 2. Bilibili账户信息管理
+```kotlin
+// 保存Cookie信息
+DatabaseService.saveBilibiliAccount(
+    mid, nickname, sessdata, buvid3, biliJct, refreshToken, playerName
+) { success ->
+    if (success) sendMessage("账户信息已保存")
+}
+
+// 获取账户信息
+DatabaseService.getBilibiliAccount(mid) { account ->
+    account?.let { 
+        sendMessage("账户: ${it.nickname}")
+        // 使用完整的Cookie信息进行API调用
+    }
+}
+
+// 更新Cookie
+DatabaseService.updateCookies(
+    mid, sessdata, buvid3, biliJct, refreshToken, playerName
+) { success ->
+    if (success) sendMessage("Cookie已更新")
+}
+```
+
+#### 3. 视频三连状态管理
+```kotlin
+// 保存视频状态
+DatabaseService.saveVideoTripleStatus(
+    bvid, mid, playerUuid, isLiked, isCoined, isFavorited, playerName
+) { success ->
+    if (success) sendMessage("视频状态已保存")
+}
+
+// 查询视频状态
+DatabaseService.getVideoTripleStatus(bvid, mid, playerUuid) { status ->
+    status?.let {
+        sendMessage("点赞: ${it.isLiked}, 投币: ${it.isCoined}, 收藏: ${it.isFavorited}")
+    }
+}
+```
+
+#### 4. UP主关注状态管理
+```kotlin
+// 保存关注状态
+DatabaseService.saveUpFollowStatus(
+    upMid, followerMid, playerUuid, isFollowing, playerName
+) { success ->
+    if (success) sendMessage("关注状态已更新")
+}
+
+// 查询关注状态
+DatabaseService.getUpFollowStatus(upMid, followerMid, playerUuid) { status ->
+    status?.let {
+        sendMessage("关注状态: ${it.isFollowing}")
+    }
+}
+```
+
+#### 5. 便捷查询方法
+```kotlin
+// 检查绑定状态
+DatabaseService.isPlayerBound(playerUuid) { isBound ->
+    if (!isBound) sendMessage("请先绑定Bilibili账户")
+}
+
+DatabaseService.isMidBound(mid) { isBound ->
+    if (isBound) sendMessage("该账户已被绑定")
+}
+```
+
+### 数据库服务层优势
+
+1. **简化使用复杂度**：调用方无需关心异步处理细节
+2. **统一错误处理**：所有数据库异常都有统一的日志记录
+3. **线程安全保障**：回调确保在正确的线程中执行
+4. **代码复用性**：避免重复的异步处理逻辑
+5. **易于测试维护**：集中的数据库操作便于单元测试
+
+Database 模块为 TabooLib 插件提供了完整的数据持久化解决方案，通过 DatabaseService 统一服务层，实现了简单易用的数据库操作 API，是开发功能丰富插件的重要基础。

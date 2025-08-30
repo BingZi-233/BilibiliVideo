@@ -39,20 +39,20 @@
 ### 📚 TabooLib 模块文档
 
 #### 核心模块
-- **[Basic 模块](docs/Basic.md)** - 基础模块，提供核心功能和平台抽象
-- **[Bukkit 模块](docs/Bukkit.md)** - Bukkit 平台核心，事件监听和服务器 API 封装
+- **[Basic 模块](docs/taboolib/Basic.md)** - 基础模块，提供核心功能和平台抽象
+- **[Bukkit 模块](docs/taboolib/Bukkit.md)** - Bukkit 平台核心，事件监听和服务器 API 封装
 
 #### 功能模块
-- **[BukkitHook 模块](docs/BukkitHook.md)** - Bukkit 插件集成，支持 PlaceholderAPI、Vault 等
-- **[BukkitUtil 模块](docs/BukkitUtil.md)** - Bukkit 实用工具，包含 ItemBuilder、库存管理等
-- **[CommandHelper 模块](docs/CommandHelper.md)** - 命令系统，支持声明式命令定义和自动补全
-- **[I18n 模块](docs/I18n.md)** - 国际化支持，多语言消息管理
-- **[MinecraftChat 模块](docs/MinecraftChat.md)** - 聊天消息处理，支持 JSON 格式和 RGB 颜色
-- **[Kether 模块](docs/Kether.md)** - 脚本引擎，动态脚本执行和配置
+- **[BukkitHook 模块](docs/taboolib/BukkitHook.md)** - Bukkit 插件集成，支持 PlaceholderAPI、Vault 等
+- **[BukkitUtil 模块](docs/taboolib/BukkitUtil.md)** - Bukkit 实用工具，包含 ItemBuilder、库存管理等
+- **[CommandHelper 模块](docs/taboolib/CommandHelper.md)** - 命令系统，支持声明式命令定义和自动补全
+- **[I18n 模块](docs/taboolib/I18n.md)** - 国际化支持，多语言消息管理
+- **[MinecraftChat 模块](docs/taboolib/MinecraftChat.md)** - 聊天消息处理，支持 JSON 格式和 RGB 颜色
+- **[Kether 模块](docs/taboolib/Kether.md)** - 脚本引擎，动态脚本执行和配置
 
 #### 数据和工具模块
-- **[DatabasePlayer 模块](docs/DatabasePlayer.md)** - 玩家数据库，数据持久化存储
-- **[Metrics 模块](docs/Metrics.md)** - 插件统计，集成 bStats 数据收集
+- **[DatabasePlayer 模块](docs/taboolib/DatabasePlayer.md)** - 玩家数据库，数据持久化存储
+- **[Metrics 模块](docs/taboolib/Metrics.md)** - 插件统计，集成 bStats 数据收集
 
 ### 🎬 Bilibili API 集成文档
 

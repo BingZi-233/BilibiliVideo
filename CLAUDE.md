@@ -146,24 +146,24 @@ DatabaseService.getVideoTripleStatus(bvid, mid, playerUuid) { status ->
 ### TabooLib 模块相关问题
 
 #### 基础和核心问题
-- **插件启动/生命周期问题** → [Basic 模块](docs/Basic.md) - 插件对象模式、日志输出、生命周期管理
-- **事件监听/服务器 API 问题** → [Bukkit 模块](docs/Bukkit.md) - 事件系统、任务调度、跨版本兼容
+- **插件启动/生命周期问题** → [Basic 模块](docs/taboolib/Basic.md) - 插件对象模式、日志输出、生命周期管理
+- **事件监听/服务器 API 问题** → [Bukkit 模块](docs/taboolib/Bukkit.md) - 事件系统、任务调度、跨版本兼容
 
 #### 功能集成问题  
-- **其他插件集成/PlaceholderAPI/Vault** → [BukkitHook 模块](docs/BukkitHook.md) - 插件钩子、依赖管理
-- **物品构建/库存操作/玩家工具** → [BukkitUtil 模块](docs/BukkitUtil.md) - ItemBuilder、库存管理、位置操作
-- **命令系统/参数解析/补全** → [CommandHelper 模块](docs/CommandHelper.md) - 声明式命令、多级子命令、权限检查
+- **其他插件集成/PlaceholderAPI/Vault** → [BukkitHook 模块](docs/taboolib/BukkitHook.md) - 插件钩子、依赖管理
+- **物品构建/库存操作/玩家工具** → [BukkitUtil 模块](docs/taboolib/BukkitUtil.md) - ItemBuilder、库存管理、位置操作
+- **命令系统/参数解析/补全** → [CommandHelper 模块](docs/taboolib/CommandHelper.md) - 声明式命令、多级子命令、权限检查
 
 #### 用户体验问题
-- **配置文件管理/@Config注解/ConfigNodeTransfer** → [Configuration 模块](docs/Configuration.md) - 配置文件加载、代理映射、节点转换、自动监听
-- **多语言/消息发送/国际化** → [I18n 模块](docs/I18n.md) - sendInfo/sendWarn/sendError、语言文件管理
-- **聊天消息/RGB颜色/JSON格式** → [MinecraftChat 模块](docs/MinecraftChat.md) - Component 消息、悬停点击事件
-- **脚本执行/动态配置** → [Kether 模块](docs/Kether.md) - 脚本引擎、条件判断、变量函数
+- **配置文件管理/@Config注解/ConfigNodeTransfer** → [Configuration 模块](docs/taboolib/Configuration.md) - 配置文件加载、代理映射、节点转换、自动监听
+- **多语言/消息发送/国际化** → [I18n 模块](docs/taboolib/I18n.md) - sendInfo/sendWarn/sendError、语言文件管理
+- **聊天消息/RGB颜色/JSON格式** → [MinecraftChat 模块](docs/taboolib/MinecraftChat.md) - Component 消息、悬停点击事件
+- **脚本执行/动态配置** → [Kether 模块](docs/taboolib/Kether.md) - 脚本引擎、条件判断、变量函数
 
 #### 数据和监控问题
-- **数据库操作/SQL查询/事务管理** → [Database 模块](docs/Database.md) - MySQL/SQLite支持、数据表创建、增删改查操作
-- **玩家数据存储/数据库** → [DatabasePlayer 模块](docs/DatabasePlayer.md) - 数据持久化、多数据库支持
-- **插件统计/bStats集成** → [Metrics 模块](docs/Metrics.md) - 使用统计、自定义图表
+- **数据库操作/SQL查询/事务管理** → [Database 模块](docs/taboolib/Database.md) - MySQL/SQLite支持、数据表创建、增删改查操作
+- **玩家数据存储/数据库** → [DatabasePlayer 模块](docs/taboolib/DatabasePlayer.md) - 数据持久化、多数据库支持
+- **插件统计/bStats集成** → [Metrics 模块](docs/taboolib/Metrics.md) - 使用统计、自定义图表
 - **Bilibili数据管理** → 内置数据库架构 - `DatabaseService` 提供完整的玩家绑定、Cookie管理、三连状态、关注状态API
 
 ### Bilibili API 集成问题
@@ -187,11 +187,11 @@ DatabaseService.getVideoTripleStatus(bvid, mid, playerUuid) { status ->
 → 重点关注账户隔离和数据持久化
 
 **问题：命令系统集成**
-→ 查看 [CommandHelper 模块](docs/CommandHelper.md) 了解 TabooLib 命令系统
+→ 查看 [CommandHelper 模块](docs/taboolib/CommandHelper.md) 了解 TabooLib 命令系统
 → 查看各 API 文档中的 TabooLib 命令实现示例
 
 **问题：国际化消息**
-→ 查看 [I18n 模块](docs/I18n.md) 了解 sendInfo/sendWarn/sendError 用法
+→ 查看 [I18n 模块](docs/taboolib/I18n.md) 了解 sendInfo/sendWarn/sendError 用法
 → 注意语言文件使用扁平结构和小驼峰命名，颜色代码使用 & 而非 §
 
 **问题：数据库开发和DAO实现**
@@ -215,4 +215,4 @@ DatabaseService.getVideoTripleStatus(bvid, mid, playerUuid) { status ->
 - 项目使用 TabooLib 的任务调度系统而非 Kotlin Coroutines
 - 现有 `docs/bilibili-API-collect/` 中的文档使用了 Kotlin Coroutines 示例代码
 - 实际开发时需要将 `suspend fun`、`withContext(Dispatchers.IO)`、`launch` 等协程代码替换为 TabooLib 的异步处理方式
-- 参考 [Bukkit 模块](docs/Bukkit.md) 中的 `submitTask` 异步任务示例
+- 参考 [Bukkit 模块](docs/taboolib/Bukkit.md) 中的 `submitTask` 异步任务示例
