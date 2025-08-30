@@ -24,9 +24,7 @@ object BilibiliCommand {
 
     @CommandBody
     val main = mainCommand {
-        execute<ProxyCommandSender> { sender, _, _ ->
-            createHelper()
-        }
+        createHelper()
     }
 
     @CommandBody

@@ -4,7 +4,7 @@
 # 数据库配置
 database:
   # 是否启用数据库 (true: 使用 MySQL, false: 使用 SQLite)
-  enable: true
+  enable: false
   
   # MySQL 数据库配置
   mysql:

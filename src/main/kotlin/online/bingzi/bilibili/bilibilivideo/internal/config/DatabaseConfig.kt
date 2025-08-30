@@ -2,7 +2,9 @@ package online.bingzi.bilibili.bilibilivideo.internal.config
 
 import taboolib.common.io.newFile
 import taboolib.common.platform.function.getDataFolder
+import taboolib.module.configuration.Config
 import taboolib.module.configuration.ConfigNode
+import taboolib.module.configuration.Configuration
 import taboolib.module.database.Host
 import taboolib.module.database.HostSQL
 import taboolib.module.database.HostSQLite
@@ -14,45 +16,48 @@ import javax.sql.DataSource
  * 负责为 TabooLib Database 模块提供连接对象
  */
 object DatabaseConfig {
-    
+    @Config("database.yml")
+    lateinit var config: Configuration
+        private set
+
     // 基本配置
-    @ConfigNode("database.enable")
-    var enable: Boolean = true
-    
+    @ConfigNode(value = "database.enable", bind = "database.yml")
+    var enable: Boolean = false
+
     // MySQL 配置
-    @ConfigNode("database.mysql.host")
+    @ConfigNode(value = "database.mysql.host", bind = "database.yml")
     var mysqlHost: String = "localhost"
-    
-    @ConfigNode("database.mysql.port")
+
+    @ConfigNode(value = "database.mysql.port", bind = "database.yml")
     var mysqlPort: Int = 3306
-    
-    @ConfigNode("database.mysql.database")
+
+    @ConfigNode(value = "database.mysql.database", bind = "database.yml")
     var mysqlDatabase: String = "bilibili_video"
-    
-    @ConfigNode("database.mysql.username")
+
+    @ConfigNode(value = "database.mysql.username", bind = "database.yml")
     var mysqlUsername: String = "root"
-    
-    @ConfigNode("database.mysql.password")
+
+    @ConfigNode(value = "database.mysql.password", bind = "database.yml")
     var mysqlPassword: String = ""
-    
-    @ConfigNode("database.mysql.use-ssl")
+
+    @ConfigNode(value = "database.mysql.use-ssl", bind = "database.yml")
     var mysqlUseSsl: Boolean = false
-    
-    @ConfigNode("database.mysql.charset")
+
+    @ConfigNode(value = "database.mysql.charset", bind = "database.yml")
     var mysqlCharset: String = "utf8mb4"
-    
+
     // SQLite 配置
-    @ConfigNode("database.sqlite.file")
+    @ConfigNode(value = "database.sqlite.file", bind = "database.yml")
     var sqliteFile: String = "data/database.db"
-    
+
     // 数据表配置
-    @ConfigNode("database.table.prefix")
+    @ConfigNode(value = "database.table.prefix", bind = "database.yml")
     var tablePrefix: String = "bv_"
-    
+
     // 高级配置
-    @ConfigNode("database.advanced.auto-reconnect")
+    @ConfigNode(value = "database.advanced.auto-reconnect", bind = "database.yml")
     var advancedAutoReconnect: Boolean = true
-    
+
     /**
      * 创建 TabooLib Database 模块所需的 Host 对象
      * @return Host<*> 对象，根据配置返回 HostSQL 或 HostSQLite
@@ -67,7 +72,7 @@ object DatabaseConfig {
                 password = mysqlPassword,
                 database = mysqlDatabase
             )
-            
+
             // 配置连接参数
             host.flags.clear()
             host.flags.add("characterEncoding=$mysqlCharset")
@@ -76,14 +81,14 @@ object DatabaseConfig {
             if (advancedAutoReconnect) {
                 host.flags.add("autoReconnect=true")
             }
-            
+
             host
         } else {
             // 创建 SQLite Host
             HostSQLite(getSqliteFile())
         }
     }
-    
+
     /**
      * 创建 DataSource 对象
      * @param autoRelease 是否自动释放，默认为 true
@@ -93,7 +98,7 @@ object DatabaseConfig {
     fun createDataSource(autoRelease: Boolean = true, withoutConfig: Boolean = false): DataSource {
         return createHost().createDataSource(autoRelease, withoutConfig)
     }
-    
+
     /**
      * 获取带前缀的表名
      * @param tableName 原表名
@@ -102,7 +107,7 @@ object DatabaseConfig {
     fun getTableName(tableName: String): String {
         return tablePrefix + tableName
     }
-    
+
     /**
      * 获取 SQLite 数据库文件
      */
@@ -112,10 +117,10 @@ object DatabaseConfig {
         } else {
             newFile(getDataFolder(), sqliteFile)
         }
-        
+
         // 确保父目录存在
         file.parentFile?.mkdirs()
-        
+
         return file
     }
 }
