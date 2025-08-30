@@ -673,55 +673,161 @@ A: 不会冲突。每个插件的配置文件都存储在各自的插件数据�
 
 ## 示例项目
 
-以下是一个完整的配置管理示例：
+以下是一个完整的数据库配置管理示例，来自 BilibiliVideo 插件的实际实现：
 
 ```kotlin
-// 主配置类
-object BilibiliVideoConfig {
-    @Config("config.yml")
+/**
+ * 数据库配置管理类
+ * 负责为 TabooLib Database 模块提供连接对象
+ */
+object DatabaseConfig {
+    @Config("database.yml")
     lateinit var config: Configuration
         private set
-    
-    @Config("database.yml")
-    lateinit var database: Configuration
-        private set
-    
-    @Config("messages.yml", autoReload = true)
-    lateinit var messages: Configuration
-        private set
-    
-    // 基础配置
-    @ConfigNode("plugin.debug")
-    var debugMode: Boolean = false
-    
-    @ConfigNode("plugin.auto-save-interval")
-    var autoSaveInterval: Long = 300000L // 5分钟
-    
-    // 数据库配置
-    @ConfigNode("database.url", bind = "database.yml")
-    var dbUrl: String = "jdbc:sqlite:plugins/BilibiliVideo/data.db"
-    
-    @ConfigNode("database.username", bind = "database.yml")
-    var dbUsername: String = ""
-    
-    @ConfigNode("database.password", bind = "database.yml")
-    var dbPassword: String = ""
-    
-    // 复杂类型转换
-    @ConfigNode("bilibili.cookies", bind = "config.yml")
-    val cookieSettings: ConfigNodeTransfer<Map<String, String>, CookieManager> = lazyConversion { cookieMap ->
-        CookieManager().apply {
-            cookieMap.forEach { (key, value) -> addCookie(key, value) }
+
+    // 基本配置
+    @ConfigNode(value = "database.enable", bind = "database.yml")
+    var enable: Boolean = false
+
+    // MySQL 配置
+    @ConfigNode(value = "database.mysql.host", bind = "database.yml")
+    var mysqlHost: String = "localhost"
+
+    @ConfigNode(value = "database.mysql.port", bind = "database.yml")
+    var mysqlPort: Int = 3306
+
+    @ConfigNode(value = "database.mysql.database", bind = "database.yml")
+    var mysqlDatabase: String = "bilibili_video"
+
+    @ConfigNode(value = "database.mysql.username", bind = "database.yml")
+    var mysqlUsername: String = "root"
+
+    @ConfigNode(value = "database.mysql.password", bind = "database.yml")
+    var mysqlPassword: String = ""
+
+    @ConfigNode(value = "database.mysql.use-ssl", bind = "database.yml")
+    var mysqlUseSsl: Boolean = false
+
+    @ConfigNode(value = "database.mysql.charset", bind = "database.yml")
+    var mysqlCharset: String = "utf8mb4"
+
+    // SQLite 配置
+    @ConfigNode(value = "database.sqlite.file", bind = "database.yml")
+    var sqliteFile: String = "data/database.db"
+
+    // 数据表配置
+    @ConfigNode(value = "database.table.prefix", bind = "database.yml")
+    var tablePrefix: String = "bv_"
+
+    // 高级配置
+    @ConfigNode(value = "database.advanced.auto-reconnect", bind = "database.yml")
+    var advancedAutoReconnect: Boolean = true
+
+    /**
+     * 创建 TabooLib Database 模块所需的 Host 对象
+     * @return Host<*> 对象，根据配置返回 HostSQL 或 HostSQLite
+     */
+    fun createHost(): Host<*> {
+        return if (enable) {
+            // 创建 MySQL Host
+            val host = HostSQL(
+                host = mysqlHost,
+                port = mysqlPort.toString(),
+                user = mysqlUsername,
+                password = mysqlPassword,
+                database = mysqlDatabase
+            )
+
+            // 配置连接参数
+            host.flags.clear()
+            host.flags.add("characterEncoding=$mysqlCharset")
+            host.flags.add("useSSL=$mysqlUseSsl")
+            host.flags.add("allowPublicKeyRetrieval=true") // 针对 MySQL8
+            if (advancedAutoReconnect) {
+                host.flags.add("autoReconnect=true")
+            }
+
+            host
+        } else {
+            // 创建 SQLite Host
+            HostSQLite(getSqliteFile())
         }
     }
-    
-    // 消息配置
-    @ConfigNode("prefix", bind = "messages.yml")
-    var messagePrefix: String = "&7[&bBilibiliVideo&7] "
-    
-    @ConfigNode("login.qr-expired", bind = "messages.yml")
-    var qrExpiredMessage: String = "&c二维码已过期，请重新获取"
+
+    /**
+     * 创建 DataSource 对象
+     * @param autoRelease 是否自动释放，默认为 true
+     * @param withoutConfig 是否不使用配置，默认为 false
+     * @return DataSource 对象
+     */
+    fun createDataSource(autoRelease: Boolean = true, withoutConfig: Boolean = false): DataSource {
+        return createHost().createDataSource(autoRelease, withoutConfig)
+    }
+
+    /**
+     * 获取带前缀的表名
+     * @param tableName 原表名
+     * @return 带前缀的完整表名
+     */
+    fun getTableName(tableName: String): String {
+        return tablePrefix + tableName
+    }
+
+    /**
+     * 获取 SQLite 数据库文件
+     */
+    private fun getSqliteFile(): File {
+        val file = if (sqliteFile.startsWith("/")) {
+            File(sqliteFile)
+        } else {
+            newFile(getDataFolder(), sqliteFile)
+        }
+
+        // 确保父目录存在
+        file.parentFile?.mkdirs()
+
+        return file
+    }
 }
 ```
 
-这个配置系统为 BilibiliVideo 插件提供了完整的配置管理功能，支持多文件配置、类型转换、热重载等特性，确保插件配置的灵活性和可维护性。
+### 该示例的配置文件结构
+
+对应的 `database.yml` 配置文件结构：
+
+```yaml
+database:
+  enable: false  # true: MySQL, false: SQLite
+  
+  mysql:
+    host: localhost
+    port: 3306
+    database: bilibili_video
+    username: root
+    password: ""
+    use-ssl: false
+    charset: utf8mb4
+  
+  sqlite:
+    file: "data/database.db"
+  
+  table:
+    prefix: "bv_"
+  
+  advanced:
+    auto-reconnect: true
+```
+
+### 示例特点说明
+
+这个数据库配置管理类展示了以下 TabooLib Configuration 模块的核心特性：
+
+1. **单一配置文件绑定**: 所有字段都使用 `bind = "database.yml"` 绑定到同一个配置文件
+2. **层次化配置路径**: 使用点号分隔的路径如 `database.mysql.host` 映射到嵌套的 YAML 结构
+3. **类型自动转换**: 支持 String、Int、Boolean 等基本类型的自动转换
+4. **默认值设置**: 每个配置项都提供了合理的默认值
+5. **业务逻辑集成**: `createHost()` 方法展示了如何将配置数据转换为业务对象
+6. **文件路径处理**: `getSqliteFile()` 方法展示了相对路径和绝对路径的处理
+7. **TabooLib 集成**: 与 TabooLib Database 模块无缝集成，支持 MySQL/SQLite 双数据库
+
+这个配置系统为 BilibiliVideo 插件提供了完整的数据库配置管理功能，支持生产环境的 MySQL 和开发环境的 SQLite 无缝切换，确保插件配置的灵活性和可维护性。
