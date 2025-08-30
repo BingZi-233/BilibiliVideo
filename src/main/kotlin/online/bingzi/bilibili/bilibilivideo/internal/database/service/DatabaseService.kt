@@ -1,7 +1,11 @@
 package online.bingzi.bilibili.bilibilivideo.internal.database.service
 
-import online.bingzi.bilibili.bilibilivideo.internal.database.entity.*
+import online.bingzi.bilibili.bilibilivideo.internal.database.entity.BilibiliAccount
+import online.bingzi.bilibili.bilibilivideo.internal.database.entity.UpFollowStatus
+import online.bingzi.bilibili.bilibilivideo.internal.database.entity.VideoTripleStatus
 import online.bingzi.bilibili.bilibilivideo.internal.database.factory.TableFactory
+import taboolib.common.platform.function.severe
+import taboolib.common.platform.function.submit
 import taboolib.common.platform.function.submitAsync
 
 /**
@@ -14,10 +18,6 @@ object DatabaseService {
     
     /**
      * 绑定玩家与MID
-     * @param playerUuid 玩家UUID
-     * @param mid Bilibili MID
-     * @param playerName 玩家名称
-     * @param callback 结果回调
      */
     fun bindPlayer(playerUuid: String, mid: Long, playerName: String, callback: (Boolean) -> Unit) {
         submitAsync {
@@ -26,18 +26,18 @@ object DatabaseService {
                 val dataSource = TableFactory.getDataSource()
                 val currentTime = System.currentTimeMillis()
                 
-                // 使用插入或更新逻辑
-                val existingRecord = table.select(dataSource) {
-                    where("player_uuid", playerUuid)
-                }.firstOrNull()
+                // 查询是否已存在记录
+                val existingRecords = table.select(dataSource) {
+                    where { "player_uuid" eq playerUuid }
+                }
                 
-                val result = if (existingRecord != null) {
+                val result = if (existingRecords.find()) {
                     // 更新现有记录
                     table.update(dataSource) {
                         set("mid", mid)
                         set("update_time", currentTime)
                         set("update_player", playerName)
-                        where("player_uuid", playerUuid)
+                        where { "player_uuid" eq playerUuid }
                     } > 0
                 } else {
                     // 插入新记录
@@ -51,18 +51,18 @@ object DatabaseService {
                     } > 0
                 }
                 
-                callback(result)
+                submit { callback(result) }
             } catch (e: Exception) {
-                e.printStackTrace()
-                callback(false)
+                submit {
+                    severe("绑定玩家失败: ${e.message}")
+                    callback(false)
+                }
             }
         }
     }
     
     /**
      * 根据玩家UUID获取绑定的MID
-     * @param playerUuid 玩家UUID
-     * @param callback 结果回调
      */
     fun getPlayerMid(playerUuid: String, callback: (Long?) -> Unit) {
         submitAsync {
@@ -70,24 +70,26 @@ object DatabaseService {
                 val table = TableFactory.getPlayerBindingTable()
                 val dataSource = TableFactory.getDataSource()
                 
-                val result = table.select(dataSource) {
-                    where("player_uuid", playerUuid)
-                }.firstOrNull()?.let { row ->
-                    row["mid"].asLong()
+                val results = table.select(dataSource) {
+                    where { "player_uuid" eq playerUuid }
                 }
                 
-                callback(result)
+                val mid = results.firstOrNull { 
+                    getLong("mid")
+                }
+                
+                submit { callback(mid) }
             } catch (e: Exception) {
-                e.printStackTrace()
-                callback(null)
+                submit {
+                    severe("查询玩家MID失败: ${e.message}")
+                    callback(null)
+                }
             }
         }
     }
     
     /**
      * 根据MID获取绑定的玩家UUID
-     * @param mid Bilibili MID
-     * @param callback 结果回调
      */
     fun getPlayerByMid(mid: Long, callback: (String?) -> Unit) {
         submitAsync {
@@ -95,24 +97,26 @@ object DatabaseService {
                 val table = TableFactory.getPlayerBindingTable()
                 val dataSource = TableFactory.getDataSource()
                 
-                val result = table.select(dataSource) {
-                    where("mid", mid)
-                }.firstOrNull()?.let { row ->
-                    row["player_uuid"].asString()
+                val results = table.select(dataSource) {
+                    where { "mid" eq mid }
                 }
                 
-                callback(result)
+                val playerUuid = results.firstOrNull {
+                    getString("player_uuid")
+                }
+                
+                submit { callback(playerUuid) }
             } catch (e: Exception) {
-                e.printStackTrace()
-                callback(null)
+                submit {
+                    severe("根据MID查询玩家失败: ${e.message}")
+                    callback(null)
+                }
             }
         }
     }
     
     /**
      * 解除玩家绑定
-     * @param playerUuid 玩家UUID
-     * @param callback 结果回调
      */
     fun unbindPlayer(playerUuid: String, callback: (Boolean) -> Unit) {
         submitAsync {
@@ -121,13 +125,15 @@ object DatabaseService {
                 val dataSource = TableFactory.getDataSource()
                 
                 val result = table.delete(dataSource) {
-                    where("player_uuid", playerUuid)
+                    where { "player_uuid" eq playerUuid }
                 } > 0
                 
-                callback(result)
+                submit { callback(result) }
             } catch (e: Exception) {
-                e.printStackTrace()
-                callback(false)
+                submit {
+                    severe("解除玩家绑定失败: ${e.message}")
+                    callback(false)
+                }
             }
         }
     }
@@ -136,14 +142,6 @@ object DatabaseService {
     
     /**
      * 保存或更新Bilibili账户信息
-     * @param mid Bilibili MID
-     * @param nickname 昵称
-     * @param sessdata SESSDATA Cookie
-     * @param buvid3 buvid3 Cookie
-     * @param biliJct bili_jct Cookie
-     * @param refreshToken 刷新令牌
-     * @param playerName 操作的玩家名称
-     * @param callback 结果回调
      */
     fun saveBilibiliAccount(
         mid: Long,
@@ -161,12 +159,12 @@ object DatabaseService {
                 val dataSource = TableFactory.getDataSource()
                 val currentTime = System.currentTimeMillis()
                 
-                // 使用插入或更新逻辑
-                val existingRecord = table.select(dataSource) {
-                    where("mid", mid)
-                }.firstOrNull()
+                // 查询是否已存在记录
+                val existingRecords = table.select(dataSource) {
+                    where { "mid" eq mid }
+                }
                 
-                val result = if (existingRecord != null) {
+                val result = if (existingRecords.find()) {
                     // 更新现有记录
                     table.update(dataSource) {
                         set("nickname", nickname)
@@ -176,7 +174,7 @@ object DatabaseService {
                         set("refresh_token", refreshToken)
                         set("update_time", currentTime)
                         set("update_player", playerName)
-                        where("mid", mid)
+                        where { "mid" eq mid }
                     } > 0
                 } else {
                     // 插入新记录
@@ -194,18 +192,18 @@ object DatabaseService {
                     } > 0
                 }
                 
-                callback(result)
+                submit { callback(result) }
             } catch (e: Exception) {
-                e.printStackTrace()
-                callback(false)
+                submit {
+                    severe("保存Bilibili账户信息失败: ${e.message}")
+                    callback(false)
+                }
             }
         }
     }
     
     /**
      * 根据MID获取Bilibili账户信息
-     * @param mid Bilibili MID
-     * @param callback 结果回调
      */
     fun getBilibiliAccount(mid: Long, callback: (BilibiliAccount?) -> Unit) {
         submitAsync {
@@ -213,40 +211,37 @@ object DatabaseService {
                 val table = TableFactory.getBilibiliAccountTable()
                 val dataSource = TableFactory.getDataSource()
                 
-                val result = table.select(dataSource) {
-                    where("mid", mid)
-                }.firstOrNull()?.let { row ->
+                val results = table.select(dataSource) {
+                    where { "mid" eq mid }
+                }
+                
+                val account = results.firstOrNull {
                     BilibiliAccount(
-                        mid = row["mid"].asLong(),
-                        nickname = row["nickname"].asString(),
-                        sessdata = row["sessdata"].asString(),
-                        buvid3 = row["buvid3"].asString(),
-                        biliJct = row["bili_jct"].asString(),
-                        refreshToken = row["refresh_token"].asString(),
-                        createTime = row["create_time"].asLong(),
-                        updateTime = row["update_time"].asLong(),
-                        createPlayer = row["create_player"].asString(),
-                        updatePlayer = row["update_player"].asString()
+                        mid = getLong("mid"),
+                        nickname = getString("nickname"),
+                        sessdata = getString("sessdata"),
+                        buvid3 = getString("buvid3"),
+                        biliJct = getString("bili_jct"),
+                        refreshToken = getString("refresh_token"),
+                        createTime = getLong("create_time"),
+                        updateTime = getLong("update_time"),
+                        createPlayer = getString("create_player"),
+                        updatePlayer = getString("update_player")
                     )
                 }
                 
-                callback(result)
+                submit { callback(account) }
             } catch (e: Exception) {
-                e.printStackTrace()
-                callback(null)
+                submit {
+                    severe("获取Bilibili账户信息失败: ${e.message}")
+                    callback(null)
+                }
             }
         }
     }
     
     /**
      * 更新Cookie信息
-     * @param mid Bilibili MID
-     * @param sessdata SESSDATA Cookie
-     * @param buvid3 buvid3 Cookie
-     * @param biliJct bili_jct Cookie
-     * @param refreshToken 刷新令牌
-     * @param playerName 操作的玩家名称
-     * @param callback 结果回调
      */
     fun updateCookies(
         mid: Long,
@@ -270,13 +265,15 @@ object DatabaseService {
                     set("refresh_token", refreshToken)
                     set("update_time", currentTime)
                     set("update_player", playerName)
-                    where("mid", mid)
+                    where { "mid" eq mid }
                 } > 0
                 
-                callback(result)
+                submit { callback(result) }
             } catch (e: Exception) {
-                e.printStackTrace()
-                callback(false)
+                submit {
+                    severe("更新Cookie信息失败: ${e.message}")
+                    callback(false)
+                }
             }
         }
     }
@@ -285,14 +282,6 @@ object DatabaseService {
     
     /**
      * 保存或更新视频三连状态
-     * @param bvid 视频BV号
-     * @param mid Bilibili MID
-     * @param playerUuid 玩家UUID
-     * @param isLiked 是否点赞
-     * @param isCoined 是否投币
-     * @param isFavorited 是否收藏
-     * @param playerName 操作的玩家名称
-     * @param callback 结果回调
      */
     fun saveVideoTripleStatus(
         bvid: String,
@@ -310,14 +299,12 @@ object DatabaseService {
                 val dataSource = TableFactory.getDataSource()
                 val currentTime = System.currentTimeMillis()
                 
-                // 使用插入或更新逻辑
-                val existingRecord = table.select(dataSource) {
-                    where("bvid", bvid)
-                    where("mid", mid)
-                    where("player_uuid", playerUuid)
-                }.firstOrNull()
+                // 查询是否已存在记录
+                val existingRecords = table.select(dataSource) {
+                    where { "bvid" eq bvid; "mid" eq mid; "player_uuid" eq playerUuid }
+                }
                 
-                val result = if (existingRecord != null) {
+                val result = if (existingRecords.find()) {
                     // 更新现有记录
                     table.update(dataSource) {
                         set("is_liked", if (isLiked) 1 else 0)
@@ -325,9 +312,7 @@ object DatabaseService {
                         set("is_favorited", if (isFavorited) 1 else 0)
                         set("update_time", currentTime)
                         set("update_player", playerName)
-                        where("bvid", bvid)
-                        where("mid", mid)
-                        where("player_uuid", playerUuid)
+                        where { "bvid" eq bvid; "mid" eq mid; "player_uuid" eq playerUuid }
                     } > 0
                 } else {
                     // 插入新记录
@@ -345,20 +330,18 @@ object DatabaseService {
                     } > 0
                 }
                 
-                callback(result)
+                submit { callback(result) }
             } catch (e: Exception) {
-                e.printStackTrace()
-                callback(false)
+                submit {
+                    severe("保存视频三连状态失败: ${e.message}")
+                    callback(false)
+                }
             }
         }
     }
     
     /**
      * 获取视频三连状态
-     * @param bvid 视频BV号
-     * @param mid Bilibili MID
-     * @param playerUuid 玩家UUID
-     * @param callback 结果回调
      */
     fun getVideoTripleStatus(
         bvid: String,
@@ -371,29 +354,32 @@ object DatabaseService {
                 val table = TableFactory.getVideoTripleStatusTable()
                 val dataSource = TableFactory.getDataSource()
                 
-                val result = table.select(dataSource) {
-                    where("bvid", bvid)
-                    where("mid", mid)
-                    where("player_uuid", playerUuid)
-                }.firstOrNull()?.let { row ->
+                val results = table.select(dataSource) {
+                    where { "bvid" eq bvid; "mid" eq mid; "player_uuid" eq playerUuid }
+                }
+                
+                val status = results.firstOrNull {
                     VideoTripleStatus(
-                        bvid = row["bvid"].asString(),
-                        mid = row["mid"].asLong(),
-                        playerUuid = row["player_uuid"].asString(),
-                        isLiked = row["is_liked"].asInt() == 1,
-                        isCoined = row["is_coined"].asInt() == 1,
-                        isFavorited = row["is_favorited"].asInt() == 1,
-                        createTime = row["create_time"].asLong(),
-                        updateTime = row["update_time"].asLong(),
-                        createPlayer = row["create_player"].asString(),
-                        updatePlayer = row["update_player"].asString()
+                        id = getLong("id"),
+                        bvid = getString("bvid"),
+                        mid = getLong("mid"),
+                        playerUuid = getString("player_uuid"),
+                        isLiked = getInt("is_liked") == 1,
+                        isCoined = getInt("is_coined") == 1,
+                        isFavorited = getInt("is_favorited") == 1,
+                        createTime = getLong("create_time"),
+                        updateTime = getLong("update_time"),
+                        createPlayer = getString("create_player"),
+                        updatePlayer = getString("update_player")
                     )
                 }
                 
-                callback(result)
+                submit { callback(status) }
             } catch (e: Exception) {
-                e.printStackTrace()
-                callback(null)
+                submit {
+                    severe("获取视频三连状态失败: ${e.message}")
+                    callback(null)
+                }
             }
         }
     }
@@ -402,12 +388,6 @@ object DatabaseService {
     
     /**
      * 保存或更新UP主关注状态
-     * @param upMid UP主MID
-     * @param followerMid 关注者MID
-     * @param playerUuid 玩家UUID
-     * @param isFollowing 是否关注
-     * @param playerName 操作的玩家名称
-     * @param callback 结果回调
      */
     fun saveUpFollowStatus(
         upMid: Long,
@@ -423,22 +403,18 @@ object DatabaseService {
                 val dataSource = TableFactory.getDataSource()
                 val currentTime = System.currentTimeMillis()
                 
-                // 使用插入或更新逻辑
-                val existingRecord = table.select(dataSource) {
-                    where("up_mid", upMid)
-                    where("follower_mid", followerMid)
-                    where("player_uuid", playerUuid)
-                }.firstOrNull()
+                // 查询是否已存在记录
+                val existingRecords = table.select(dataSource) {
+                    where { "up_mid" eq upMid; "follower_mid" eq followerMid; "player_uuid" eq playerUuid }
+                }
                 
-                val result = if (existingRecord != null) {
+                val result = if (existingRecords.find()) {
                     // 更新现有记录
                     table.update(dataSource) {
                         set("is_following", if (isFollowing) 1 else 0)
                         set("update_time", currentTime)
                         set("update_player", playerName)
-                        where("up_mid", upMid)
-                        where("follower_mid", followerMid)
-                        where("player_uuid", playerUuid)
+                        where { "up_mid" eq upMid; "follower_mid" eq followerMid; "player_uuid" eq playerUuid }
                     } > 0
                 } else {
                     // 插入新记录
@@ -454,20 +430,18 @@ object DatabaseService {
                     } > 0
                 }
                 
-                callback(result)
+                submit { callback(result) }
             } catch (e: Exception) {
-                e.printStackTrace()
-                callback(false)
+                submit {
+                    severe("保存UP主关注状态失败: ${e.message}")
+                    callback(false)
+                }
             }
         }
     }
     
     /**
      * 获取UP主关注状态
-     * @param upMid UP主MID
-     * @param followerMid 关注者MID
-     * @param playerUuid 玩家UUID
-     * @param callback 结果回调
      */
     fun getUpFollowStatus(
         upMid: Long,
@@ -480,27 +454,30 @@ object DatabaseService {
                 val table = TableFactory.getUpFollowStatusTable()
                 val dataSource = TableFactory.getDataSource()
                 
-                val result = table.select(dataSource) {
-                    where("up_mid", upMid)
-                    where("follower_mid", followerMid)
-                    where("player_uuid", playerUuid)
-                }.firstOrNull()?.let { row ->
+                val results = table.select(dataSource) {
+                    where { "up_mid" eq upMid; "follower_mid" eq followerMid; "player_uuid" eq playerUuid }
+                }
+                
+                val status = results.firstOrNull {
                     UpFollowStatus(
-                        upMid = row["up_mid"].asLong(),
-                        followerMid = row["follower_mid"].asLong(),
-                        playerUuid = row["player_uuid"].asString(),
-                        isFollowing = row["is_following"].asInt() == 1,
-                        createTime = row["create_time"].asLong(),
-                        updateTime = row["update_time"].asLong(),
-                        createPlayer = row["create_player"].asString(),
-                        updatePlayer = row["update_player"].asString()
+                        id = getLong("id"),
+                        upMid = getLong("up_mid"),
+                        followerMid = getLong("follower_mid"),
+                        playerUuid = getString("player_uuid"),
+                        isFollowing = getInt("is_following") == 1,
+                        createTime = getLong("create_time"),
+                        updateTime = getLong("update_time"),
+                        createPlayer = getString("create_player"),
+                        updatePlayer = getString("update_player")
                     )
                 }
                 
-                callback(result)
+                submit { callback(status) }
             } catch (e: Exception) {
-                e.printStackTrace()
-                callback(null)
+                submit {
+                    severe("获取UP主关注状态失败: ${e.message}")
+                    callback(null)
+                }
             }
         }
     }
@@ -509,8 +486,6 @@ object DatabaseService {
     
     /**
      * 检查玩家是否已绑定MID
-     * @param playerUuid 玩家UUID
-     * @param callback 结果回调
      */
     fun isPlayerBound(playerUuid: String, callback: (Boolean) -> Unit) {
         submitAsync {
@@ -518,22 +493,22 @@ object DatabaseService {
                 val table = TableFactory.getPlayerBindingTable()
                 val dataSource = TableFactory.getDataSource()
                 
-                val result = table.select(dataSource) {
-                    where("player_uuid", playerUuid)
-                }.isNotEmpty()
+                val results = table.select(dataSource) {
+                    where { "player_uuid" eq playerUuid }
+                }
                 
-                callback(result)
+                submit { callback(results.find()) }
             } catch (e: Exception) {
-                e.printStackTrace()
-                callback(false)
+                submit {
+                    severe("检查玩家绑定状态失败: ${e.message}")
+                    callback(false)
+                }
             }
         }
     }
     
     /**
      * 检查MID是否已被绑定
-     * @param mid Bilibili MID
-     * @param callback 结果回调
      */
     fun isMidBound(mid: Long, callback: (Boolean) -> Unit) {
         submitAsync {
@@ -541,14 +516,16 @@ object DatabaseService {
                 val table = TableFactory.getPlayerBindingTable()
                 val dataSource = TableFactory.getDataSource()
                 
-                val result = table.select(dataSource) {
-                    where("mid", mid)
-                }.isNotEmpty()
+                val results = table.select(dataSource) {
+                    where { "mid" eq mid }
+                }
                 
-                callback(result)
+                submit { callback(results.find()) }
             } catch (e: Exception) {
-                e.printStackTrace()
-                callback(false)
+                submit {
+                    severe("检查MID绑定状态失败: ${e.message}")
+                    callback(false)
+                }
             }
         }
     }
