@@ -1,45 +1,316 @@
-name: build
+name: CI/CD Pipeline
+
 on:
   push:
-    branches:
-      - master
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  JAVA_VERSION: 8
+  GRADLE_VERSION: '8.14.3'
+  GRADLE_OPTS: -Dorg.gradle.daemon=false -Dorg.gradle.parallel=true -Dorg.gradle.workers.max=2
+
 jobs:
   build:
+    name: 🔨 构建
     runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      short_version: ${{ steps.version.outputs.short_version }}
+      should_release: ${{ steps.check_release.outputs.should_release }}
+
     steps:
-      - name: checkout repository
-        uses: actions/checkout@v2
-      - name: validate gradle wrapper
-        uses: gradle/wrapper-validation-action@v1
-      - name: setup jdk 8.0
-        uses: actions/setup-java@v2
+      - name: 📥 检出代码仓库
+        uses: actions/checkout@v4
         with:
-          distribution: adopt
-          java-version: 8.0
-      - name: make gradle wrapper executable
-        run: chmod +x ./gradlew
-      # 第一次构建
-      - name: build
-        id: build_1
-        run: ./gradlew build
-      # 第二次构建
-      - name: build (retry 1)
-        id: build_2
-        if: steps.build_1.outcome == 'failure'
-        run: ./gradlew build
-      # 第三次构建
-      - name: build (retry 2)
-        id: build_3
-        if: steps.build_2.outcome == 'failure'
-        run: ./gradlew build
-      # 第四次构建
-      - name: build (retry 3)
-        id: build_4
-        if: steps.build_3.outcome == 'failure'
-        run: ./gradlew build
-      # 上传构建文件
-      - name: capture build artifacts
-        uses: actions/upload-artifact@v2
+          fetch-depth: 0
+
+      - name: ☕ 配置 JDK ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v4
         with:
-          name: Artifacts
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: 'temurin'
+
+      - name: 📦 缓存 Gradle 依赖
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+            ~/.gradle/kotlin-dsl
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties', '**/libs.versions.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
+      - name: 🐘 配置 Gradle 构建工具
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: ${{ env.GRADLE_VERSION }}
+          cache-read-only: false
+
+      - name: 🏷️ 解析版本信息
+        id: version
+        run: |
+          # 从 gradle.properties 读取版本
+          BASE_VERSION=$(grep '^version=' gradle.properties | cut -d'=' -f2 | tr -d ' ')
+          
+          # 添加构建信息
+          SHORT_HASH=$(git rev-parse --short=7 HEAD)
+          
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            SHORT_VERSION="${BASE_VERSION}-${SHORT_HASH}"
+          else
+            SHORT_VERSION="${BASE_VERSION}-${SHORT_HASH}"
+          fi
+          VERSION="v${SHORT_VERSION}"
+          
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          echo "short_version=${SHORT_VERSION}" >> $GITHUB_OUTPUT
+          echo "base_version=${BASE_VERSION}" >> $GITHUB_OUTPUT
+          
+          echo "📦 完整版本: ${VERSION}"
+          echo "🏷️ 版本号: ${SHORT_VERSION}"
+
+      - name: 🎯 判断发布条件
+        id: check_release
+        run: |
+          SHOULD_RELEASE="false"
+          
+          # 仅master分支推送时发布
+          if [[ "${{ github.ref }}" == "refs/heads/main" ]] && [[ "${{ github.event_name }}" == "push" ]]; then
+            SHOULD_RELEASE="true"
+            echo "✅ master分支推送，将创建正式发布"
+          else
+            echo "ℹ️ 不满足发布条件，仅执行构建和测试"
+          fi
+          
+          echo "should_release=${SHOULD_RELEASE}" >> $GITHUB_OUTPUT
+
+      - name: 📝 更新版本号到 gradle.properties
+        run: |
+          echo "🔄 更新 gradle.properties 中的版本号为: ${{ steps.version.outputs.short_version }}"
+          sed -i "s/^version=.*/version=${{ steps.version.outputs.short_version }}/" gradle.properties
+          cat gradle.properties
+
+      - name: 🔧 执行项目构建
+        run: |
+          chmod +x gradlew
+          ./gradlew clean build --no-daemon --info
+
+      - name: 🛠️ 构建开发版本API
+        run: ./gradlew taboolibBuildApi -PDeleteCode --no-daemon --info
+
+      - name: 📦 保存用户版构建产物
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-artifacts-${{ github.sha }}
+          path: |
+            build/libs/*.jar
+            !build/libs/*-sources.jar
+            !build/libs/*-javadoc.jar
+            !build/libs/*-api.jar
+          retention-days: 30
+
+      - name: 📦 保存API版构建产物
+        uses: actions/upload-artifact@v4
+        with:
+          name: api-artifacts-${{ github.sha }}
+          path: |
+            build/libs/*-api.jar
+          retention-days: 30
+
+  release:
+    name: 🎉 创建 GitHub Release
+    needs: build
+    if: needs.build.outputs.should_release == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
+
+    steps:
+      - name: 📥 检出代码仓库
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 📥 获取用户版构建产物
+        uses: actions/download-artifact@v4
+        with:
+          name: release-artifacts-${{ github.sha }}
           path: build/libs/
+
+      - name: 📝 生成更新日志
+        id: changelog
+        run: |
+          # 获取最新的标签
+          LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+          
+          echo "## 📝 更新内容" > CHANGELOG.md
+          echo "" >> CHANGELOG.md
+          
+          if [ -n "$LATEST_TAG" ]; then
+            echo "### 自 ${LATEST_TAG} 以来的变更：" >> CHANGELOG.md
+            echo "" >> CHANGELOG.md
+          
+            # 按类型分组提交记录
+            echo "#### ✨ 新功能" >> CHANGELOG.md
+            FEAT_COMMITS=$(git log ${LATEST_TAG}..HEAD --pretty=format:"- %s (%h)" --grep="^feat" 2>/dev/null || echo "")
+            echo "${FEAT_COMMITS:-  - 暂无新功能}" >> CHANGELOG.md
+            echo -e "\n" >> CHANGELOG.md
+          
+            echo "#### 🐛 修复" >> CHANGELOG.md
+            FIX_COMMITS=$(git log ${LATEST_TAG}..HEAD --pretty=format:"- %s (%h)" --grep="^fix" 2>/dev/null || echo "")
+            echo "${FIX_COMMITS:-  - 暂无修复}" >> CHANGELOG.md
+            echo -e "\n" >> CHANGELOG.md
+          
+            echo "#### 📚 文档" >> CHANGELOG.md
+            DOCS_COMMITS=$(git log ${LATEST_TAG}..HEAD --pretty=format:"- %s (%h)" --grep="^docs" 2>/dev/null || echo "")
+            echo "${DOCS_COMMITS:-  - 暂无文档更新}" >> CHANGELOG.md
+            echo -e "\n" >> CHANGELOG.md
+          
+            echo "#### 🔧 其他变更" >> CHANGELOG.md
+            git log ${LATEST_TAG}..HEAD --pretty=format:"- %s (%h)" --grep -v "^feat\|^fix\|^docs" | head -20 >> CHANGELOG.md
+            echo -e "\n" >> CHANGELOG.md
+          else
+            echo "### 所有变更：" >> CHANGELOG.md
+            echo "" >> CHANGELOG.md
+            git log --pretty=format:"- %s (%h)" | head -50 >> CHANGELOG.md
+            echo -e "\n" >> CHANGELOG.md
+          fi
+          
+          echo "### 📊 统计" >> CHANGELOG.md
+          echo "" >> CHANGELOG.md
+          if [ -n "$LATEST_TAG" ]; then
+            COMMITS=$(git rev-list ${LATEST_TAG}..HEAD --count)
+            FILES_CHANGED=$(git diff --stat ${LATEST_TAG}..HEAD | tail -1)
+          else
+            COMMITS=$(git rev-list HEAD --count)
+            FILES_CHANGED=$(git diff --stat $(git rev-list --max-parents=0 HEAD)..HEAD | tail -1)
+          fi
+          echo "- 📊 提交次数: ${COMMITS}" >> CHANGELOG.md
+          echo "- 📂 ${FILES_CHANGED}" >> CHANGELOG.md
+          echo "" >> CHANGELOG.md
+          
+          # 贡献者
+          echo "### 👥 贡献者" >> CHANGELOG.md
+          echo "" >> CHANGELOG.md
+          if [ -n "$LATEST_TAG" ]; then
+            git log ${LATEST_TAG}..HEAD --pretty=format:"%an" | sort -u | sed 's/^/- @/' >> CHANGELOG.md
+          else
+            git log --pretty=format:"%an" | sort -u | sed 's/^/- @/' | head -10 >> CHANGELOG.md
+          fi
+          
+          # 保存到输出
+          echo "changelog<<EOF" >> $GITHUB_OUTPUT
+          cat CHANGELOG.md >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: 🚀 发布新版本
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ needs.build.outputs.version }}
+          name: BilibiliVideo ${{ needs.build.outputs.version }}
+          body: |
+            <div align="center">
+            
+            ![TabooLib](https://img.shields.io/badge/TabooLib-6.2.3+-green)
+            ![Minecraft](https://img.shields.io/badge/Minecraft-1.8--1.21+-orange)
+            ![Java](https://img.shields.io/badge/Java-8+-red)
+            ![Build Status](https://img.shields.io/github/actions/workflow/status/BingZi-233/BilibiliVideo/build.yml)
+            ![Downloads](https://img.shields.io/github/downloads/BingZi-233/BilibiliVideo/total)
+            
+            </div>
+            
+            ---
+            
+            ${{ steps.changelog.outputs.changelog }}
+            
+            ---
+            
+            ## 🚀 快速开始
+            
+            ### 安装步骤
+            
+            1. **下载插件**
+               ```
+               BilibiliVideo-${{ needs.build.outputs.short_version }}.jar
+               ```
+            
+            2. **放置文件**
+               将 JAR 文件放入服务器的 `plugins` 目录
+            
+            3. **重启服务器**
+               ```bash
+               /reload 或重启服务器
+               ```
+            
+            4. **配置连接**
+               ```bash
+               /bilibili preset list         # 查看可用预设
+               /bilibili preset apply        # 应用预设配置
+               /bilibili connect             # 连接到 Bilibili 服务器
+               /bilibili status              # 查看连接状态
+               ```
+            
+            ## 📋 系统要求
+            
+            - **Java**: 8 或更高版本
+            - **服务器**: Bukkit/Spigot/Paper 1.8-1.21+
+            - **内存**: 建议至少 2GB
+            - **Bilibili API**: 支持 Bilibili Open API
+            
+            ## 🔗 相关链接
+            
+            | 资源 | 链接 |
+            |------|------|
+            | 📚 文档 | [Wiki](https://github.com/BingZi-233/BilibiliVideo/wiki) |
+            | 🐛 问题反馈 | [Issues](https://github.com/BingZi-233/BilibiliVideo/issues) |
+            | 💬 讨论交流 | [Discussions](https://github.com/BingZi-233/BilibiliVideo/discussions) |
+            | 📖 配置指南 | [配置文档](https://github.com/BingZi-233/BilibiliVideo/wiki/Configuration) |
+            | 🎯 路线图 | [Roadmap](https://github.com/BingZi-233/BilibiliVideo/projects) |
+            
+            ## ⚠️ 重要提示
+            
+            - 首次使用请仔细阅读 [配置指南](https://github.com/BingZi-233/BilibiliVideo/wiki/Configuration)
+            - 遇到问题请先查看 [FAQ](https://github.com/BingZi-233/BilibiliVideo/wiki/FAQ)
+            - 升级前请备份配置文件
+            
+            ## 💖 支持项目
+            
+            如果这个插件对您有帮助，请考虑：
+            - ⭐ 给项目点个 Star
+            - 🐛 报告问题和建议
+            - 🤝 贡献代码
+            - 📢 向朋友推荐
+            
+            ---
+            
+            <div align="center">
+            
+            **感谢使用 BilibiliVideo！** 🎮
+            
+                  [报告问题](https://github.com/BingZi-233/BilibiliVideo/issues/new/choose) | [请求功能](https://github.com/BingZi-233/BilibiliVideo/issues/new?labels=enhancement) | [加入讨论](https://github.com/BingZi-233/BilibiliVideo/discussions)
+            
+            </div>
+          draft: false
+          files: |
+            build/libs/*.jar
+            !build/libs/*-sources.jar
+            !build/libs/*-javadoc.jar
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: ✅ 发布完成通知
+        if: success()
+        run: |
+          echo "🎉 GitHub Release 发布成功"
+          echo "📦 发布版本: ${{ needs.build.outputs.version }}"
+          echo "🔗 Release 页面: https://github.com/${{ github.repository }}/releases/tag/${{ needs.build.outputs.version }}"
+          echo "📥 下载地址: https://github.com/${{ github.repository }}/releases/download/${{ needs.build.outputs.version }}/BilibiliVideo-${{ needs.build.outputs.short_version }}.jar"
