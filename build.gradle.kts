@@ -29,6 +29,8 @@ taboolib {
         }
     }
     version { taboolib = "6.2.3-2eb93b5" }
+    relocate("com.google.gson", "online.bingzi.bilibili.bilibilivideo.library.gson")
+    relocate("okhttp3","online.bingzi.bilibili.bilibilivideo.library.okhttp3")
 }
 
 repositories {
@@ -38,9 +40,9 @@ repositories {
 dependencies {
     compileOnly("ink.ptms.core:v12004:12004:mapped")
     compileOnly("ink.ptms.core:v12004:12004:universal")
-    compileOnly("com.squareup.okhttp3:okhttp:4.12.0")
-    compileOnly("com.squareup.okhttp3:logging-interceptor:4.12.0")
-    compileOnly("com.google.code.gson:gson:2.10.1")
+    taboo("com.squareup.okhttp3:okhttp:4.12.0")
+    taboo("com.squareup.okhttp3:logging-interceptor:4.12.0")
+    taboo("com.google.code.gson:gson:2.10.1")
     compileOnly(kotlin("stdlib"))
     compileOnly(fileTree("libs"))
 }
