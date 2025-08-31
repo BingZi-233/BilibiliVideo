@@ -82,7 +82,7 @@ jobs:
           SHOULD_RELEASE="false"
           
           # 仅master分支推送时发布
-          if [[ "${{ github.ref }}" == "refs/heads/main" ]] && [[ "${{ github.event_name }}" == "push" ]]; then
+          if [[ "${{ github.ref }}" == "refs/heads/master" ]] && [[ "${{ github.event_name }}" == "push" ]]; then
             SHOULD_RELEASE="true"
             echo "✅ master分支推送，将创建正式发布"
           else
