@@ -180,7 +180,7 @@ jobs:
           echo "✅ Maven 发布成功完成"
           echo "📦 发布版本: ${{ needs.build.outputs.version }}"
           echo "🔗 Maven 仓库地址: https://repo.aeoliancloud.com/repository/releases/"
-          echo "📚 Maven 坐标: online.bingzi:onebot:${{ needs.build.outputs.short_version }}"
+          echo "📚 Maven 坐标: online.bingzi:bilibilivideo:${{ needs.build.outputs.short_version }}"
           echo "💡 使用方式: 在 pom.xml 或 build.gradle 中添加以上坐标"
 
 
