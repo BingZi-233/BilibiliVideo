@@ -28,10 +28,19 @@ object QrCodeApi {
                 if (response.isSuccessful) {
                     val responseBody = response.body?.string()
                     if (responseBody != null) {
-                        val qrResponse = gson.fromJson(responseBody, QrCodeGenerateResponse::class.java)
-                        if (qrResponse.code == 0 && qrResponse.data != null) {
-                            callback(qrResponse.data)
-                            return@submitAsync
+                        println("QrCodeApi: Response body: $responseBody")
+                        println("QrCodeApi: Response body length: ${responseBody.length}")
+                        println("QrCodeApi: Response body first char: '${responseBody.firstOrNull()}' (${responseBody.firstOrNull()?.code})")
+                        try {
+                            val qrResponse = gson.fromJson(responseBody, QrCodeGenerateResponse::class.java)
+                            if (qrResponse.code == 0 && qrResponse.data != null) {
+                                callback(qrResponse.data)
+                                return@submitAsync
+                            }
+                        } catch (e: Exception) {
+                            println("QrCodeApi: JSON parsing failed: ${e.message}")
+                            println("QrCodeApi: Raw response (first 200 chars): ${responseBody.take(200)}")
+                            e.printStackTrace()
                         }
                     }
                 }

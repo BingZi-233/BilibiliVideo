@@ -1,14 +1,27 @@
 package online.bingzi.bilibili.bilibilivideo.internal.database.entity
 
 /**
- * 玩家-MID绑定实体类
- * 表示 Minecraft 玩家与 Bilibili MID 的一对一绑定关系
+ * 玩家MID绑定实体类
+ * 
+ * 表示Minecraft玩家与Bilibili MID的一对一绑定关系。
+ * 确保每个Minecraft玩家只能绑定一个Bilibili账户，
+ * 每个Bilibili账户也只能被一个Minecraft玩家绑定。
+ * 
+ * @property playerUuid Minecraft玩家的UUID字符串
+ * @property mid Bilibili用户MID（即DedeUserID）
+ * @property createTime 记录创建时间戳（毫秒）
+ * @property updateTime 记录最后更新时间戳（毫秒）
+ * @property createPlayer 创建记录的玩家名称
+ * @property updatePlayer 最后更新记录的玩家名称
+ * 
+ * @since 1.0.0
+ * @author BilibiliVideo
  */
 data class PlayerBinding(
-    val playerUuid: String,    // 玩家UUID
-    val mid: Long,             // B站MID (即DedeUserID)
-    val createTime: Long,      // 创建时间戳
-    val updateTime: Long,      // 更新时间戳
-    val createPlayer: String,  // 创建玩家名
-    val updatePlayer: String   // 更新玩家名
+    val playerUuid: String,
+    val mid: Long,
+    val createTime: Long,
+    val updateTime: Long,
+    val createPlayer: String,
+    val updatePlayer: String
 )

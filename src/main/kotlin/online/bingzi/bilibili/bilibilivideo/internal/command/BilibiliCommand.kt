@@ -13,6 +13,26 @@ import taboolib.expansion.createHelper
 import taboolib.module.lang.sendError
 import taboolib.module.lang.sendInfo
 
+/**
+ * Bilibili插件主命令类
+ * 
+ * 使用TabooLib CommandHelper模块实现的声明式命令系统。
+ * 提供玩家Bilibili账户管理和状态查询功能。
+ * 支持权限管理和多级子命令结构。
+ * 
+ * 主要命令：
+ * - /bili login [玩家] - 登录Bilibili账户
+ * - /bili logout [玩家] - 登出Bilibili账户
+ * - /bili triple <BV号> [玩家] - 查询视频三连状态
+ * - /bili follow <MID> [玩家] - 查询UP主关注状态
+ * 
+ * 权限说明：
+ * - bilibili.use: 基础使用权限（默认true）
+ * - bilibili.admin: 管理员权限，可操作其他玩家
+ * 
+ * @since 1.0.0
+ * @author BilibiliVideo
+ */
 @CommandHeader(
     name = "bili",
     aliases = ["bilibili", "bl"],
