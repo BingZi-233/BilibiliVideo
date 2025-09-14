@@ -4,6 +4,7 @@ import online.bingzi.bilibili.bilibilivideo.internal.command.handler.FollowStatu
 import online.bingzi.bilibili.bilibilivideo.internal.command.handler.LoginCommandHandler
 import online.bingzi.bilibili.bilibilivideo.internal.command.handler.LogoutCommandHandler
 import online.bingzi.bilibili.bilibilivideo.internal.command.handler.TripleStatusCommandHandler
+import online.bingzi.bilibili.bilibilivideo.internal.manager.BvManager
 import org.bukkit.Bukkit
 import org.bukkit.entity.Player
 import taboolib.common.platform.ProxyCommandSender
@@ -82,6 +83,11 @@ object BilibiliCommand {
     @CommandBody
     val triple = subCommand {
         dynamic("bvid") {
+            suggestion<ProxyCommandSender> { _, _ ->
+                // 返回配置文件中的BV号列表用于自动补全
+                BvManager.getEnabledBvids()
+            }
+            
             restrict<ProxyCommandSender> { sender, _, argument ->
                 if (!isValidBvid(argument)) {
                     sender.sendError("commandsTripleInvalidBvid")

@@ -1,0 +1,102 @@
+# BilibiliVideo 插件设置配置
+# 
+# 此文件配置视频三连奖励系统
+# 支持默认奖励和特定BV号奖励配置
+
+# 默认奖励配置
+# 当玩家对未在videos列表中配置的BV号执行三连时使用
+default-reward:
+  # 是否启用默认奖励
+  enabled: true
+  
+  # 是否需要完整三连（点赞+投币+收藏）才能获得奖励
+  # true: 必须完成点赞、投币、收藏三个操作
+  # false: 只要有任何一个操作即可获得奖励
+  require-complete-triple: true
+  
+  # 奖励列表
+  rewards:
+    - type: "command"
+      command: "eco give {player} 100"
+      description: "给予100金币"
+    - type: "message"
+      message: "&a感谢您的三连支持！"
+
+# 特定BV号配置
+# 为指定的BV号设置专门的奖励
+videos:
+  # 示例BV号1 - 新手教程视频
+  BV1xx411c7mD:
+    # 视频显示名称（用于日志和提示）
+    name: "新手教程视频"
+    
+    # 是否启用此BV号的奖励
+    enabled: true
+    
+    # 此BV号的三连要求，会覆盖默认设置
+    require-complete-triple: true
+    
+    # 此BV号专属奖励
+    rewards:
+      - type: "command"
+        command: "eco give {player} 500"
+        description: "新手奖励500金币"
+      - type: "item"
+        material: "EMERALD"
+        amount: 5
+        display-name: "&a新手奖励绿宝石"
+        lore:
+          - "&7感谢观看新手教程！"
+          - "&7继续加油哦~"
+      - type: "message"
+        message: "&a&l恭喜完成新手教程三连！获得丰厚奖励！"
+  
+  # 示例BV号2 - 周年庆视频
+  BV1yy4y1N7eE:
+    name: "周年庆庆典视频"
+    enabled: true
+    
+    # 周年庆活动只需要点赞即可获得奖励
+    require-complete-triple: false
+    
+    rewards:
+      - type: "command"
+        command: "give {player} special_anniversary_item"
+        description: "周年庆纪念品"
+      - type: "command"
+        command: "eco give {player} 1000"
+        description: "周年庆奖励1000金币"
+      - type: "message"
+        message: "&6&l感谢参与周年庆活动！"
+
+# 奖励类型说明：
+# 1. command: 执行服务器命令
+#    - command: 要执行的命令，支持 {player} 占位符
+#    - description: 奖励描述（可选）
+#
+# 2. item: 给予物品
+#    - material: 物品类型（Bukkit Material枚举）
+#    - amount: 数量
+#    - display-name: 显示名称（支持颜色代码，可选）
+#    - lore: 物品描述列表（支持颜色代码，可选）
+#    - description: 奖励描述（可选）
+#
+# 3. message: 发送消息
+#    - message: 要发送的消息内容（支持颜色代码）
+
+# 高级设置
+settings:
+  # 是否阻止重复领取奖励
+  # true: 每个BV号每个玩家只能领取一次奖励
+  # false: 玩家每次三连都能获得奖励
+  prevent-duplicate-rewards: true
+  
+  # 奖励发放延迟（毫秒）
+  # 避免与B站API请求冲突
+  reward-delay: 1000
+  
+  # 是否在奖励发放时播放音效
+  play-sound: true
+  sound-type: "ENTITY_PLAYER_LEVELUP"
+  sound-volume: 1.0
+  sound-pitch: 1.0
