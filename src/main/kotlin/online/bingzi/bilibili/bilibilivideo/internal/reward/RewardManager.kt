@@ -6,20 +6,13 @@ import online.bingzi.bilibili.bilibilivideo.internal.config.SettingConfig
 import online.bingzi.bilibili.bilibilivideo.internal.database.entity.VideoRewardRecord
 import online.bingzi.bilibili.bilibilivideo.internal.database.service.DatabaseService
 import online.bingzi.bilibili.bilibilivideo.internal.manager.BvManager
-import org.bukkit.Bukkit
 import org.bukkit.entity.Player
-import org.bukkit.inventory.ItemStack
-import org.bukkit.inventory.meta.ItemMeta
 import taboolib.common.platform.event.SubscribeEvent
-import taboolib.common.util.asList
-import taboolib.module.chat.colored
-import taboolib.platform.util.giveItem
+import online.bingzi.bilibili.bilibilivideo.internal.helper.ketherEval
+import taboolib.common.platform.function.submit
+import taboolib.platform.util.asProxyPlayer
 import taboolib.platform.util.sendInfo
 import taboolib.platform.util.sendWarn
-import taboolib.common.platform.function.submit
-import taboolib.common5.Coerce
-import com.google.gson.Gson
-import com.google.gson.JsonObject
 
 /**
  * 奖励管理类
@@ -32,8 +25,6 @@ import com.google.gson.JsonObject
  * @author BilibiliVideo
  */
 object RewardManager {
-    
-    private val gson = Gson()
     
     /**
      * 监听视频三连状态检查事件
@@ -108,8 +99,8 @@ object RewardManager {
         
         // 发放奖励
         val rewards = when (config) {
-            is VideoRewardConfig -> config.getValidRewards()
-            is DefaultRewardConfig -> config.getValidRewards()
+            is VideoRewardConfig -> config.rewards
+            is DefaultRewardConfig -> config.rewards
             else -> emptyList()
         }
         
@@ -117,12 +108,14 @@ object RewardManager {
             return
         }
         
+        // 使用KetherHelper执行奖励脚本
         var rewardGiven = false
-        
-        for (reward in rewards) {
-            if (giveReward(player, reward)) {
-                rewardGiven = true
-            }
+        try {
+            rewards.ketherEval(player.asProxyPlayer())
+            rewardGiven = true
+        } catch (e: Exception) {
+            taboolib.common.platform.function.warning("执行奖励脚本失败: ${e.message}")
+            rewardGiven = false
         }
         
         if (rewardGiven) {
@@ -149,59 +142,6 @@ object RewardManager {
     }
     
     /**
-     * 发放单个奖励
-     * 
-     * @param player 玩家
-     * @param reward 奖励数据
-     * @return Boolean 是否成功发放
-     */
-    private fun giveReward(player: Player, reward: RewardData): Boolean {
-        return try {
-            when (reward.type.lowercase()) {
-                "command" -> {
-                    val command = reward.command?.replace("{player}", player.name) ?: return false
-                    Bukkit.dispatchCommand(Bukkit.getConsoleSender(), command)
-                    true
-                }
-                
-                "item" -> {
-                    val material = reward.getMaterialType() ?: return false
-                    val item = ItemStack(material, reward.amount)
-                    
-                    // 设置显示名称和描述
-                    if (reward.displayName != null || reward.lore != null) {
-                        val meta: ItemMeta = item.itemMeta ?: return false
-                        
-                        if (reward.displayName != null) {
-                            meta.setDisplayName(reward.displayName.colored())
-                        }
-                        
-                        if (reward.lore != null) {
-                            meta.lore = reward.lore.map { it.colored() }
-                        }
-                        
-                        item.itemMeta = meta
-                    }
-                    
-                    player.giveItem(item)
-                    true
-                }
-                
-                "message" -> {
-                    val message = reward.message ?: return false
-                    player.sendMessage(message.colored())
-                    true
-                }
-                
-                else -> false
-            }
-        } catch (e: Exception) {
-            taboolib.common.platform.function.warning("发放奖励失败: ${e.message}")
-            false
-        }
-    }
-    
-    /**
      * 记录奖励发放
      * 
      * @param player 玩家
@@ -220,17 +160,7 @@ object RewardManager {
         }
         
         val rewardDataJson = try {
-            val json = JsonObject()
-            when (config) {
-                is VideoRewardConfig -> {
-                    json.addProperty("name", config.name)
-                    json.addProperty("reward_count", config.rewards.size)
-                }
-                is DefaultRewardConfig -> {
-                    json.addProperty("reward_count", config.rewards.size)
-                }
-            }
-            gson.toJson(json)
+            "脚本奖励发放成功"
         } catch (e: Exception) {
             null
         }
@@ -313,8 +243,8 @@ object RewardManager {
         }
         
         val rewards = when (config) {
-            is VideoRewardConfig -> config.getValidRewards()
-            is DefaultRewardConfig -> config.getValidRewards()
+            is VideoRewardConfig -> config.rewards
+            is DefaultRewardConfig -> config.rewards
             else -> emptyList()
         }
         
@@ -324,10 +254,12 @@ object RewardManager {
         }
         
         var rewardGiven = false
-        for (reward in rewards) {
-            if (giveReward(player, reward)) {
-                rewardGiven = true
-            }
+        try {
+            rewards.ketherEval(player.asProxyPlayer())
+            rewardGiven = true
+        } catch (e: Exception) {
+            taboolib.common.platform.function.warning("执行奖励脚本失败: ${e.message}")
+            rewardGiven = false
         }
         
         if (rewardGiven) {

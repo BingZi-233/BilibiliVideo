@@ -1,7 +1,6 @@
 package online.bingzi.bilibili.bilibilivideo.internal.config
 
 import online.bingzi.bilibili.bilibilivideo.internal.reward.DefaultRewardConfig
-import online.bingzi.bilibili.bilibilivideo.internal.reward.RewardData
 import online.bingzi.bilibili.bilibilivideo.internal.reward.RewardSettings
 import online.bingzi.bilibili.bilibilivideo.internal.reward.VideoRewardConfig
 import taboolib.module.configuration.Config
@@ -33,12 +32,9 @@ object SettingConfig {
         
         val enabled = section.getBoolean("enabled", true)
         val requireCompleteTriple = section.getBoolean("require-complete-triple", true)
-        val rewardsList = section.getMapList("rewards")
+        val rewardsList = section.getStringList("rewards")
         
-        val rewards = rewardsList.mapNotNull { rewardMap ->
-            @Suppress("UNCHECKED_CAST")
-            parseRewardData(rewardMap as Map<String, Any>)
-        }
+        val rewards = rewardsList
         
         return DefaultRewardConfig(
             enabled = enabled,
@@ -60,12 +56,9 @@ object SettingConfig {
         val name = videoSection.getString("name") ?: "未命名视频"
         val enabled = videoSection.getBoolean("enabled", true)
         val requireCompleteTriple = videoSection.getBoolean("require-complete-triple", true)
-        val rewardsList = videoSection.getMapList("rewards")
+        val rewardsList = videoSection.getStringList("rewards")
         
-        val rewards = rewardsList.mapNotNull { rewardMap ->
-            @Suppress("UNCHECKED_CAST")
-            parseRewardData(rewardMap as Map<String, Any>)
-        }
+        val rewards = rewardsList
         
         return VideoRewardConfig(
             name = name,
@@ -127,27 +120,6 @@ object SettingConfig {
         val defaultConfig = if (videoConfig == null) getDefaultRewardConfig() else null
         
         return Pair(videoConfig, defaultConfig)
-    }
-    
-    /**
-     * 解析奖励数据
-     * 
-     * @param rewardMap Map<String, Any> 奖励配置Map
-     * @return RewardData? 奖励数据对象，解析失败返回null
-     */
-    private fun parseRewardData(rewardMap: Map<String, Any>): RewardData? {
-        val type = rewardMap["type"] as? String ?: return null
-        
-        return RewardData(
-            type = type,
-            command = rewardMap["command"] as? String,
-            material = rewardMap["material"] as? String,
-            amount = (rewardMap["amount"] as? Number)?.toInt() ?: 1,
-            displayName = rewardMap["display-name"] as? String,
-            lore = (rewardMap["lore"] as? List<*>)?.mapNotNull { it as? String },
-            message = rewardMap["message"] as? String,
-            description = rewardMap["description"] as? String
-        )
     }
     
     /**

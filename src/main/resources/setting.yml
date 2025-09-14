@@ -2,6 +2,7 @@
 # 
 # 此文件配置视频三连奖励系统
 # 支持默认奖励和特定BV号奖励配置
+# 奖励现在使用 Kether 脚本语言，功能更加强大和灵活
 
 # 默认奖励配置
 # 当玩家对未在videos列表中配置的BV号执行三连时使用
@@ -14,13 +15,14 @@ default-reward:
   # false: 只要有任何一个操作即可获得奖励
   require-complete-triple: true
   
-  # 奖励列表
+  # 奖励列表 - 使用 Kether 脚本语言
   rewards:
-    - type: "command"
-      command: "eco give {player} 100"
-      description: "给予100金币"
-    - type: "message"
-      message: "&a感谢您的三连支持！"
+    # 给予金币
+    - 'command "eco give " + player.name + " 100"'
+    # 发送消息
+    - 'tell player "&a感谢您的三连支持！"'
+    # 播放音效
+    - 'sound player "entity.player.levelup" 1.0 1.0'
 
 # 特定BV号配置
 # 为指定的BV号设置专门的奖励
@@ -36,20 +38,18 @@ videos:
     # 此BV号的三连要求，会覆盖默认设置
     require-complete-triple: true
     
-    # 此BV号专属奖励
+    # 此BV号专属奖励 - 使用 Kether 脚本
     rewards:
-      - type: "command"
-        command: "eco give {player} 500"
-        description: "新手奖励500金币"
-      - type: "item"
-        material: "EMERALD"
-        amount: 5
-        display-name: "&a新手奖励绿宝石"
-        lore:
-          - "&7感谢观看新手教程！"
-          - "&7继续加油哦~"
-      - type: "message"
-        message: "&a&l恭喜完成新手教程三连！获得丰厚奖励！"
+      # 给予大量金币
+      - 'command "eco give " + player.name + " 500"'
+      # 给予绿宝石
+      - 'give player "emerald" 5'
+      # 设置绿宝石物品名称和描述
+      - 'item player "emerald" 5 name "&a新手奖励绿宝石" lore "&7感谢观看新手教程！" "&7继续加油哦~"'
+      # 发送特殊消息
+      - 'tell player "&a&l恭喜完成新手教程三连！获得丰厚奖励！"'
+      # 播放成就音效
+      - 'sound player "ui.toast.challenge_complete" 1.0 1.0'
   
   # 示例BV号2 - 周年庆视频
   BV1yy4y1N7eE:
@@ -60,29 +60,33 @@ videos:
     require-complete-triple: false
     
     rewards:
-      - type: "command"
-        command: "give {player} special_anniversary_item"
-        description: "周年庆纪念品"
-      - type: "command"
-        command: "eco give {player} 1000"
-        description: "周年庆奖励1000金币"
-      - type: "message"
-        message: "&6&l感谢参与周年庆活动！"
+      # 条件判断：根据玩家等级给不同奖励
+      - 'if player.level > 50 then { command "give " + player.name + " special_anniversary_item_gold" } else { command "give " + player.name + " special_anniversary_item" }'
+      # 给予金币
+      - 'command "eco give " + player.name + " 1000"'
+      # 发送个性化消息
+      - 'tell player "&6&l感谢参与周年庆活动！你是第 " + random(1, 1000) + " 位参与者！"'
+      # 播放烟花音效
+      - 'sound player "entity.firework_rocket.blast" 1.0 1.2'
+      # 给予经验
+      - 'command "xp add " + player.name + " 100"'
 
-# 奖励类型说明：
-# 1. command: 执行服务器命令
-#    - command: 要执行的命令，支持 {player} 占位符
-#    - description: 奖励描述（可选）
+# Kether 脚本说明：
+# 
+# 基本语法：
+# - tell player "消息"              # 发送消息给玩家
+# - command "命令"                  # 执行服务器命令
+# - give player "物品" 数量         # 给予物品
+# - sound player "音效" 音量 音调   # 播放音效
+# - item player "物品" 数量 name "名称" lore "描述1" "描述2"  # 给予带名称描述的物品
 #
-# 2. item: 给予物品
-#    - material: 物品类型（Bukkit Material枚举）
-#    - amount: 数量
-#    - display-name: 显示名称（支持颜色代码，可选）
-#    - lore: 物品描述列表（支持颜色代码，可选）
-#    - description: 奖励描述（可选）
+# 变量和条件：
+# - player.name                     # 玩家名称
+# - player.level                    # 玩家等级
+# - random(1, 100)                  # 随机数
+# - if 条件 then { 脚本 } else { 脚本 }  # 条件判断
 #
-# 3. message: 发送消息
-#    - message: 要发送的消息内容（支持颜色代码）
+# 更多 Kether 语法请参考 TabooLib 文档
 
 # 高级设置
 settings:
@@ -96,7 +100,8 @@ settings:
   reward-delay: 1000
   
   # 是否在奖励发放时播放音效
-  play-sound: true
+  # 注意：如果奖励脚本中已包含音效，可以设置为 false
+  play-sound: false
   sound-type: "ENTITY_PLAYER_LEVELUP"
   sound-volume: 1.0
   sound-pitch: 1.0
