@@ -4,13 +4,12 @@ import online.bingzi.bilibili.bilibilivideo.api.event.VideoTripleStatusCheckEven
 import online.bingzi.bilibili.bilibilivideo.internal.bilibili.model.VideoTripleData
 import online.bingzi.bilibili.bilibilivideo.internal.config.SettingConfig
 import online.bingzi.bilibili.bilibilivideo.internal.database.entity.VideoRewardRecord
-import online.bingzi.bilibili.bilibilivideo.internal.database.service.DatabaseService
+import online.bingzi.bilibili.bilibilivideo.internal.helper.ketherEval
 import online.bingzi.bilibili.bilibilivideo.internal.manager.BvManager
 import org.bukkit.entity.Player
 import taboolib.common.platform.event.SubscribeEvent
-import online.bingzi.bilibili.bilibilivideo.internal.helper.ketherEval
+import taboolib.common.platform.function.getProxyPlayer
 import taboolib.common.platform.function.submit
-import taboolib.platform.util.asProxyPlayer
 import taboolib.platform.util.sendInfo
 import taboolib.platform.util.sendWarn
 
@@ -60,7 +59,7 @@ object RewardManager {
             // 由于当前DatabaseService没有奖励记录相关方法，先预留逻辑
             val hasReward = hasPlayerReceivedReward(player.uniqueId.toString(), bvid)
             if (hasReward) {
-                player.sendWarn("rewardAlreadyClaimed", "bvid" to bvid)
+                player.sendWarn("rewardAlreadyClaimed", bvid)
                 return
             }
         }
@@ -93,7 +92,7 @@ object RewardManager {
         
         if (!meetsRequirement) {
             val requirement = if (requireCompleteTriple) "完整三连" else "至少一项操作"
-            player.sendWarn("rewardRequirementNotMet", "requirement" to requirement)
+            player.sendWarn("rewardRequirementNotMet", requirement)
             return
         }
         
@@ -111,7 +110,7 @@ object RewardManager {
         // 使用KetherHelper执行奖励脚本
         var rewardGiven = false
         try {
-            rewards.ketherEval(player.asProxyPlayer())
+            rewards.ketherEval(getProxyPlayer(player.uniqueId)!!)
             rewardGiven = true
         } catch (e: Exception) {
             taboolib.common.platform.function.warning("执行奖励脚本失败: ${e.message}")
@@ -137,7 +136,7 @@ object RewardManager {
             
             // 发送成功消息
             val videoName = if (videoConfig != null) videoConfig.name else bvid
-            player.sendInfo("rewardReceived", "video" to videoName)
+            player.sendInfo("rewardReceived", videoName)
         }
     }
     
@@ -238,7 +237,7 @@ object RewardManager {
         } else if (defaultConfig?.enabled == true) {
             defaultConfig
         } else {
-            player.sendWarn("noRewardConfigured", "bvid" to bvid)
+            player.sendWarn("noRewardConfigured", bvid)
             return
         }
         
@@ -249,13 +248,13 @@ object RewardManager {
         }
         
         if (rewards.isEmpty()) {
-            player.sendWarn("noValidRewards", "bvid" to bvid)
+            player.sendWarn("noValidRewards", bvid)
             return
         }
         
         var rewardGiven = false
         try {
-            rewards.ketherEval(player.asProxyPlayer())
+            rewards.ketherEval(getProxyPlayer(player.uniqueId)!!)
             rewardGiven = true
         } catch (e: Exception) {
             taboolib.common.platform.function.warning("执行奖励脚本失败: ${e.message}")
@@ -277,7 +276,7 @@ object RewardManager {
             }
             
             val videoName = if (videoConfig != null) videoConfig.name else bvid
-            player.sendInfo("rewardReceivedManual", "video" to videoName)
+            player.sendInfo("rewardReceivedManual", videoName)
         }
     }
 }

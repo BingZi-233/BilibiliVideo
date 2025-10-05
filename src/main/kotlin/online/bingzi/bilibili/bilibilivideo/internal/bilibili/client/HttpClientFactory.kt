@@ -40,7 +40,6 @@ object HttpClientFactory {
                 .addHeader("User-Agent", userAgent)
                 .addHeader("Accept", "application/json, text/plain, */*")
                 .addHeader("Accept-Language", "zh-CN,zh;q=0.9,en;q=0.8")
-                .addHeader("Accept-Encoding", "gzip, deflate, br")
                 .addHeader("Cache-Control", "no-cache")
                 .addHeader("Connection", "keep-alive")
                 .addHeader("Sec-Fetch-Site", "same-site")

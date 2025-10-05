@@ -10,9 +10,7 @@ import online.bingzi.bilibili.bilibilivideo.internal.database.service.DatabaseSe
 import online.bingzi.bilibili.bilibilivideo.internal.event.EventManager
 import online.bingzi.bilibili.bilibilivideo.internal.session.SessionManager
 import org.bukkit.entity.Player
-import taboolib.expansion.DispatcherType
-import taboolib.expansion.DurationType
-import taboolib.expansion.chain
+import taboolib.common.platform.function.submit
 import taboolib.platform.util.sendError
 import taboolib.platform.util.sendInfo
 import taboolib.platform.util.sendWarn
@@ -53,10 +51,10 @@ object LoginCommandHandler {
                                 startPolling(player, qrData.qrcodeKey)
                             }
                             is SendResult.Failure -> {
-                                player.sendError("commandsLoginQrCodeSendFailed", "errorMessage" to result.reason)
+                                player.sendError("commandsLoginQrCodeSendFailed", result.reason)
                             }
                             is SendResult.Partial -> {
-                                player.sendWarn("commandsLoginQrCodePartialSuccess", "details" to result.details)
+                                player.sendWarn("commandsLoginQrCodePartialSuccess", result.details)
                             }
                         }
                     }
@@ -97,17 +95,15 @@ object LoginCommandHandler {
                 
                 LoginStatus.SCANNED_WAITING -> {
                     task.player.sendInfo("commandsLoginQrCodeScanned")
-                    // 继续轮询
-                    chain(DispatcherType.SYNC) {
-                        wait(40, DurationType.MINECRAFT_TICK) // 等待2秒
+                    // 继续轮询（2秒后）
+                    submit(delay = 40L) {
                         pollQrCodeStatus(task)
                     }
                 }
                 
                 LoginStatus.NOT_SCANNED -> {
-                    // 继续轮询
-                    chain(DispatcherType.SYNC) {
-                        wait(60, DurationType.MINECRAFT_TICK) // 等待3秒
+                    // 继续轮询（3秒后）
+                    submit(delay = 60L) {
                         pollQrCodeStatus(task)
                     }
                 }
@@ -155,7 +151,7 @@ object LoginCommandHandler {
                         // 触发BilibiliLoginEvent事件
                         EventManager.callBilibiliLoginEvent(player, session)
                         
-                        player.sendInfo("commandsLoginSuccessWelcome", "nickname" to "用户${loginInfo.mid}")
+                        player.sendInfo("commandsLoginSuccessWelcome", "用户${loginInfo.mid}")
                     } else {
                         player.sendError("commandsLoginFailedIncompleteInfo")
                     }

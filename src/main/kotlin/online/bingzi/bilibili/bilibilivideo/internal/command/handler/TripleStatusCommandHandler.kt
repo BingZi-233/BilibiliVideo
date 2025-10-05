@@ -19,7 +19,7 @@ object TripleStatusCommandHandler {
             return
         }
         
-        player.sendInfo("commandsTripleQuerying", "bvid" to bvid)
+        player.sendInfo("commandsTripleQuerying", bvid)
         
         // 调用API查询三连状态
         VideoApi.getTripleStatus(
@@ -47,8 +47,8 @@ object TripleStatusCommandHandler {
                     if (success) {
                         // 发送结果给玩家
                         player.sendInfo("commandsTripleQueryComplete")
-                        player.sendInfo("commandsTripleVideo", "bvid" to bvid)
-                        player.sendInfo("commandsTripleStatus", "status" to updatedTripleData.getStatusMessage())
+                        player.sendInfo("commandsTripleVideo", bvid)
+                        player.sendInfo("commandsTripleStatus", updatedTripleData.getStatusMessage())
                         
                         if (updatedTripleData.hasTripleAction()) {
                             player.sendInfo("commandsTripleCompleted")

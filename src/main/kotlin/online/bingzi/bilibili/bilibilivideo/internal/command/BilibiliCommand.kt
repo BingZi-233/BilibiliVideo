@@ -103,7 +103,7 @@ object BilibiliCommand {
                 }
                 
                 execute<ProxyCommandSender> { sender, context, argument ->
-                    val bvid = context.argument(-1)
+                    val bvid = context["bvid"]
                     val targetPlayer = resolveTargetPlayer(sender, argument) ?: return@execute
                     executeForPlayer(sender, targetPlayer, argument) {
                         TripleStatusCommandHandler.handleTripleStatus(it, bvid)
@@ -131,7 +131,7 @@ object BilibiliCommand {
                 }
                 
                 execute<ProxyCommandSender> { sender, context, argument ->
-                    val midStr = context.argument(-1)
+                    val midStr = context["mid"]
                     val mid = midStr.toLongOrNull()!! // restrict已经验证过格式
                     val targetPlayer = resolveTargetPlayer(sender, argument) ?: return@execute
                     executeForPlayer(sender, targetPlayer, argument) {
@@ -151,7 +151,7 @@ object BilibiliCommand {
                 return null
             }
             Bukkit.getPlayer(playerName) ?: run {
-                sender.sendError("playerNotFound", "player" to playerName)
+                sender.sendError("playerNotFound", playerName)
                 null
             }
         } else {
@@ -174,7 +174,7 @@ object BilibiliCommand {
         
         // 如果是为他人执行，给管理员反馈
         if (playerName != null && sender is ProxyPlayer && sender.cast<Player>() != targetPlayer) {
-            sender.sendInfo("executedForPlayer", "player" to targetPlayer.name)
+            sender.sendInfo("executedForPlayer", targetPlayer.name)
         }
     }
     
