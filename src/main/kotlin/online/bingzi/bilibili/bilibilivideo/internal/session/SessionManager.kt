@@ -6,6 +6,22 @@ import taboolib.common.platform.function.submitAsync
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 
+/**
+ * 会话管理器
+ * 
+ * 管理所有玩家的Bilibili登录会话，提供会话创建、获取、删除和生命周期管理功能。
+ * 使用内存缓存提高性能，支持从数据库加载持久化会话信息。
+ * 线程安全，使用ConcurrentHashMap确保并发访问的安全性。
+ * 
+ * 主要功能：
+ * - 会话缓存管理
+ * - 会话过期检查和自动清理
+ * - 数据库会话加载
+ * - 会话状态查询
+ * 
+ * @since 1.0.0
+ * @author BilibiliVideo
+ */
 object SessionManager {
     
     private val sessions = ConcurrentHashMap<UUID, LoginSession>()

@@ -31,7 +31,8 @@ object TableFactory {
             PlayerBindingTable.createTable(host),
             BilibiliAccountTable.createTable(host),
             VideoTripleStatusTable.createTable(host),
-            UpFollowStatusTable.createTable(host)
+            UpFollowStatusTable.createTable(host),
+            VideoRewardRecordTable.createTable(host)
         ))
         
         return tables
@@ -99,5 +100,13 @@ object TableFactory {
     fun getUpFollowStatusTable(): Table<*, *> {
         return tables.find { it.name.endsWith("up_follow_status") }
             ?: UpFollowStatusTable.createTable(host)
+    }
+    
+    /**
+     * 获取视频奖励记录表
+     */
+    fun getVideoRewardRecordTable(): Table<*, *> {
+        return tables.find { it.name.endsWith("video_reward_record") }
+            ?: VideoRewardRecordTable.createTable(host)
     }
 }

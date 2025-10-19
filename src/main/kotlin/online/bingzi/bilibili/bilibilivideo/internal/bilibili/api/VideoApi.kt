@@ -9,14 +9,45 @@ import online.bingzi.bilibili.bilibilivideo.internal.bilibili.model.LikeStatusRe
 import online.bingzi.bilibili.bilibilivideo.internal.bilibili.model.VideoTripleData
 import taboolib.common.platform.function.submitAsync
 
+/**
+ * Bilibili视频API工具类
+ * 
+ * 提供视频三连状态（点赞、投币、收藏）查询功能。
+ * 支持BV号到AV号的转换和并发查询多个状态。
+ * 所有网络请求均为异步执行，通过回调函数返回结果。
+ * 
+ * 主要功能：
+ * - 查询视频三连状态
+ * - BV号与AV号互转
+ * - 并发查询优化
+ * - Cookie认证支持
+ * 
+ * @since 1.0.0
+ * @author BilibiliVideo
+ */
 object VideoApi {
     
+    /** Bilibili点赞状态查询API端点 */
     private const val LIKE_STATUS_URL = "https://api.bilibili.com/x/web-interface/archive/has/like"
+    /** Bilibili投币状态查询API端点 */
     private const val COIN_STATUS_URL = "https://api.bilibili.com/x/web-interface/archive/coins"
+    /** Bilibili收藏状态查询API端点 */
     private const val FAVORITE_STATUS_URL = "https://api.bilibili.com/x/v2/fav/video/favoured"
     
+    /** JSON解析器实例 */
     private val gson = Gson()
     
+    /**
+     * 获取视频三连状态
+     * 
+     * 并发查询指定视频的点赞、投币、收藏状态，提高查询效率。
+     * 需要用户已登录并提供有效的Cookie信息。
+     * 
+     * @param bvid 视频BV号
+     * @param sessdata 用户SESSDATA Cookie
+     * @param buvid3 设备标识Cookie
+     * @param callback 结果回调，成功时返回VideoTripleData，失败时返回null
+     */
     fun getTripleStatus(
         bvid: String,
         sessdata: String,
@@ -189,6 +220,15 @@ object VideoApi {
         }
     }
     
+    /**
+     * BV号转AV号算法
+     * 
+     * 使用Bilibili官方算法将BV号转换为AV号。
+     * BV号是Bilibili视频的新标识符，AV号是旧标识符，某些API仍需要AV号。
+     * 
+     * @param bvid BV号字符串，格式如"BV1xx411c7mD"
+     * @return 对应的AV号，转换失败时返回null
+     */
     private fun bvidToAid(bvid: String): Long? {
         // BV号转AV号的算法
         val table = "fZodR9XQDSUm21yCkr6zBqiveYah8bt4xsWpHnJE7jL5VG3guMTKNPAwcF"

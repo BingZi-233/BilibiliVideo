@@ -19,7 +19,7 @@ object FollowStatusCommandHandler {
             return
         }
         
-        player.sendInfo("commandsFollowQuerying", "mid" to mid)
+        player.sendInfo("commandsFollowQuerying", mid)
         
         // 调用API查询关注状态
         UserApi.getFollowStatus(
@@ -44,8 +44,8 @@ object FollowStatusCommandHandler {
                     if (success) {
                         // 发送结果给玩家
                         player.sendInfo("commandsFollowQueryComplete")
-                        player.sendInfo("commandsFollowUpmaster", "upName" to updatedFollowData.upName, "upMid" to updatedFollowData.upMid)
-                        player.sendInfo("commandsFollowStatus", "status" to updatedFollowData.getStatusMessage())
+                        player.sendInfo("commandsFollowUpmaster", updatedFollowData.upName, updatedFollowData.upMid)
+                        player.sendInfo("commandsFollowStatus", updatedFollowData.getStatusMessage())
                         
                         if (updatedFollowData.isFollowing) {
                             player.sendInfo("commandsFollowFollowing")

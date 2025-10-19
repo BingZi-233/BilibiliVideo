@@ -10,14 +10,35 @@ import taboolib.common.platform.function.submitAsync
 
 /**
  * 数据库服务类
- * 提供统一的数据库操作API，直接使用Table API进行操作
+ * 
+ * 提供统一的异步数据库操作API，封装所有数据访问逻辑。
+ * 直接使用TabooLib Table API进行数据库操作，支持MySQL和SQLite。
+ * 所有操作均为异步执行，通过回调函数返回结果。
+ * 
+ * 主要功能：
+ * - 玩家-MID绑定管理
+ * - Bilibili账户信息存储
+ * - 视频三连状态跟踪
+ * - UP主关注状态管理
+ * - 便捷查询方法
+ * 
+ * @since 1.0.0
+ * @author BilibiliVideo
  */
 object DatabaseService {
     
     // ===== 玩家绑定相关操作 =====
     
     /**
-     * 绑定玩家与MID
+     * 绑定玩家与Bilibili MID
+     * 
+     * 在数据库中建立Minecraft玩家UUID与Bilibili MID的一对一绑定关系。
+     * 如果已存在绑定记录则更新，否则创建新记录。
+     * 
+     * @param playerUuid 玩家UUID字符串
+     * @param mid Bilibili用户MID
+     * @param playerName 玩家名称（用于审计日志）
+     * @param callback 异步回调，参数为操作是否成功
      */
     fun bindPlayer(playerUuid: String, mid: Long, playerName: String, callback: (Boolean) -> Unit) {
         submitAsync {

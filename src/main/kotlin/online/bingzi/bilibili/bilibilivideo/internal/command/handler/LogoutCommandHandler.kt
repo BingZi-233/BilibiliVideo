@@ -30,7 +30,7 @@ object LogoutCommandHandler {
         // 取消正在进行的登录任务（如果有的话）
         LoginCommandHandler.cancelLogin(player)
         
-        player.sendInfo("commandsLogoutSuccess", "nickname" to nickname)
+        player.sendInfo("commandsLogoutSuccess", nickname)
         player.sendInfo("commandsLogoutNote")
     }
 }

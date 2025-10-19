@@ -1,16 +1,16 @@
 # ===== Common Messages =====
 commonPlayerOnly: "&cOnly players can use this command!"
 noPermissionForOthers: "&cYou don't have permission to execute this command for other players!"
-playerNotFound: "&cThe specified player was not found!"
-executedForPlayer: "&aCommand executed for player {player}."
+playerNotFound: "&cThe specified player {0} was not found!"
+executedForPlayer: "&aCommand executed for player {0}."
 
 # ===== Login Related Messages =====
 commandsLoginAlreadyLoggedIn: "&cYou are already logged into your Bilibili account!"
 commandsLoginInProgress: "&cYou are already in the login process, please do not repeat the operation!"
 commandsLoginGeneratingQrCode: "&eGenerating login QR code, please wait..."
 commandsLoginQrCodeSent: "&aQR code has been sent, please use your mobile Bilibili app to scan and login!"
-commandsLoginQrCodePartialSuccess: "&eQR code sending partially successful: {details}"
-commandsLoginQrCodeSendFailed: "&cFailed to send QR code: {errorMessage}"
+commandsLoginQrCodePartialSuccess: "&eQR code sending partially successful: {0}"
+commandsLoginQrCodeSendFailed: "&cFailed to send QR code: {0}"
 commandsLoginNoQrCodeSender: "&cNo available QR code sender, please contact the administrator for configuration!"
 commandsLoginQrCodeGenerateFailed: "&cFailed to generate QR code, please try again later!"
 commandsLoginQrCodeScanned: "&aScanned, please confirm login on your mobile phone!"

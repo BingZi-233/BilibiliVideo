@@ -8,14 +8,24 @@ import taboolib.common.platform.function.severe
 
 /**
  * 数据库管理器
- * 负责数据库的初始化、表创建和连接管理
+ * 
+ * 负责数据库的生命周期管理，包括初始化、表创建和资源清理。
+ * 使用TabooLib的生命周期注解自动在插件启用和禁用时执行相应操作。
+ * 通过TableFactory统一管理所有数据表的创建和初始化。
+ * 
+ * @since 1.0.0
+ * @author BilibiliVideo
  */
 object DatabaseManager {
     
+    /** 数据库初始化状态标记 */
     private var isInitialized = false
     
     /**
      * 插件启用时初始化数据库
+     * 
+     * 使用TabooLib生命周期注解自动调用。
+     * 执行表结构创建和初始化操作，避免重复初始化。
      */
     @Awake(LifeCycle.ENABLE)
     fun initialize() {
@@ -45,7 +55,10 @@ object DatabaseManager {
     }
     
     /**
-     * 插件禁用时清理资源
+     * 插件禁用时清理数据库资源
+     * 
+     * 使用TabooLib生命周期注解自动调用。
+     * 执行数据库连接池关闭和其他清理工作。
      */
     @Awake(LifeCycle.DISABLE)
     fun cleanup() {
@@ -59,13 +72,20 @@ object DatabaseManager {
     
     /**
      * 检查数据库是否已初始化
+     * 
+     * @return true 如果数据库已完成初始化，false 否则
      */
     fun isInitialized(): Boolean {
         return isInitialized
     }
     
     /**
-     * 获取数据库连接信息
+     * 获取数据库连接和表信息
+     * 
+     * 返回数据库的当前状态和已初始化的表信息。
+     * 用于调试和状态监控。
+     * 
+     * @return 包含数据库状态的描述字符串
      */
     fun getDatabaseInfo(): String {
         return if (isInitialized) {

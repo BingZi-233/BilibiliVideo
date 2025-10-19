@@ -1,3 +1,8 @@
 .gradle
 .idea
 build
+
+# Environment & local config
+.env
+.env.*
+.mcp.json
