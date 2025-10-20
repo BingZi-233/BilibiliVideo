@@ -4,6 +4,7 @@ import online.bingzi.bilibili.bilibilivideo.internal.command.handler.FollowStatu
 import online.bingzi.bilibili.bilibilivideo.internal.command.handler.LoginCommandHandler
 import online.bingzi.bilibili.bilibilivideo.internal.command.handler.LogoutCommandHandler
 import online.bingzi.bilibili.bilibilivideo.internal.command.handler.TripleStatusCommandHandler
+import online.bingzi.bilibili.bilibilivideo.internal.command.handler.StatusCommandHandler
 import online.bingzi.bilibili.bilibilivideo.internal.manager.BvManager
 import org.bukkit.Bukkit
 import org.bukkit.entity.Player
@@ -139,6 +140,17 @@ object BilibiliCommand {
                     }
                 }
             }
+        }
+    }
+
+    @CommandBody
+    val status = subCommand {
+        execute<ProxyCommandSender> { sender, _, _ ->
+            if (!sender.hasPermission("bilibili.admin")) {
+                sender.sendError("noPermissionForOthers")
+                return@execute
+            }
+            StatusCommandHandler.handleStatus(sender)
         }
     }
     

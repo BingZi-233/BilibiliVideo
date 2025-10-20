@@ -52,91 +52,92 @@ object RewardManager {
     private fun processReward(player: Player, tripleData: VideoTripleData) {
         val bvid = tripleData.bvid
         val settings = SettingConfig.getRewardSettings()
-        
-        // 检查是否阻止重复领奖
-        if (settings.preventDuplicateRewards) {
-            // 这里需要通过DatabaseService检查是否已经领取过奖励
-            // 由于当前DatabaseService没有奖励记录相关方法，先预留逻辑
-            val hasReward = hasPlayerReceivedReward(player.uniqueId.toString(), bvid)
-            if (hasReward) {
-                player.sendWarn("rewardAlreadyClaimed", bvid)
+
+        // 选择奖励配置（优先特定视频，否则使用默认）
+        val (videoConfig, defaultConfig) = BvManager.getRewardConfig(bvid)
+        val chosenConfig: Any = when {
+            videoConfig?.enabled == true -> videoConfig
+            defaultConfig?.enabled == true -> defaultConfig
+            else -> return // 没有启用的奖励配置
+        }
+
+        fun proceedWithReward() {
+            // 检查三连要求
+            val requireCompleteTriple = when (chosenConfig) {
+                is VideoRewardConfig -> chosenConfig.requireCompleteTriple
+                is DefaultRewardConfig -> chosenConfig.requireCompleteTriple
+                else -> true
+            }
+
+            val meetsRequirement = if (requireCompleteTriple) {
+                tripleData.hasTripleAction() // 需要完整三连
+            } else {
+                // 只需要任何一个操作（点赞、投币或收藏）
+                tripleData.isLiked || tripleData.coinCount > 0 || tripleData.isFavorited
+            }
+
+            if (!meetsRequirement) {
+                val requirement = if (requireCompleteTriple) "完整三连" else "至少一项操作"
+                player.sendWarn("rewardRequirementNotMet", requirement)
                 return
             }
-        }
-        
-        // 获取奖励配置
-        val (videoConfig, defaultConfig) = BvManager.getRewardConfig(bvid)
-        
-        // 确定使用哪个配置
-        val config = if (videoConfig?.enabled == true) {
-            videoConfig
-        } else if (defaultConfig?.enabled == true) {
-            defaultConfig
-        } else {
-            return // 没有启用的奖励配置
-        }
-        
-        // 检查三连要求
-        val requireCompleteTriple = when (config) {
-            is VideoRewardConfig -> config.requireCompleteTriple
-            is DefaultRewardConfig -> config.requireCompleteTriple
-            else -> true
-        }
-        
-        val meetsRequirement = if (requireCompleteTriple) {
-            tripleData.hasTripleAction() // 需要完整三连
-        } else {
-            // 只需要任何一个操作（点赞、投币或收藏）
-            tripleData.isLiked || tripleData.coinCount > 0 || tripleData.isFavorited
-        }
-        
-        if (!meetsRequirement) {
-            val requirement = if (requireCompleteTriple) "完整三连" else "至少一项操作"
-            player.sendWarn("rewardRequirementNotMet", requirement)
-            return
-        }
-        
-        // 发放奖励
-        val rewards = when (config) {
-            is VideoRewardConfig -> config.rewards
-            is DefaultRewardConfig -> config.rewards
-            else -> emptyList()
-        }
-        
-        if (rewards.isEmpty()) {
-            return
-        }
-        
-        // 使用KetherHelper执行奖励脚本
-        var rewardGiven = false
-        try {
-            rewards.ketherEval(getProxyPlayer(player.uniqueId)!!)
-            rewardGiven = true
-        } catch (e: Exception) {
-            taboolib.common.platform.function.warning("执行奖励脚本失败: ${e.message}")
-            rewardGiven = false
-        }
-        
-        if (rewardGiven) {
-            // 播放音效
-            if (settings.playSound) {
-                val sound = settings.getSoundType()
-                if (sound != null) {
-                    player.playSound(
-                        player.location,
-                        sound,
-                        settings.soundVolume,
-                        settings.soundPitch
-                    )
-                }
+
+            // 发放奖励
+            val rewards = when (chosenConfig) {
+                is VideoRewardConfig -> chosenConfig.rewards
+                is DefaultRewardConfig -> chosenConfig.rewards
+                else -> emptyList()
             }
-            
-            // 记录奖励发放
-            recordReward(player, tripleData, config)
-            
-            // 发送成功消息
-            val videoName = if (videoConfig != null) videoConfig.name else bvid
-            player.sendInfo("rewardReceived", videoName)
+
+            if (rewards.isEmpty()) {
+                return
+            }
+
+            // 使用KetherHelper执行奖励脚本
+            var rewardGiven = false
+            try {
+                rewards.ketherEval(getProxyPlayer(player.uniqueId)!!)
+                rewardGiven = true
+            } catch (e: Exception) {
+                taboolib.common.platform.function.warning("执行奖励脚本失败: ${e.message}")
+                rewardGiven = false
+            }
+
+            if (rewardGiven) {
+                // 播放音效
+                if (settings.playSound) {
+                    val sound = settings.getSoundType()
+                    if (sound != null) {
+                        player.playSound(
+                            player.location,
+                            sound,
+                            settings.soundVolume,
+                            settings.soundPitch
+                        )
+                    }
+                }
+
+                // 记录奖励发放
+                recordReward(player, tripleData, chosenConfig)
+
+                // 发送成功消息
+                val videoName = if (videoConfig != null) videoConfig.name else bvid
+                player.sendInfo("rewardReceived", videoName)
+            }
+        }
+
+        // 防重复检查（异步）
+        if (settings.preventDuplicateRewards) {
+            online.bingzi.bilibili.bilibilivideo.internal.database.service.RewardRecordService
+                .hasPlayerReceivedReward(player.uniqueId.toString(), bvid) { has ->
+                    if (has) {
+                        player.sendWarn("rewardAlreadyClaimed", bvid)
+                    } else {
+                        proceedWithReward()
+                    }
+                }
+        } else {
+            proceedWithReward()
         }
     }
     
@@ -177,11 +178,13 @@ object RewardManager {
             updatePlayer = player.name
         )
         
-        // 这里需要DatabaseService支持奖励记录的保存
-        // 目前先记录日志
-        taboolib.common.platform.function.info(
-            "玩家 ${player.name} 获得视频 ${tripleData.bvid} 的奖励 ($rewardType)"
-        )
+        // 保存奖励记录
+        online.bingzi.bilibili.bilibilivideo.internal.database.service.RewardRecordService
+            .saveVideoRewardRecord(record) { success ->
+                if (!success) {
+                    taboolib.common.platform.function.severe("保存奖励记录失败: ${tripleData.bvid} / ${player.name}")
+                }
+            }
     }
     
     /**
