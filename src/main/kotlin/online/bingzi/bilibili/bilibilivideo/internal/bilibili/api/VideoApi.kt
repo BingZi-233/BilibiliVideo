@@ -230,21 +230,20 @@ object VideoApi {
      * @return 对应的AV号，转换失败时返回null
      */
     private fun bvidToAid(bvid: String): Long? {
-        // BV号转AV号的算法
         val table = "fZodR9XQDSUm21yCkr6zBqiveYah8bt4xsWpHnJE7jL5VG3guMTKNPAwcF"
         val s = intArrayOf(11, 10, 3, 8, 4, 6)
         val xor = 177451812L
         val add = 8728348608L
-        
+
         return try {
-            if (!bvid.startsWith("BV")) return null
-            
-            val bvStr = bvid.substring(2)
+            if (!bvid.startsWith("BV") || bvid.length != 12) return null
             var r = 0L
             for (i in 0..5) {
-                r += table.indexOf(bvStr[s[i]]) * Math.pow(58.0, i.toDouble()).toLong()
+                val c = bvid[s[i]]
+                val index = table.indexOf(c)
+                if (index < 0) return null
+                r += index * Math.pow(58.0, i.toDouble()).toLong()
             }
-            
             (r - add) xor xor
         } catch (e: Exception) {
             null

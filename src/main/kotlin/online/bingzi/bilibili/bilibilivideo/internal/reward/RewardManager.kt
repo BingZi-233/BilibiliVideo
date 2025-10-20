@@ -24,6 +24,9 @@ import taboolib.platform.util.sendWarn
  * @author BilibiliVideo
  */
 object RewardManager {
+
+    // 防止同一玩家同一视频的奖励并发发放
+    private val rewardInProgress = java.util.concurrent.ConcurrentHashMap.newKeySet<String>()
     
     /**
      * 监听视频三连状态检查事件
@@ -52,6 +55,12 @@ object RewardManager {
     private fun processReward(player: Player, tripleData: VideoTripleData) {
         val bvid = tripleData.bvid
         val settings = SettingConfig.getRewardSettings()
+
+        val key = player.uniqueId.toString() + "|" + bvid
+        if (!rewardInProgress.add(key)) {
+            // 已有同一奖励流程在进行中，避免并发重复
+            return
+        }
 
         // 选择奖励配置（优先特定视频，否则使用默认）
         val (videoConfig, defaultConfig) = BvManager.getRewardConfig(bvid)
@@ -124,6 +133,8 @@ object RewardManager {
                 val videoName = if (videoConfig != null) videoConfig.name else bvid
                 player.sendInfo("rewardReceived", videoName)
             }
+            // 移除并发锁
+            rewardInProgress.remove(key)
         }
 
         // 防重复检查（异步）
@@ -132,6 +143,7 @@ object RewardManager {
                 .hasPlayerReceivedReward(player.uniqueId.toString(), bvid) { has ->
                     if (has) {
                         player.sendWarn("rewardAlreadyClaimed", bvid)
+                        rewardInProgress.remove(key)
                     } else {
                         proceedWithReward()
                     }

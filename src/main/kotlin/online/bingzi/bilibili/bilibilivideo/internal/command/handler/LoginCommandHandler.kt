@@ -40,10 +40,11 @@ object LoginCommandHandler {
             if (qrData != null) {
                 // 发送二维码给玩家
                 val senders = QRCodeSenderRegistry.getAvailableSenders()
-                if (senders.isNotEmpty()) {
-                    val sender = senders.values.first()
+                val active = QRCodeSenderRegistry.getActiveSender()
+                if (active != null || senders.isNotEmpty()) {
+                    val sender = active ?: senders.values.first()
                     val options = SendOptions()
-                    
+
                     sender.sendAsync(player, qrData.url, options) { result ->
                         when (result) {
                             is SendResult.Success -> {

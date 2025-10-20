@@ -1,5 +1,6 @@
 package online.bingzi.bilibili.bilibilivideo
 
+import online.bingzi.bilibili.bilibilivideo.api.qrcode.registry.QRCodeSenderRegistry
 import taboolib.common.platform.Plugin
 import taboolib.common.platform.function.info
 
@@ -21,6 +22,8 @@ object BilibiliVideo : Plugin() {
 
     override fun onDisable() {
         info("正在禁用 BilibiliVideo 插件...")
+        // 关闭所有已注册的二维码发送器，释放资源
+        QRCodeSenderRegistry.shutdown()
         info("BilibiliVideo 插件禁用完成！")
     }
 }
