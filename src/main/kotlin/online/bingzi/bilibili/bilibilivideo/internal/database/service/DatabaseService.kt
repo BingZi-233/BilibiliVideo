@@ -560,6 +560,44 @@ object DatabaseService {
         }
     }
     
+    /**
+     * 获取指定玩家与BV号的奖励记录
+     */
+    fun getVideoRewardRecord(bvid: String, playerUuid: String, callback: (VideoRewardRecord?) -> Unit) {
+        submitAsync {
+            try {
+                val table = TableFactory.getVideoRewardRecordTable()
+                val dataSource = TableFactory.getDataSource()
+                val results = table.select(dataSource) {
+                    where { "bvid" eq bvid; "player_uuid" eq playerUuid }
+                }
+                val record = results.firstOrNull {
+                    VideoRewardRecord(
+                        id = getLong("id"),
+                        bvid = getString("bvid"),
+                        mid = getLong("mid"),
+                        playerUuid = getString("player_uuid"),
+                        rewardType = getString("reward_type"),
+                        rewardData = getString("reward_data"),
+                        isLiked = getInt("is_liked") == 1,
+                        isCoined = getInt("is_coined") == 1,
+                        isFavorited = getInt("is_favorited") == 1,
+                        createTime = getLong("create_time"),
+                        updateTime = getLong("update_time"),
+                        createPlayer = getString("create_player"),
+                        updatePlayer = getString("update_player")
+                    )
+                }
+                submit { callback(record) }
+            } catch (e: Exception) {
+                submit {
+                    severe("获取奖励记录失败: ${e.message}")
+                    callback(null)
+                }
+            }
+        }
+    }
+    
     // ===== 便捷方法 =====
     
     /**
