@@ -3,6 +3,7 @@ package online.bingzi.bilibili.bilibilivideo.internal.database.service
 import online.bingzi.bilibili.bilibilivideo.internal.database.entity.BilibiliAccount
 import online.bingzi.bilibili.bilibilivideo.internal.database.entity.UpFollowStatus
 import online.bingzi.bilibili.bilibilivideo.internal.database.entity.VideoTripleStatus
+import online.bingzi.bilibili.bilibilivideo.internal.database.entity.VideoRewardRecord
 import online.bingzi.bilibili.bilibilivideo.internal.database.factory.TableFactory
 import taboolib.common.platform.function.severe
 import taboolib.common.platform.function.submit
@@ -498,6 +499,62 @@ object DatabaseService {
                 submit {
                     severe("获取UP主关注状态失败: ${e.message}")
                     callback(null)
+                }
+            }
+        }
+    }
+    
+    // ===== 视频奖励记录相关操作 =====
+    
+    /**
+     * 检查玩家是否已领取过指定BV号的奖励
+     */
+    fun hasVideoRewardRecord(playerUuid: String, bvid: String, callback: (Boolean) -> Unit) {
+        submitAsync {
+            try {
+                val table = TableFactory.getVideoRewardRecordTable()
+                val dataSource = TableFactory.getDataSource()
+                val results = table.select(dataSource) {
+                    where { "player_uuid" eq playerUuid; "bvid" eq bvid }
+                }
+                submit { callback(results.find()) }
+            } catch (e: Exception) {
+                submit {
+                    severe("检查奖励记录失败: ${e.message}")
+                    callback(false)
+                }
+            }
+        }
+    }
+    
+    /**
+     * 保存视频奖励记录
+     */
+    fun saveVideoRewardRecord(record: VideoRewardRecord, callback: (Boolean) -> Unit) {
+        submitAsync {
+            try {
+                val table = TableFactory.getVideoRewardRecordTable()
+                val dataSource = TableFactory.getDataSource()
+                val currentTime = System.currentTimeMillis()
+                val result = table.insert(dataSource) {
+                    value("bvid", record.bvid)
+                    value("mid", record.mid)
+                    value("player_uuid", record.playerUuid)
+                    value("reward_type", record.rewardType)
+                    value("reward_data", record.rewardData)
+                    value("is_liked", if (record.isLiked) 1 else 0)
+                    value("is_coined", if (record.isCoined) 1 else 0)
+                    value("is_favorited", if (record.isFavorited) 1 else 0)
+                    value("create_time", currentTime)
+                    value("update_time", currentTime)
+                    value("create_player", record.createPlayer)
+                    value("update_player", record.updatePlayer)
+                } > 0
+                submit { callback(result) }
+            } catch (e: Exception) {
+                submit {
+                    severe("保存视频奖励记录失败: ${e.message}")
+                    callback(false)
                 }
             }
         }
