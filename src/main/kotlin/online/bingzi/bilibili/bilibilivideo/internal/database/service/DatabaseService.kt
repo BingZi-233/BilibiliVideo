@@ -7,6 +7,8 @@ import online.bingzi.bilibili.bilibilivideo.internal.database.factory.TableFacto
 import taboolib.common.platform.function.severe
 import taboolib.common.platform.function.submit
 import taboolib.common.platform.function.submitAsync
+import taboolib.module.database.Table
+import javax.sql.DataSource
 
 /**
  * 数据库服务类
@@ -62,14 +64,15 @@ object DatabaseService {
                     } > 0
                 } else {
                     // 插入新记录
-                    table.insert(dataSource) {
-                        value("player_uuid", playerUuid)
-                        value("mid", mid)
-                        value("create_time", currentTime)
-                        value("update_time", currentTime)
-                        value("create_player", playerName)
-                        value("update_player", playerName)
-                    } > 0
+                    table.insertRow(
+                        dataSource,
+                        "player_uuid" to playerUuid,
+                        "mid" to mid,
+                        "create_time" to currentTime,
+                        "update_time" to currentTime,
+                        "create_player" to playerName,
+                        "update_player" to playerName
+                    ) > 0
                 }
                 
                 submit { callback(result) }
@@ -199,18 +202,19 @@ object DatabaseService {
                     } > 0
                 } else {
                     // 插入新记录
-                    table.insert(dataSource) {
-                        value("mid", mid)
-                        value("nickname", nickname)
-                        value("sessdata", sessdata)
-                        value("buvid3", buvid3)
-                        value("bili_jct", biliJct)
-                        value("refresh_token", refreshToken)
-                        value("create_time", currentTime)
-                        value("update_time", currentTime)
-                        value("create_player", playerName)
-                        value("update_player", playerName)
-                    } > 0
+                    table.insertRow(
+                        dataSource,
+                        "mid" to mid,
+                        "nickname" to nickname,
+                        "sessdata" to sessdata,
+                        "buvid3" to buvid3,
+                        "bili_jct" to biliJct,
+                        "refresh_token" to refreshToken,
+                        "create_time" to currentTime,
+                        "update_time" to currentTime,
+                        "create_player" to playerName,
+                        "update_player" to playerName
+                    ) > 0
                 }
                 
                 submit { callback(result) }
@@ -337,18 +341,19 @@ object DatabaseService {
                     } > 0
                 } else {
                     // 插入新记录
-                    table.insert(dataSource) {
-                        value("bvid", bvid)
-                        value("mid", mid)
-                        value("player_uuid", playerUuid)
-                        value("is_liked", if (isLiked) 1 else 0)
-                        value("is_coined", if (isCoined) 1 else 0)
-                        value("is_favorited", if (isFavorited) 1 else 0)
-                        value("create_time", currentTime)
-                        value("update_time", currentTime)
-                        value("create_player", playerName)
-                        value("update_player", playerName)
-                    } > 0
+                    table.insertRow(
+                        dataSource,
+                        "bvid" to bvid,
+                        "mid" to mid,
+                        "player_uuid" to playerUuid,
+                        "is_liked" to if (isLiked) 1 else 0,
+                        "is_coined" to if (isCoined) 1 else 0,
+                        "is_favorited" to if (isFavorited) 1 else 0,
+                        "create_time" to currentTime,
+                        "update_time" to currentTime,
+                        "create_player" to playerName,
+                        "update_player" to playerName
+                    ) > 0
                 }
                 
                 submit { callback(result) }
@@ -439,16 +444,17 @@ object DatabaseService {
                     } > 0
                 } else {
                     // 插入新记录
-                    table.insert(dataSource) {
-                        value("up_mid", upMid)
-                        value("follower_mid", followerMid)
-                        value("player_uuid", playerUuid)
-                        value("is_following", if (isFollowing) 1 else 0)
-                        value("create_time", currentTime)
-                        value("update_time", currentTime)
-                        value("create_player", playerName)
-                        value("update_player", playerName)
-                    } > 0
+                    table.insertRow(
+                        dataSource,
+                        "up_mid" to upMid,
+                        "follower_mid" to followerMid,
+                        "player_uuid" to playerUuid,
+                        "is_following" to if (isFollowing) 1 else 0,
+                        "create_time" to currentTime,
+                        "update_time" to currentTime,
+                        "create_player" to playerName,
+                        "update_player" to playerName
+                    ) > 0
                 }
                 
                 submit { callback(result) }
@@ -548,6 +554,20 @@ object DatabaseService {
                     callback(false)
                 }
             }
+        }
+    }
+
+    private fun Table<*, *>.insertRow(
+        dataSource: DataSource,
+        vararg entries: Pair<String, Any?>
+    ): Int {
+        if (entries.isEmpty()) {
+            return 0
+        }
+        val keyArray = entries.map { it.first }.toTypedArray()
+        val valueArray = entries.map { it.second }.toTypedArray()
+        return insert(dataSource, *keyArray) {
+            value(*valueArray)
         }
     }
 }
