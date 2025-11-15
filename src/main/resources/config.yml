@@ -1,0 +1,21 @@
+reward:
+  templates:
+    default:
+      description: "完成三连时发放的默认奖励示例"
+      kether:
+        # 仅作为示例，实际脚本可根据需要自行编写
+        - 'tell "&a你已完成该视频的三连，感谢支持！"'
+
+    vip:
+      description: "示例：某些视频使用更高档奖励"
+      kether:
+        - 'tell "&6你对该视频的支持获得了 VIP 奖励！"'
+
+  # 针对特定 bvid 的奖励配置
+  videos:
+    # 完全自定义的示例：BV1xxxxx 使用 vip 模板
+    BV1xxxxx:
+      rewardKey: "vip"
+
+    # 如果仅配置了 bvid 但不写 rewardKey，将自动回退到 templates.default
+    BV2yyyyy: { }

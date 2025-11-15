@@ -14,6 +14,9 @@ taboolib {
     env {
         install(Basic)
         install(BukkitHook)
+        install(BukkitNMS)
+        install(BukkitNMSItemTag)
+        install(BukkitNMSUtil)
         install(BukkitUtil)
         install(CommandHelper)
         install(I18n)
@@ -21,7 +24,7 @@ taboolib {
         install(MinecraftChat)
         install(Bukkit)
         install(Kether)
-        install(Database)
+        enableIsolatedClassloader = true
     }
     description {
         name = "BilibiliVideo"
@@ -29,10 +32,20 @@ taboolib {
             name("BingZi-233")
         }
     }
-    version { taboolib = "6.2.3-2eb93b5" }
-    relocate("com.google.gson", "online.bingzi.bilibili.bilibilivideo.library.gson")
-    relocate("okhttp3","online.bingzi.bilibili.bilibilivideo.library.okhttp3")
+    version {
+        taboolib = "6.2.4-621517d"
+        skipKotlinRelocate = true
+    }
 }
+
+val ktormVersion = "3.6.0"
+val hikariVersion = "4.0.3"
+val sqliteDriverVersion = "3.45.1.0"
+val mysqlDriverVersion = "8.3.0"
+val okhttpVersion = "4.12.0"
+val okioVersion = "3.6.0"
+val gsonVersion = "2.11.0"
+val zxingVersion = "3.5.2"
 
 repositories {
     mavenCentral()
@@ -41,11 +54,19 @@ repositories {
 dependencies {
     compileOnly("ink.ptms.core:v12004:12004:mapped")
     compileOnly("ink.ptms.core:v12004:12004:universal")
-    taboo("com.squareup.okhttp3:okhttp:4.12.0")
-    taboo("com.squareup.okhttp3:logging-interceptor:4.12.0")
-    taboo("com.google.code.gson:gson:2.10.1")
     compileOnly(kotlin("stdlib"))
+    compileOnly(kotlin("reflect"))
     compileOnly(fileTree("libs"))
+    compileOnly("org.ktorm:ktorm-core:$ktormVersion")
+    compileOnly("org.ktorm:ktorm-support-mysql:$ktormVersion")
+    compileOnly("org.ktorm:ktorm-support-sqlite:$ktormVersion")
+    compileOnly("com.zaxxer:HikariCP:$hikariVersion")
+    compileOnly("org.xerial:sqlite-jdbc:$sqliteDriverVersion")
+    compileOnly("com.mysql:mysql-connector-j:$mysqlDriverVersion")
+    compileOnly("com.squareup.okhttp3:okhttp:$okhttpVersion")
+    compileOnly("com.squareup.okio:okio-jvm:$okioVersion")
+    compileOnly("com.google.code.gson:gson:$gsonVersion")
+    compileOnly("com.google.zxing:core:$zxingVersion")
 }
 
 tasks.withType<JavaCompile> {

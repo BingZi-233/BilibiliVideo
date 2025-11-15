@@ -1,302 +1,402 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+这个文件为 Claude Code (claude.ai/code) 提供指导，帮助其在此仓库中工作。
 
 ## 项目概述
 
-BilibiliVideo 是一个基于 TabooLib 6.2.3 框架开发的 Minecraft Bukkit 插件，使用 Kotlin 语言实现。插件允许每个玩家登录自己的 Bilibili 账户，并提供视频三连状态查询、UP主关注状态查询等功能，同时支持基于 Kether 脚本的奖励系统。
+BilibiliVideo 是一个基于 TabooLib 6.2.4 框架开发的 Minecraft (Bukkit/Spigot/Paper) 服务器插件，提供 B 站账号绑定、视频三连检测和奖励发放功能。
 
-**技术栈**: Kotlin 2.2.0 (JVM 1.8) + TabooLib 6.2.3 + Gradle (Kotlin DSL) + OkHttp3 + Exposed ORM
+- **语言**: Kotlin 2.2.0
+- **构建工具**: Gradle (Kotlin DSL)
+- **目标 JVM**: Java 8
+- **框架**: TabooLib 6.2.4
+- **包名**: `online.bingzi.bilibili.video`
+- **当前版本**: 2.0.0-beta
 
-## 构建和开发命令
+## 常用命令
 
-### 构建命令
+### 构建与开发
+
 ```bash
-# 清理构建文件
+# 构建发行版本(不包含 TabooLib 本体)
+./gradlew build
+# 输出: build/libs/BilibiliVideo-2.0.0-beta.jar
+
+# 构建 API 版本(包含 TabooLib API，用于开发依赖)
+./gradlew taboolibBuildApi
+# 输出: build/libs/BilibiliVideo-2.0.0-beta-api.jar
+
+# 清理构建产物
 ./gradlew clean
 
-# 编译 Kotlin 代码
-./gradlew compileKotlin
-
-# 构建发行版本（不含 TabooLib 本体，用于服务器部署）
-./gradlew build
-# 产物位于: build/libs/${project.name}-${version}.jar
-
-# 构建 API JAR（用于开发者依赖，包含 TabooLib 但移除逻辑代码）
-./gradlew taboolibBuildApi -PDeleteCode
-# 产物位于: build/libs/${project.name}-${version}-api.jar
-
-# 构建完整开发版本（包含 TabooLib 本体）
-./gradlew taboolibBuild
-
-# 发布到 Maven 仓库（需要环境变量或 gradle.properties 中配置认证信息）
+# 发布到 Maven 仓库(需要配置 MAVEN_USERNAME 和 MAVEN_PASSWORD)
 ./gradlew publish
+
+# 编译不运行测试
+./gradlew build -x test
 ```
 
-### 测试命令
-```bash
-# 运行测试（当前项目无测试目录，需要先创建 src/test/kotlin）
-./gradlew test
-```
+### 依赖管理
 
-### 重要编译参数
-- `-Xjvm-default=all`: Kotlin 接口默认方法生成策略
-- JVM Target: 1.8
-- 编码: UTF-8
+所有依赖都在 `build.gradle.kts` 中配置为 `compileOnly`，因为 TabooLib 使用隔离类加载器机制:
 
-## 核心架构
-
-### 包结构设计
-
-```
-online.bingzi.bilibili.bilibilivideo/
-├── BilibiliVideo.kt                # 主插件类（Object，继承 Plugin）
-├── api/                            # 公共 API 包（供第三方开发者使用）
-│   ├── event/                      # 事件定义
-│   │   ├── BilibiliLoginEvent      # 登录事件
-│   │   ├── BilibiliLogoutEvent     # 登出事件
-│   │   ├── VideoTripleStatusCheckEvent  # 视频三连状态检查事件
-│   │   └── UpFollowStatusCheckEvent     # UP主关注状态检查事件
-│   └── qrcode/                     # 二维码发送系统（可扩展框架）
-│       ├── sender/QRCodeSender     # 发送器接口
-│       ├── registry/QRCodeSenderRegistry  # 注册中心
-│       ├── result/SendResult       # 发送结果（密封类）
-│       └── options/SendOptions     # 发送选项
-└── internal/                       # 内部实现包（不保证向后兼容）
-    ├── bilibili/                   # Bilibili API 实现
-    │   ├── api/                    # API 请求封装
-    │   │   ├── QrCodeApi          # 二维码登录 API
-    │   │   ├── VideoApi           # 视频相关 API
-    │   │   └── UserApi            # 用户相关 API
-    │   ├── model/                  # 数据模型
-    │   ├── client/HttpClientFactory # HTTP 客户端工厂
-    │   └── helper/CookieHelper     # Cookie 管理（包含风控机制）
-    ├── command/                    # 命令系统
-    │   ├── BilibiliCommand         # 主命令类（声明式命令定义）
-    │   └── handler/                # 命令处理器
-    │       ├── LoginCommandHandler
-    │       ├── LogoutCommandHandler
-    │       ├── TripleStatusCommandHandler
-    │       └── FollowStatusCommandHandler
-    ├── config/                     # 配置管理
-    │   ├── DatabaseConfig          # 数据库配置
-    │   └── SettingConfig           # 插件设置配置
-    ├── database/                   # 数据持久化层
-    │   ├── DatabaseManager         # 生命周期管理
-    │   ├── DatabaseService         # 统一数据服务接口
-    │   ├── factory/TableFactory    # 表工厂
-    │   ├── table/                  # 表定义（Exposed Table）
-    │   ├── entity/                 # 数据实体类
-    │   └── dao/                    # 数据访问接口
-    ├── event/EventManager          # 内部事件管理
-    ├── helper/KetherHelper         # Kether 脚本辅助
-    ├── manager/                    # 业务管理器
-    │   ├── BvManager              # BV 号管理
-    │   └── SessionManager         # 会话管理
-    ├── reward/RewardManager        # 奖励系统（基于 Kether 脚本）
-    └── session/LoginSession        # 登录会话
-```
-
-### 关键架构模式
-
-#### 1. 命令系统（TabooLib CommandHelper）
-使用声明式命令定义，通过注解 `@CommandHeader` 和 `@CommandBody` 定义命令结构：
-- 主命令: `/bili` (别名: `/bilibili`, `/bl`)
-- 子命令: `login`, `logout`, `triple`, `follow`
-- 权限: `bilibili.use`（默认 true）, `bilibili.admin`（操作其他玩家）
-- 所有命令支持补全和参数验证（通过 `suggestion` 和 `restrict` DSL）
-
-#### 2. 数据库架构（Exposed ORM）
-- 双数据库支持: MySQL / SQLite（通过配置自动切换）
-- 异步操作: 所有数据库操作通过 `DatabaseService` 异步执行
-- 数据表:
-  - `player_bindings`: 玩家-MID 绑定关系（一对一）
-  - `bilibili_accounts`: Bilibili 账户信息（Cookie、刷新令牌）
-  - `video_triple_status`: 视频三连状态记录
-  - `up_follow_status`: UP主关注状态记录
-  - `video_reward_records`: 奖励发放历史记录
-- 初始化: 插件启用时自动通过 `@Awake(LifeCycle.ENABLE)` 初始化
-
-#### 3. 奖励系统（Kether 脚本驱动）
-- 配置文件: `src/main/resources/setting.yml`
-- 支持两种奖励配置:
-  - `default-reward`: 默认奖励（未特殊配置的 BV 号）
-  - `videos[bvid]`: 特定 BV 号专属奖励
-- 奖励执行: 通过 `KetherHelper.ketherEval()` 执行 Kether 脚本
-- 防重复机制: 通过 `video_reward_records` 表防止重复领奖
-- 事件驱动: 监听 `VideoTripleStatusCheckEvent` 自动发放奖励
-
-#### 4. Bilibili API 集成
-- HTTP 客户端: OkHttp3 + 日志拦截器
-- 依赖重定位:
-  - `com.google.gson` → `online.bingzi.bilibili.bilibilivideo.library.gson`
-  - `okhttp3` → `online.bingzi.bilibili.bilibilivideo.library.okhttp3`
-- 风控机制:
-  - `buvid3` 自动生成和管理
-  - WBI 签名机制（UP主关注状态查询）
-  - Cookie 自动刷新（RSA-OAEP 加密）
-- 异步请求: 使用 TabooLib 任务调度系统 (`submit(async = true)`)
-
-#### 5. 会话管理
-- 每个玩家独立登录会话（`LoginSession`）
-- 会话存储在 `SessionManager` 中（内存 + 数据库持久化）
-- 登录流程: 二维码生成 → 轮询扫码状态 → 获取 Cookie → 保存会话
-- 登出清理: 删除内存会话 + 触发 `BilibiliLogoutEvent`
-
-## 关键实现细节
-
-### BV 号格式验证
 ```kotlin
-// 正则表达式: BV + 10位字符（不包含 0、I、O、l）
-Regex("^BV[1-9a-km-zA-HJ-NP-Z]{10}$")
+// 核心依赖版本
+ktormVersion = "3.6.0"           // ORM 框架
+hikariVersion = "4.0.3"          // 连接池
+okhttpVersion = "4.12.0"         // HTTP 客户端
+gsonVersion = "2.11.0"           // JSON 序列化
+zxingVersion = "3.5.2"           // 二维码生成
 ```
-文件位置: `src/main/kotlin/.../internal/command/BilibiliCommand.kt:183`
 
-### Kether 脚本常用语法
+## 架构设计
+
+项目采用经典的分层架构:
+
+```
+命令层 (Command)
+    ↓
+服务层 (Service)
+    ↓
+仓库层 (Repository)
+    ↓
+数据库层 (Database/ORM)
+    ↓
+外部 API 层 (Bilibili API / HTTP)
+```
+
+### 核心模块
+
+#### 1. 数据库层 (`internal/database/`)
+
+- **DatabaseFactory**: 负责初始化 HikariCP 数据源和 Ktorm Database 实例
+- **DatabaseSchemaInitializer**: 自动建表和 Schema 管理
+- 支持 SQLite(默认) 和 MySQL 两种数据库
+- 配置文件: `src/main/resources/database.yml`
+
+#### 2. 实体层 (`internal/entity/`)
+
+使用 Ktorm 的 Entity API 定义数据实体:
+
+- `CredentialEntities.kt`: B 站登录凭证(SESSDATA, bili_jct, refresh_token 等)
+- `BoundAccountEntities.kt`: 玩家与 B 站账号的绑定关系
+- `TripleStatusEntities.kt`: 视频三连状态记录
+- `RewardRecordEntities.kt`: 奖励领取记录
+
+表前缀在 `DatabaseTablePrefix.kt` 中定义(默认 `bv_`)，可通过 `database.yml` 的 `options.table-prefix` 配置修改。
+
+#### 3. 仓库层 (`internal/repository/`)
+
+提供纯数据访问接口，封装 Ktorm 的 CRUD 操作:
+
+- `CredentialRepository`: 凭证数据访问
+- `BoundAccountRepository`: 绑定关系数据访问
+- `TripleStatusRepository`: 三连状态数据访问
+- `RewardRecordRepository`: 奖励记录数据访问
+
+**重要**: Repository 层只做数据操作，不包含业务逻辑。
+
+#### 4. 服务层 (`internal/service/`)
+
+包含核心业务逻辑:
+
+- **BindingService**: 账号绑定/解绑业务，确保一对一绑定规则
+- **CredentialService**: 凭证管理，提供通过玩家/标签获取凭证的功能
+- **TripleCheckService**: 调用 B 站 API 检测视频三连状态
+- **RewardService**: 奖励发放业务，检查三连状态并记录奖励
+- **RewardKetherExecutor**: 执行 Kether 脚本奖励
+
+**设计原则**: Service 层不持有任何 Bukkit 对象(如 Player)，避免内存泄漏。所有需要 Player 的场景都传递 UUID/名称等基本类型。
+
+#### 5. 命令层 (`internal/command/`)
+
+使用 TabooLib CommandHelper 模块定义命令:
+
+主命令: `/bv` (别名: `/bilibili`)
+
+玩家命令:
+- `/bv qrcode` - 生成登录二维码地图
+- `/bv status` - 查看绑定状态
+- `/bv triple <bvid>` - 检测视频三连状态
+- `/bv reward <bvid>` - 领取三连奖励
+
+管理员命令:
+- `/bv admin reload` - 重载配置
+- `/bv admin credential list` - 列出所有凭证
+- `/bv admin credential info <label>` - 查看凭证详情
+- `/bv admin credential refresh <label>` - 刷新凭证(待实现)
+
+#### 6. HTTP 层 (`internal/http/`)
+
+**BilibiliHttpClient**: 统一的 B 站 API 调用底座
+
+- 使用 OkHttp3 作为 HTTP 客户端
+- 封装了 GET 和 POST Form 方法
+- 统一处理 Cookie 头、User-Agent、Referer
+- 使用 Gson 进行 JSON 序列化/反序列化
+
+#### 7. B 站 API 集成 (`internal/bilibili/`)
+
+**TripleActionApi**: 封装 B 站视频三连相关 API
+
+- `checkTripleStatus()`: 检查视频的点赞、投币、收藏状态
+- 返回 `TripleStatus` 数据类，包含 `liked`, `coinCount`, `favoured`, `isTriple` 等字段
+
+DTO 定义在 `internal/bilibili/dto/` 目录下:
+- `TripleDtos.kt`: 三连状态响应
+- `QrLoginDtos.kt`: 二维码登录响应
+
+#### 8. 二维码登录 (`internal/credential/`)
+
+**QrLoginService**: 管理 B 站二维码登录流程
+
+- `startLogin(player)`: 发起登录，返回二维码 URL
+- 使用内部线程池轮询登录状态
+- 登录成功后自动保存凭证并建立绑定关系
+
+#### 9. UI 层 (`internal/ui/`)
+
+**QrMapService**: 将二维码渲染到 Minecraft 地图物品
+
+- `createQrMapItem(player, qrUrl)`: 创建包含二维码的地图物品
+- **QrMapRenderer**: 使用 MapView API 渲染二维码
+- **MapViewCompat / MapMaterialCompat**: 跨版本兼容性封装
+
+#### 10. 配置层 (`internal/config/`)
+
+- **DatabaseConfig**: 数据库配置(`database.yml`)
+- **RewardConfig**: 奖励配置(`config.yml`)
+
+奖励配置使用模板系统:
 ```yaml
-rewards:
-  - 'command "eco give " + player.name + " 100"'  # 执行命令
-  - 'tell player "&a消息内容"'                     # 发送消息
-  - 'sound player "ENTITY_PLAYER_LEVELUP" 1.0 1.0' # 播放音效
-  - 'if player.level > 50 then { ... } else { ... }' # 条件判断
-  - 'random(1, 100)'                               # 随机数
+reward:
+  templates:
+    default:
+      kether: [...]  # Kether 脚本列表
+  videos:
+    BV1xxxxx:
+      rewardKey: "default"  # 指定使用的模板
 ```
 
-### 数据库操作模式
-所有数据库操作都使用回调模式，确保异步执行：
+## 重要技术细节
+
+### TabooLib 框架
+
+项目使用以下 TabooLib 模块:
+
 ```kotlin
-DatabaseService.bindPlayer(playerUuid, mid, playerName) { success ->
-    if (success) {
-        // 处理成功逻辑
-    } else {
-        // 处理失败逻辑（错误已记录到日志）
+install(Basic)            // 基础模块
+install(BukkitHook)       // PlaceholderAPI 等集成
+install(BukkitNMS)        // NMS 抽象层
+install(BukkitUtil)       // Bukkit 工具
+install(CommandHelper)    // 命令系统
+install(I18n)            // 国际化
+install(Metrics)         // bStats 统计
+install(MinecraftChat)   // 聊天消息
+install(Kether)          // 脚本引擎
+install(Bukkit)          // Bukkit 核心
+```
+
+关键 API:
+- `submit(async = true) { ... }`: 异步执行任务
+- `Plugin.onEnable()` / `Plugin.onDisable()`: 插件生命周期
+- `@CommandHeader` / `@CommandBody`: 声明式命令定义
+
+### Ktorm ORM
+
+使用 Ktorm 3.6.0 的 Entity API 风格:
+
+```kotlin
+// 定义实体接口
+interface Credential : Entity<Credential> {
+    val id: Long
+    var sessdata: String
+    // ...
+}
+
+// 定义表对象
+object Credentials : Table<Credential>("${DATABASE_TABLE_PREFIX}credential") {
+    val id = long("id").primaryKey().bindTo { it.id }
+    val sessdata = varchar("sessdata").bindTo { it.sessdata }
+    // ...
+}
+
+// CRUD 操作
+database.sequenceOf(Credentials).find { it.id eq 1 }
+database.sequenceOf(Credentials).add(entity)
+```
+
+### 异步模式
+
+所有网络请求和数据库操作都应该异步执行:
+
+```kotlin
+submit(async = true) {
+    // 异步操作(在工作线程执行)
+    val result = someBlockingOperation()
+
+    submit {
+        // 回到主线程(操作 Bukkit API)
+        player.sendMessage("结果: $result")
     }
 }
 ```
 
-### TabooLib 生命周期
-- `@Awake(LifeCycle.LOAD)`: 插件加载阶段
-- `@Awake(LifeCycle.ENABLE)`: 插件启用阶段（数据库初始化）
-- `@Awake(LifeCycle.ACTIVE)`: 插件激活阶段
-- `@Awake(LifeCycle.DISABLE)`: 插件禁用阶段（资源清理）
+**规则**:
+- Repository 层的数据库调用必须在异步上下文中调用
+- Service 层的网络请求必须在异步上下文中调用
+- 所有 Bukkit API(如 `player.sendMessage()`, `player.inventory.addItem()`)必须在主线程执行
 
-## 配置文件
+### 数据库表前缀
 
-### 主配置 (src/main/resources/setting.yml)
-- `default-reward`: 默认奖励配置
-  - `enabled`: 是否启用
-  - `require-complete-triple`: 是否需要完整三连
-  - `rewards`: Kether 脚本列表
-- `videos[bvid]`: 特定 BV 号奖励配置
-  - `name`: 视频显示名称
-  - `enabled`: 是否启用
-  - `require-complete-triple`: 三连要求
-  - `rewards`: Kether 脚本列表
-- `settings`: 系统设置
-  - `prevent-duplicate-rewards`: 是否阻止重复领奖
-  - `reward-delay`: 奖励发放延迟（毫秒）
-  - `play-sound`: 是否播放音效
-  - `sound-type/volume/pitch`: 音效配置
+表前缀通过 `DATABASE_TABLE_PREFIX` 全局变量控制:
 
-### 数据库配置 (src/main/resources/database.yml)
-通过 TabooLib DatabasePlayer 模块管理，支持 MySQL 和 SQLite 配置。
+```kotlin
+internal var DATABASE_TABLE_PREFIX: String = "bv_"
+```
 
-### 多语言配置 (src/main/resources/lang/)
-- `zh_CN.yml`: 简体中文
-- `en_US.yml`: 英文
+在 `DatabaseFactory.init()` 中从配置文件读取并覆盖，必须在访问任何实体之前完成。
 
-## 开发注意事项
+### Kether 脚本执行
 
-### 代码风格
-- 使用 Kotlin `object` 作为主插件类和单例管理器
-- 缩进: 4 空格
-- 命名: 包名小写，类名 PascalCase，方法/变量 camelCase
-- 可空性: 显式标记可空类型，避免 `!!` 操作符
-- 公共 API 必须包含 KDoc 文档
+奖励使用 TabooLib 的 Kether 脚本引擎:
 
-### TabooLib 模块依赖
-项目使用以下 TabooLib 模块（在 build.gradle.kts 中定义）:
-- `Basic`: 基础模块
-- `BukkitHook`, `BukkitUtil`: Bukkit 集成
-- `CommandHelper`: 命令系统
-- `I18n`: 国际化
-- `Metrics`: bStats 统计
-- `MinecraftChat`: 聊天消息处理
-- `Bukkit`: Bukkit 平台核心
-- `Kether`: 脚本引擎
-- `Database`: 数据库支持
+```kotlin
+KetherShell.eval(scriptLines, sender = player) {
+    // 脚本执行成功
+}.thenApply { result ->
+    // 处理结果
+}
+```
 
-### 依赖管理
-- 外部依赖通过 `taboo()` 或 `compileOnly()` 添加
-- 需要重定位的依赖在 `taboolib {}` 块中使用 `relocate()` 配置
-- 新增库前必须评估是否与服务器或其他插件冲突
+脚本示例:
+```yaml
+kether:
+  - 'tell "&a感谢你的三连！"'
+  - 'command papi "give %player_name% diamond 3"'
+```
 
-### 测试建议
-当前项目无测试目录，建议新增 `src/test/kotlin` 并使用 JUnit 5 + MockK。测试文件以 `*Test.kt` 结尾，与被测类同包。
+## 开发指南
 
-### Git 提交规范
-- 提交信息使用中文简体，动词开头（如：修复、重构、新增）
-- PR 需包含: 变更摘要、动机、影响面、关联 Issue
-- 修改配置文件或命令时，需同步更新相关文档（`docs/*`）和多语言文件（`lang/*`）
+### 添加新的 Service
 
-### 安全要求
-- 切勿提交密钥、令牌、Cookie、环境变量到版本控制
-- 使用 `.env` 或 `gradle.properties` 管理敏感配置
-- 项目已配置 `.gitignore` 忽略敏感文件
+1. 在 `internal/service/` 创建新的 Service object
+2. 定义 data class 作为返回值(包含 success 字段和 message)
+3. 不要持有 Bukkit 对象(如 Player)，只使用 UUID/String 等基本类型
+4. 依赖 Repository 层进行数据操作
 
-## 常见任务
+### 添加新的 Repository
 
-### 添加新的 Bilibili API
-1. 在 `internal/bilibili/api/` 创建新的 API 类
-2. 在 `internal/bilibili/model/` 定义数据模型
-3. 使用 `HttpClientFactory.createClient()` 创建 HTTP 客户端
-4. 异步执行请求: `submit(async = true) { ... }`
-5. 在 `CookieHelper` 中添加风控机制支持（如需要）
+1. 在 `internal/entity/` 定义实体接口和表对象
+2. 在 `internal/repository/` 创建 Repository object
+3. 使用 Ktorm 的 `sequenceOf()` API 进行 CRUD
+4. 所有方法都应该是纯数据操作，不包含业务逻辑
 
-### 添加新命令
-1. 在 `BilibiliCommand.kt` 中使用 `@CommandBody` 定义子命令
-2. 在 `handler/` 目录创建对应的命令处理器
-3. 使用 `suggestion` DSL 提供补全
-4. 使用 `restrict` DSL 验证参数
-5. 在多语言文件中添加相关提示消息
+### 添加新的命令
 
-### 扩展奖励系统
-1. 在 `setting.yml` 的 `videos` 下添加新的 BV 号配置
-2. 编写 Kether 脚本定义奖励逻辑（参考 TabooLib Kether 文档）
-3. `RewardManager` 会自动处理新配置的奖励
+1. 在 `BilibiliVideoCommand` 中添加新的 `@CommandBody val xxx = subCommand { ... }`
+2. 使用 `execute<Player>` 或 `execute<ProxyCommandSender>`
+3. 在 execute 块中使用 `submit(async = true)` 进行异步操作
+4. 使用嵌套的 `submit {}` 回到主线程操作 Bukkit API
 
-### 添加新的数据表
-1. 在 `database/entity/` 创建实体类（Kotlin data class）
-2. 在 `database/table/` 创建表定义（继承 `org.jetbrains.exposed.sql.Table`）
-3. 在 `TableFactory.initializeTables()` 中注册新表
-4. 在 `DatabaseService` 中添加相关数据操作方法
+### 添加新的 B 站 API
 
-## 文档资源
+1. 在 `internal/bilibili/dto/` 定义 DTO data class
+2. 在 `internal/bilibili/` 创建 API object
+3. 使用 `BilibiliHttpClient.get()` 或 `postForm()` 进行请求
+4. 传入凭证的 Cookie 字符串
 
-项目包含完整的模块文档（`docs/` 目录）:
-- `docs/API.md`: API 开发文档
-- `docs/bilibilivideo/*/README.md`: 各模块详细说明
-- `docs/bilibili-API-collect/*.md`: Bilibili API 集成文档
-- `docs/taboolib/*.md`: TabooLib 模块参考
+### 数据库 Schema 变更
 
-## 外部依赖和仓库
+1. 在对应的 `*Entities.kt` 中修改实体定义
+2. 在 `DatabaseSchemaInitializer.ensureSchema()` 中添加建表/迁移逻辑
+3. **重要**: 确保向后兼容，使用 `ALTER TABLE` 而不是 `DROP TABLE`
 
-### Maven 仓库
-- Maven Central (默认)
-- `https://repo.aeoliancloud.com/repository/releases/` (自定义仓库)
+## 测试与调试
 
-### 主要依赖版本
-- TabooLib: 6.2.3-2eb93b5
-- Kotlin: 2.2.0
-- OkHttp3: 4.12.0
-- Gson: 2.10.1
-- Spigot API: 12004 (mapped & universal)
+### 本地测试环境
 
-## 许可证
+1. 准备一个 Bukkit/Spigot/Paper 测试服务器(1.12+)
+2. 构建插件: `./gradlew build`
+3. 将 `build/libs/BilibiliVideo-2.0.0-beta.jar` 复制到 `plugins/` 目录
+4. 启动服务器并查看日志
 
-MIT License - 允许自由使用、修改和分发，但需保留版权声明。
+### 调试数据库
 
-## 联系信息
+SQLite 数据库文件位于: `plugins/BilibiliVideo/bilibili_video.db`
 
-- 作者: BingZi-233
-- 项目地址: https://github.com/BingZi-233/BilibiliVideo
+可以使用 SQLite 客户端查看:
+```bash
+sqlite3 plugins/BilibiliVideo/bilibili_video.db
+.tables
+.schema bv_credential
+SELECT * FROM bv_credential;
+```
+
+### 查看日志
+
+插件使用 TabooLib 的 `info()`, `warning()` 等函数输出日志:
+
+```kotlin
+import taboolib.common.platform.function.info
+import taboolib.common.platform.function.warning
+
+info("[Database] 初始化完成")
+warning("[API] 请求失败: ${e.message}")
+```
+
+日志会输出到服务器控制台。
+
+## 常见问题
+
+### 数据库连接失败
+
+检查 `database.yml` 配置:
+- SQLite: 确保 `file` 字段正确，插件会自动创建文件
+- MySQL: 检查 `host`, `port`, `username`, `password` 是否正确
+
+### Kether 脚本不执行
+
+1. 检查 `config.yml` 的 `reward.templates` 配置
+2. 确保脚本语法正确(参考 TabooLib Kether 文档)
+3. 查看服务器日志中的错误信息
+
+### 玩家绑定失败
+
+1. 检查数据库是否初始化成功
+2. 确保玩家有权限: `bilibili.command.qrcode`
+3. 查看日志中的详细错误信息
+
+## 相关文档
+
+- [TabooLib 官方文档](https://docs.tabooproject.org/)
+- [Ktorm 官方文档](https://www.ktorm.org/)
+- [B 站 API 文档收集](https://github.com/SocialSisterYi/bilibili-API-collect)
+- 项目内 B 站 API 文档: `docs/bilibili-API-collect/`
+- 项目内 TabooLib 模块文档: `docs/taboolib/`
+
+## 提交规范
+
+使用约定式提交(Conventional Commits):
+
+```
+类型(范围): 简短描述
+
+详细描述(可选)
+```
+
+类型:
+- `feat`: 新功能
+- `fix`: Bug 修复
+- `refactor`: 重构
+- `docs`: 文档更新
+- `chore`: 构建/工具链相关
+- `test`: 测试相关
+
+示例:
+```
+feat(credential): 添加凭证自动刷新功能
+fix(database): 修复 MySQL 连接池泄漏问题
+refactor(service): 重构 BindingService 简化逻辑
+docs(readme): 更新安装步骤说明
+```
