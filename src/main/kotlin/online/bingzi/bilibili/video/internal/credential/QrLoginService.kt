@@ -6,8 +6,8 @@ import okhttp3.Request
 import online.bingzi.bilibili.video.internal.bilibili.dto.NavResponse
 import online.bingzi.bilibili.video.internal.bilibili.dto.QrGenerateResponse
 import online.bingzi.bilibili.video.internal.bilibili.dto.QrPollResponse
-import online.bingzi.bilibili.video.internal.repository.BoundAccountRepository
 import online.bingzi.bilibili.video.internal.repository.CredentialRepository
+import online.bingzi.bilibili.video.internal.service.BindingService
 import org.bukkit.Bukkit
 import org.bukkit.entity.Player
 import taboolib.common.platform.function.info
@@ -290,7 +290,7 @@ object QrLoginService {
         val uname = nav.data.uname
         val refreshToken = context.refreshToken
 
-        saveCredentialAndBinding(
+        val bindResult = saveCredentialAndBinding(
             playerUuid = session.playerUuid,
             playerName = session.playerName,
             bilibiliMid = mid,
@@ -300,6 +300,12 @@ object QrLoginService {
             buvid3 = context.buvid3,
             refreshToken = refreshToken
         )
+
+        if (!bindResult.success) {
+            warning("[QrLoginService] 玩家 ${session.playerName} 绑定失败：${bindResult.message}")
+            notifyPlayer(session, "§c[BV] ${bindResult.message}")
+            return
+        }
 
         info("[QrLoginService] 玩家 ${session.playerName} 已完成二维码登录绑定流程。")
         notifyPlayer(
@@ -331,29 +337,19 @@ object QrLoginService {
         biliJct: String,
         buvid3: String?,
         refreshToken: String?
-    ) {
+    ): BindingService.BindResult {
         val playerUuidStr = playerUuid.toString()
         val now = System.currentTimeMillis()
 
-        // 账号绑定表：更新或插入
-        val existingBound = BoundAccountRepository.findByPlayerUuid(playerUuidStr)
-        if (existingBound == null) {
-            BoundAccountRepository.insert(
-                playerUuid = playerUuidStr,
-                playerName = playerName,
-                bilibiliMid = bilibiliMid,
-                bilibiliName = bilibiliName,
-                status = 1,
-                createdAt = now,
-                updatedAt = now
-            )
-        } else {
-            BoundAccountRepository.updateBinding(
-                playerUuid = playerUuidStr,
-                playerName = playerName,
-                bilibiliMid = bilibiliMid,
-                bilibiliName = bilibiliName
-            )
+        val bindResult = BindingService.bind(
+            playerUuid = playerUuidStr,
+            playerName = playerName,
+            bilibiliMid = bilibiliMid,
+            bilibiliName = bilibiliName
+        )
+
+        if (!bindResult.success) {
+            return bindResult
         }
 
         // 凭证表：按 mid 更新或插入
@@ -384,6 +380,8 @@ object QrLoginService {
                 refreshToken = refreshToken
             )
         }
+
+        return bindResult
     }
 
     private fun extractCookie(name: String, cookies: List<String>): String? {

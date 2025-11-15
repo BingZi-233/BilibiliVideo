@@ -2,10 +2,12 @@ package online.bingzi.bilibili.video.internal.command
 
 import online.bingzi.bilibili.video.internal.config.RewardConfigManager
 import online.bingzi.bilibili.video.internal.credential.QrLoginService
+import online.bingzi.bilibili.video.internal.repository.BoundAccountRepository
 import online.bingzi.bilibili.video.internal.service.BindingService
 import online.bingzi.bilibili.video.internal.service.CredentialService
 import online.bingzi.bilibili.video.internal.service.RewardKetherExecutor
 import online.bingzi.bilibili.video.internal.service.RewardService
+import org.bukkit.Bukkit
 import org.bukkit.entity.Player
 import taboolib.common.platform.ProxyCommandSender
 import taboolib.common.platform.command.CommandBody
@@ -14,6 +16,7 @@ import taboolib.common.platform.command.mainCommand
 import taboolib.common.platform.command.subCommand
 import taboolib.common.platform.function.submit
 import taboolib.expansion.createHelper
+import java.util.UUID
 
 /**
  * /bv 主命令。
@@ -189,6 +192,29 @@ object BilibiliVideoCommand {
      */
     @CommandBody
     val admin = subCommand {
+        literal("unbind") {
+            dynamic("target") {
+                suggestion<ProxyCommandSender> { _, _ ->
+                    Bukkit.getOnlinePlayers().map { it.name }
+                }
+                execute<ProxyCommandSender> { sender, context, _ ->
+                    val targetArg = context["target"]
+                    val target = resolveUnbindTarget(targetArg)
+                    if (target == null) {
+                        sender.sendMessage("§c[BV] 未找到与 $targetArg 匹配的玩家、UUID 或 B 站 UID。")
+                        return@execute
+                    }
+                    val result = BindingService.unbind(target.playerUuid)
+                    if (!result.success) {
+                        sender.sendMessage("§c[BV] ${result.message}")
+                        return@execute
+                    }
+                    val nameText = target.displayName ?: target.playerUuid
+                    val midText = target.bilibiliMid?.toString() ?: "未知 UID"
+                    sender.sendMessage("§a[BV] 已解除玩家 $nameText 与 B 站账号 $midText 的绑定。")
+                }
+            }
+        }
         literal("credential") {
             literal("list") {
                 execute<ProxyCommandSender> { sender, _, _ ->
@@ -256,5 +282,38 @@ object BilibiliVideoCommand {
             return false
         }
         return true
+    }
+
+    private data class UnbindTarget(
+        val playerUuid: String,
+        val displayName: String?,
+        val bilibiliMid: Long?
+    )
+
+    private fun resolveUnbindTarget(argument: String): UnbindTarget? {
+        runCatching { UUID.fromString(argument) }.getOrNull()?.let { uuid ->
+            val uuidStr = uuid.toString()
+            val binding = BoundAccountRepository.findByPlayerUuid(uuidStr, includeInactive = true)
+            val name = binding?.playerName ?: Bukkit.getOfflinePlayer(uuid).name
+            return UnbindTarget(uuidStr, name, binding?.bilibiliMid)
+        }
+
+        Bukkit.getPlayerExact(argument)?.let { player ->
+            val uuidStr = player.uniqueId.toString()
+            val binding = BoundAccountRepository.findByPlayerUuid(uuidStr, includeInactive = true)
+            return UnbindTarget(uuidStr, player.name, binding?.bilibiliMid)
+        }
+
+        BoundAccountRepository.findByPlayerName(argument, includeInactive = true)?.let { binding ->
+            return UnbindTarget(binding.playerUuid, binding.playerName, binding.bilibiliMid)
+        }
+
+        argument.toLongOrNull()?.let { mid ->
+            BoundAccountRepository.findByBilibiliMid(mid, includeInactive = true)?.let { binding ->
+                return UnbindTarget(binding.playerUuid, binding.playerName, binding.bilibiliMid)
+            }
+        }
+
+        return null
     }
 }

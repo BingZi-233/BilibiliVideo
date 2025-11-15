@@ -3,6 +3,7 @@ package online.bingzi.bilibili.video.internal.repository
 import online.bingzi.bilibili.video.internal.database.DatabaseFactory
 import online.bingzi.bilibili.video.internal.entity.BoundAccount
 import online.bingzi.bilibili.video.internal.entity.BoundAccounts
+import org.ktorm.dsl.and
 import org.ktorm.dsl.eq
 import org.ktorm.dsl.insert
 import org.ktorm.dsl.update
@@ -20,12 +21,28 @@ internal object BoundAccountRepository {
 
     private val boundAccounts get() = db.sequenceOf(BoundAccounts)
 
-    fun findByPlayerUuid(playerUuid: String): BoundAccount? {
+    fun findByPlayerUuid(playerUuid: String, includeInactive: Boolean = false): BoundAccount? {
+        val active = boundAccounts.find { (it.playerUuid eq playerUuid) and (it.status eq 1) }
+        if (active != null || !includeInactive) {
+            return active
+        }
         return boundAccounts.find { it.playerUuid eq playerUuid }
     }
 
-    fun findByBilibiliMid(bilibiliMid: Long): BoundAccount? {
+    fun findByBilibiliMid(bilibiliMid: Long, includeInactive: Boolean = false): BoundAccount? {
+        val active = boundAccounts.find { (it.bilibiliMid eq bilibiliMid) and (it.status eq 1) }
+        if (active != null || !includeInactive) {
+            return active
+        }
         return boundAccounts.find { it.bilibiliMid eq bilibiliMid }
+    }
+
+    fun findByPlayerName(playerName: String, includeInactive: Boolean = false): BoundAccount? {
+        val active = boundAccounts.find { (it.playerName eq playerName) and (it.status eq 1) }
+        if (active != null || !includeInactive) {
+            return active
+        }
+        return boundAccounts.find { it.playerName eq playerName }
     }
 
     fun insert(

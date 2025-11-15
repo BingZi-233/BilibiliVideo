@@ -41,7 +41,7 @@ object BindingService {
         val code: BindResultCode,
         val message: String
     ) {
-        val success: Boolean get() = code == BindResultCode.SUCCESS
+        val success: Boolean get() = code == BindResultCode.SUCCESS || code == BindResultCode.ALREADY_BOUND_SAME
     }
 
     /**
@@ -59,12 +59,21 @@ object BindingService {
         bilibiliName: String
     ): BindResult {
         return try {
-            val existingByPlayer = BoundAccountRepository.findByPlayerUuid(playerUuid)
-            if (existingByPlayer != null) {
-                return if (existingByPlayer.bilibiliMid == bilibiliMid) {
+            val existingByPlayer = BoundAccountRepository.findByPlayerUuid(playerUuid, includeInactive = true)
+            val activePlayerBinding = existingByPlayer?.takeIf { it.status == 1 }
+
+            if (activePlayerBinding != null) {
+                return if (activePlayerBinding.bilibiliMid == bilibiliMid) {
+                    BoundAccountRepository.updateBinding(
+                        playerUuid = playerUuid,
+                        playerName = playerName,
+                        bilibiliMid = bilibiliMid,
+                        bilibiliName = bilibiliName,
+                        status = 1
+                    )
                     BindResult(
                         code = BindResultCode.ALREADY_BOUND_SAME,
-                        message = "你已经绑定过该 B 站账号。"
+                        message = "你已经绑定过该 B 站账号，无需重复操作。"
                     )
                 } else {
                     BindResult(
@@ -74,20 +83,31 @@ object BindingService {
                 }
             }
 
-            val existingByMid = BoundAccountRepository.findByBilibiliMid(bilibiliMid)
-            if (existingByMid != null) {
+            val existingByMid = BoundAccountRepository.findByBilibiliMid(bilibiliMid, includeInactive = true)
+            val conflictByMid = existingByMid?.takeIf { it.status == 1 && it.playerUuid != playerUuid }
+            if (conflictByMid != null) {
                 return BindResult(
                     code = BindResultCode.MID_BOUND_OTHER,
                     message = "该 B 站账号已与其他玩家绑定。"
                 )
             }
 
-            val affected = BoundAccountRepository.insert(
-                playerUuid = playerUuid,
-                playerName = playerName,
-                bilibiliMid = bilibiliMid,
-                bilibiliName = bilibiliName
-            )
+            val affected = if (existingByPlayer != null) {
+                BoundAccountRepository.updateBinding(
+                    playerUuid = playerUuid,
+                    playerName = playerName,
+                    bilibiliMid = bilibiliMid,
+                    bilibiliName = bilibiliName,
+                    status = 1
+                )
+            } else {
+                BoundAccountRepository.insert(
+                    playerUuid = playerUuid,
+                    playerName = playerName,
+                    bilibiliMid = bilibiliMid,
+                    bilibiliName = bilibiliName
+                )
+            }
             if (affected <= 0) {
                 return BindResult(
                     code = BindResultCode.DATABASE_ERROR,
@@ -95,7 +115,8 @@ object BindingService {
                 )
             }
 
-            info("[BindingService] 已为玩家 $playerName 完成账号绑定。")
+            val action = if (existingByPlayer == null) "完成账号绑定" else "重新激活账号绑定"
+            info("[BindingService] 已为玩家 $playerName $action。")
             BindResult(
                 code = BindResultCode.SUCCESS,
                 message = "绑定成功。"
