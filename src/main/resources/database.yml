@@ -1,39 +1,41 @@
-# BilibiliVideo 插件数据库配置文件
-# 支持 MySQL 和 SQLite 数据库
-
-# 数据库配置
 database:
-  # 是否启用数据库 (true: 使用 MySQL, false: 使用 SQLite)
-  enable: false
-  
-  # MySQL 数据库配置
-  mysql:
-    # 数据库服务器地址
-    host: localhost
-    # 数据库服务器端口
-    port: 3306
-    # 数据库名称
-    database: bilibili_video
-    # 数据库用户名
-    username: root
-    # 数据库密码
-    password: ""
-    # 使用 SSL 连接
-    use-ssl: false
-    # 字符编码
-    charset: utf8mb4
-    
-  # SQLite 数据库配置
+  enabled: true
+
+  # 数据库类型：sqlite / mysql
+  type: sqlite
+
+  # SQLite 配置（type = sqlite 时生效）
   sqlite:
-    # SQLite 数据库文件路径（相对于插件数据目录）
-    file: data/database.db
-    
-  # 数据表配置
-  table:
-    # 表名前缀
-    prefix: "bv_"
-    
-  # 高级配置
-  advanced:
-    # 是否启用自动重连
-    auto-reconnect: true
+    # 数据文件名，代码里再拼到插件 data 目录
+    file: "bilibili_video.db"
+
+  # MySQL 配置（type = mysql 时生效）
+  mysql:
+    host: "127.0.0.1"
+    port: 3306
+    database: "bilibili_video"
+    username: "root"
+    password: "password"
+    # 额外 JDBC 参数
+    params: "useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai&characterEncoding=utf8"
+
+  # 连接池（HikariCP）配置
+  hikari:
+    pool-name: "BilibiliVideoPool"
+
+    maximum-pool-size: 10
+    minimum-idle: 2
+
+    connection-timeout: 30000      # 获取连接超时时间(ms)
+    idle-timeout: 600000           # 空闲连接存活时间(ms)
+    max-lifetime: 1800000          # 连接最大生命周期(ms)
+
+    auto-commit: true
+    read-only: false
+
+  # 插件内部扩展配置
+  options:
+    table-prefix: "bv_"
+    show-sql: false
+    slow-sql-threshold-ms: 500     # 慢查询阈值（用于日志）
+
