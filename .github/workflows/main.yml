@@ -279,11 +279,7 @@ jobs:
           body: |
             <div align="center">
             
-            ![TabooLib](https://img.shields.io/badge/TabooLib-6.2.3+-green)
-            ![Minecraft](https://img.shields.io/badge/Minecraft-1.8--1.21+-orange)
-            ![Java](https://img.shields.io/badge/Java-8+-red)
-            ![Build Status](https://img.shields.io/github/actions/workflow/status/BingZi-233/BilibiliVideo/build.yml)
-            ![Downloads](https://img.shields.io/github/downloads/BingZi-233/BilibiliVideo/total)
+            ![TabooLib](https://img.shields.io/badge/TabooLib-6.2.3+-green) ｜![Minecraft](https://img.shields.io/badge/Minecraft-1.8--1.21+-orange) ｜![Java](https://img.shields.io/badge/Java-8+-red) ｜![Build Status](https://img.shields.io/github/actions/workflow/status/BingZi-233/BilibiliVideo/build.yml) ｜![Downloads](https://img.shields.io/github/downloads/BingZi-233/BilibiliVideo/total)
             
             </div>
             
