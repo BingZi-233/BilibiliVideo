@@ -2,6 +2,23 @@
 .idea
 build
 
+# macOS system files
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+._*
+
+## macOS remote AFP share
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+
+## macOS metadata files
+ehthumbs.db
+Thumbs.db
+
 # Environment & local config
 .env
 .env.*
