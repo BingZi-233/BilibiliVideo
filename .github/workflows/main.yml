@@ -279,11 +279,7 @@ jobs:
           body: |
             <div align="center">
             
-            ![TabooLib](https://img.shields.io/badge/TabooLib-6.2.3+-green)
-            ![Minecraft](https://img.shields.io/badge/Minecraft-1.8--1.21+-orange)
-            ![Java](https://img.shields.io/badge/Java-8+-red)
-            ![Build Status](https://img.shields.io/github/actions/workflow/status/BingZi-233/BilibiliVideo/build.yml)
-            ![Downloads](https://img.shields.io/github/downloads/BingZi-233/BilibiliVideo/total)
+            ![TabooLib](https://img.shields.io/badge/TabooLib-6.2.3+-green) ｜![Minecraft](https://img.shields.io/badge/Minecraft-1.8--1.21+-orange) ｜![Java](https://img.shields.io/badge/Java-8+-red) ｜![Build Status](https://img.shields.io/github/actions/workflow/status/BingZi-233/BilibiliVideo/build.yml) ｜![Downloads](https://img.shields.io/github/downloads/BingZi-233/BilibiliVideo/total)
             
             </div>
             
@@ -355,7 +351,7 @@ jobs:
             
             **感谢使用 BilibiliVideo！** 🎮
             
-                  [报告问题](https://github.com/BingZi-233/BilibiliVideo/issues/new/choose) | [请求功能](https://github.com/BingZi-233/BilibiliVideo/issues/new?labels=enhancement) | [加入讨论](https://github.com/BingZi-233/BilibiliVideo/discussions)
+            [报告问题](https://github.com/BingZi-233/BilibiliVideo/issues/new/choose) | [请求功能](https://github.com/BingZi-233/BilibiliVideo/issues/new?labels=enhancement) | [加入讨论](https://github.com/BingZi-233/BilibiliVideo/discussions)
             
             </div>
           draft: false

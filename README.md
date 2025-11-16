@@ -430,34 +430,6 @@ src/main/kotlin/online/bingzi/bilibili/video/
 
 ---
 
-## 📚 API 文档索引
-
-### TabooLib 框架文档
-
-| 文档 | 说明 |
-|------|------|
-| [Basic 模块](docs/taboolib/Basic.md) | 基础模块，提供核心功能和平台抽象 |
-| [Bukkit 模块](docs/taboolib/Bukkit.md) | Bukkit 平台核心，事件监听和服务器 API 封装 |
-| [BukkitHook 模块](docs/taboolib/BukkitHook.md) | 插件集成，支持 PlaceholderAPI、Vault 等 |
-| [BukkitUtil 模块](docs/taboolib/BukkitUtil.md) | Bukkit 实用工具，包含 ItemBuilder、库存管理等 |
-| [CommandHelper 模块](docs/taboolib/CommandHelper.md) | 命令系统，支持声明式命令定义和自动补全 |
-| [I18n 模块](docs/taboolib/I18n.md) | 国际化支持，多语言消息管理 |
-| [MinecraftChat 模块](docs/taboolib/MinecraftChat.md) | 聊天消息处理，支持 JSON 格式和 RGB 颜色 |
-| [Kether 模块](docs/taboolib/Kether.md) | 脚本引擎，动态脚本执行和配置 |
-| [DatabasePlayer 模块](docs/taboolib/DatabasePlayer.md) | 玩家数据库，数据持久化存储 |
-| [Metrics 模块](docs/taboolib/Metrics.md) | 插件统计，集成 bStats 数据收集 |
-
-### Bilibili API 集成文档
-
-| 文档 | 说明 |
-|------|------|
-| [二维码登录](docs/bilibili-API-collect/QrCodeLogin.md) | 完整的二维码登录流程实现 |
-| [视频三连状态](docs/bilibili-API-collect/VideoTripleStatus.md) | 查询视频点赞、投币、收藏状态 |
-| [UP 主关注状态](docs/bilibili-API-collect/UpFollowStatus.md) | 查询 UP 主关注状态 |
-| [Cookie 刷新](docs/bilibili-API-collect/CookieRefresh.md) | 自动刷新登录状态 |
-
----
-
 ## 🤝 贡献指南
 
 我们欢迎所有形式的贡献！
