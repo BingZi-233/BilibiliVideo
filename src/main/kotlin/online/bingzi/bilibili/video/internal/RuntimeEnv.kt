@@ -5,10 +5,14 @@ import taboolib.common.env.RuntimeDependency
 /**
  * 运行时依赖声明。
  *
- * 通过 TabooLib 的 RuntimeDependency 机制，在插件运行时动态下载并加载以下库：
- * - OkHttp / Gson：HTTP 与 JSON 解析
- * - Ktorm / HikariCP：数据库访问与连接池
+ * 通过 TabooLib 的 RuntimeDependency 机制,在插件运行时动态下载并加载以下库:
+ * - OkHttp / Gson:HTTP 与 JSON 解析
+ * - Ktorm / HikariCP:数据库访问与连接池
  * - SQLite / MySQL JDBC 驱动
+ * - ZXing:二维码生成
+ *
+ * 注意:不再显式声明 kotlin-reflect 依赖,依赖 TabooLib 内置的 Kotlin 运行时,
+ * 以避免与其他插件的类加载器冲突。
  */
 @RuntimeDependency(
     value = "com.squareup.okhttp3:okhttp:4.12.0",
@@ -21,10 +25,6 @@ import taboolib.common.env.RuntimeDependency
 @RuntimeDependency(
     value = "com.google.code.gson:gson:2.11.0",
     test = "com.google.gson.Gson"
-)
-@RuntimeDependency(
-    value = "org.jetbrains.kotlin:kotlin-reflect:2.2.0",
-    test = "kotlin.reflect.full.KClasses"
 )
 @RuntimeDependency(
     value = "org.ktorm:ktorm-core:3.6.0",
