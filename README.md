@@ -518,6 +518,22 @@ src/main/kotlin/online/bingzi/bilibili/video/
 
 ---
 
+## 💰 赞助支持
+
+如果这个项目对你有帮助，欢迎通过以下方式支持开发：
+
+<div align="center">
+
+| 微信支付 | 支付宝 |
+|:-------:|:------:|
+| <img src="images/weixin.png" width="200"/> | <img src="images/zhifubao.png" width="200"/> |
+
+</div>
+
+你的支持是我持续维护和改进项目的动力！🙏
+
+---
+
 <div align="center">
 
 **如果这个项目对你有帮助，请给个 ⭐ Star 支持一下！**
