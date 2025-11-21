@@ -23,3 +23,6 @@ Thumbs.db
 .env
 .env.*
 .mcp.json
+
+combined.log
+error.log
