@@ -70,7 +70,7 @@ object RewardConfigManager {
             file.reload()
             true
         } catch (ex: Throwable) {
-            warning("重载 config.yml 失败: ${ex.message}")
+            warning("重载 config.yml 失败: ${ex.message}", ex)
             false
         }
     }
