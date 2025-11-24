@@ -89,13 +89,13 @@ object QrLoginService {
         val generate = try {
             requestQrGenerate()
         } catch (e: IOException) {
-            warning("[QrLoginService] 申请二维码失败：${e.message}")
+            warning("[QrLoginService] 申请二维码失败：${e.message}", e)
             return QrStartResult(
                 code = QrStartCode.NETWORK_ERROR,
                 message = "无法连接到 B 站登录服务器，请稍后重试。"
             )
         } catch (e: Throwable) {
-            warning("[QrLoginService] 申请二维码时发生异常：${e.message}")
+            warning("[QrLoginService] 申请二维码时发生异常：${e.message}", e)
             return QrStartResult(
                 code = QrStartCode.API_ERROR,
                 message = "申请二维码失败，请联系管理员。"
@@ -171,10 +171,10 @@ object QrLoginService {
         val poll = try {
             requestQrPoll(session.qrcodeKey)
         } catch (e: IOException) {
-            warning("[QrLoginService] 轮询扫码状态网络错误：${e.message}")
+            warning("[QrLoginService] 轮询扫码状态网络错误：${e.message}", e)
             return
         } catch (e: Throwable) {
-            warning("[QrLoginService] 轮询扫码状态异常：${e.message}")
+            warning("[QrLoginService] 轮询扫码状态异常：${e.message}", e)
             return
         }
 
@@ -272,10 +272,10 @@ object QrLoginService {
         val nav = try {
             requestNav(cookieHeader)
         } catch (e: IOException) {
-            warning("[QrLoginService] 获取当前登录用户信息失败：${e.message}")
+            warning("[QrLoginService] 获取当前登录用户信息失败：${e.message}", e)
             return
         } catch (e: Throwable) {
-            warning("[QrLoginService] 获取当前登录用户信息异常：${e.message}")
+            warning("[QrLoginService] 获取当前登录用户信息异常：${e.message}", e)
             return
         }
 

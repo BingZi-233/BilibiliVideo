@@ -3,6 +3,7 @@ package online.bingzi.bilibili.video.internal.service
 import online.bingzi.bilibili.video.internal.entity.BoundAccount
 import online.bingzi.bilibili.video.internal.repository.BoundAccountRepository
 import taboolib.common.platform.function.info
+import taboolib.common.platform.function.warning
 
 /**
  * 账号绑定业务服务层。
@@ -122,6 +123,10 @@ object BindingService {
                 message = "绑定成功。"
             )
         } catch (t: Throwable) {
+            warning(
+                "[BindingService] 绑定失败 | 玩家=$playerName($playerUuid) | B站=$bilibiliName($bilibiliMid) | 异常=${t.javaClass.simpleName}: ${t.message}",
+                t
+            )
             BindResult(
                 code = BindResultCode.DATABASE_ERROR,
                 message = "执行绑定时发生错误，请联系管理员。"
@@ -174,6 +179,10 @@ object BindingService {
                 message = "解绑成功。"
             )
         } catch (t: Throwable) {
+            warning(
+                "[BindingService] 解绑失败 | 玩家UUID=$playerUuid | 异常=${t.javaClass.simpleName}: ${t.message}",
+                t
+            )
             UnbindResult(
                 code = UnbindResultCode.DATABASE_ERROR,
                 message = "执行解绑时发生错误，请联系管理员。"

@@ -90,10 +90,9 @@ internal object DatabaseFactory {
             dataSource = ds
             database = db
 
-            info("[Database] 初始化完成，类型: ${config.type}, URL: $jdbcUrlValue")
+            info("[Database] 初始化完成,类型: ${config.type}, URL: $jdbcUrlValue")
         } catch (t: Throwable) {
-            warning("[Database] 初始化失败: ${t.message}")
-            t.printStackTrace()
+            warning("[Database] 初始化失败: ${t.message}", t)
         }
     }
 

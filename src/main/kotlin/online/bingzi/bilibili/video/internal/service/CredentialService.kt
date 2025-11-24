@@ -160,7 +160,7 @@ object CredentialService {
                 tripleStatus = triple
             )
         } catch (t: Throwable) {
-            warning("[CredentialService] 三连状态检测调用失败：${t.message}")
+            warning("[CredentialService] 三连状态检测调用失败：${t.message}", t)
             TripleCheckResult(
                 code = TripleCheckCode.TRIPLE_CHECK_FAILED,
                 message = "调用 B 站接口失败，请稍后重试或检查凭证。"
