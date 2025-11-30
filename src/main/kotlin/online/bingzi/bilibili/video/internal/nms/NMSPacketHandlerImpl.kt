@@ -87,9 +87,17 @@ class NMSPacketHandlerImpl : NMSPacketHandler() {
 
     /**
      * 获取 OBC (org.bukkit.craftbukkit) 类。
+     *
+     * 1.20.5+ / Folia：org.bukkit.craftbukkit.xxx（无版本字符串）
+     * 1.20.4 及以下：org.bukkit.craftbukkit.v1_XX_RX.xxx
      */
     private fun obcClass(name: String): Class<*> {
         val version = MinecraftVersion.minecraftVersion
-        return Class.forName("org.bukkit.craftbukkit.$version.$name")
+        // 1.20.5+ 和 Folia 服务器返回 "UNKNOWN"，此时 CraftBukkit 不再使用版本化包路径
+        return if (version == "UNKNOWN") {
+            Class.forName("org.bukkit.craftbukkit.$name")
+        } else {
+            Class.forName("org.bukkit.craftbukkit.$version.$name")
+        }
     }
 }
