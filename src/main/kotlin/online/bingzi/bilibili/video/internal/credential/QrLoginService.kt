@@ -8,6 +8,7 @@ import online.bingzi.bilibili.video.internal.bilibili.dto.QrGenerateResponse
 import online.bingzi.bilibili.video.internal.bilibili.dto.QrPollResponse
 import online.bingzi.bilibili.video.internal.repository.CredentialRepository
 import online.bingzi.bilibili.video.internal.service.BindingService
+import online.bingzi.bilibili.video.internal.ui.VirtualItemSession
 import org.bukkit.Bukkit
 import org.bukkit.entity.Player
 import taboolib.common.platform.function.info
@@ -152,6 +153,16 @@ object QrLoginService {
     private fun cancelSession(playerUuid: UUID) {
         sessions.remove(playerUuid)
         pollTasks.remove(playerUuid)?.cancel(true)
+
+        // 恢复玩家背包（移除虚拟二维码物品）
+        Bukkit.getPlayer(playerUuid)?.let { player ->
+            submit {
+                VirtualItemSession.restoreItem(player)
+            }
+        } ?: run {
+            // 玩家离线时直接清理会话数据
+            VirtualItemSession.cleanup(playerUuid)
+        }
     }
 
     private fun pollOnce(playerUuid: UUID) {

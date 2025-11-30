@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-这个文件为 Claude Code (claude.ai/code) 提供指导，帮助其在此仓库中工作。
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## 项目概述
 
@@ -21,9 +21,14 @@ BilibiliVideo 是一个基于 TabooLib 6.2.4 框架开发的 Minecraft 服务器
 # 构建 API 版本（包含 TabooLib API，用于依赖）
 ./gradlew taboolibBuildApi
 
+# 清理构建产物
+./gradlew clean
+
 # 发布到 Maven（需要 MAVEN_USERNAME 和 MAVEN_PASSWORD）
 ./gradlew publish
 ```
+
+**注意**：项目目前没有单元测试。
 
 ## 关键约束（违反即崩溃）
 

@@ -7,6 +7,7 @@ import online.bingzi.bilibili.video.internal.service.BindingService
 import online.bingzi.bilibili.video.internal.service.CredentialService
 import online.bingzi.bilibili.video.internal.service.RewardKetherExecutor
 import online.bingzi.bilibili.video.internal.service.RewardService
+import online.bingzi.bilibili.video.internal.ui.VirtualItemSession
 import org.bukkit.Bukkit
 import org.bukkit.entity.Player
 import taboolib.common.platform.ProxyCommandSender
@@ -54,9 +55,9 @@ object BilibiliVideoCommand {
                 }
                 val qrUrl = result.qrUrl
                 submit {
-                    val item = online.bingzi.bilibili.video.internal.ui.QrMapService.createQrMapItem(player, qrUrl)
-                    player.inventory.addItem(item)
-                    player.sendMessage("§a[BV] 已为你生成二维码地图，请使用手机扫码完成绑定。")
+                    // 使用虚拟物品发送二维码地图到主手
+                    VirtualItemSession.sendVirtualItem(player, qrUrl)
+                    player.sendMessage("§a[BV] 已为你生成二维码，请使用手机扫码完成绑定。")
                 }
             }
         }
