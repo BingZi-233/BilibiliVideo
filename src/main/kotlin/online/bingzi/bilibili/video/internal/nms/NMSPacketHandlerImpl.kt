@@ -76,13 +76,23 @@ class NMSPacketHandlerImpl : NMSPacketHandler() {
      *
      * 1.17+ 使用 net.minecraft.network.protocol.game 等包名。
      * 1.16.5 及以下使用 net.minecraft.server.v1_XX_RX 包名。
+     *
+     * Paper 1.17+ 使用 Mojang 映射，类名与 Spigot 不同：
+     * - PacketPlayOutSetSlot → ClientboundContainerSetSlotPacket
+     * - PacketPlayOutMap → ClientboundMapItemDataPacket
      */
     private fun nmsClass(name: String): Class<*> {
         return if (MinecraftVersion.isUniversal) {
-            // 1.17+ 类路径映射
+            // 1.17+ 类路径映射（同时支持 Spigot 和 Paper/Mojang 映射）
             when (name) {
-                "PacketPlayOutSetSlot" -> Class.forName("net.minecraft.network.protocol.game.PacketPlayOutSetSlot")
-                "PacketPlayOutMap" -> Class.forName("net.minecraft.network.protocol.game.PacketPlayOutMap")
+                "PacketPlayOutSetSlot" -> findClass(
+                    "net.minecraft.network.protocol.game.ClientboundContainerSetSlotPacket",  // Paper (Mojang mappings)
+                    "net.minecraft.network.protocol.game.PacketPlayOutSetSlot"                // Spigot
+                )
+                "PacketPlayOutMap" -> findClass(
+                    "net.minecraft.network.protocol.game.ClientboundMapItemDataPacket",       // Paper (Mojang mappings)
+                    "net.minecraft.network.protocol.game.PacketPlayOutMap"                    // Spigot
+                )
                 "ItemStack" -> Class.forName("net.minecraft.world.item.ItemStack")
                 else -> throw IllegalArgumentException("Unknown NMS class: $name")
             }
@@ -91,6 +101,20 @@ class NMSPacketHandlerImpl : NMSPacketHandler() {
             val version = MinecraftVersion.minecraftVersion
             Class.forName("net.minecraft.server.$version.$name")
         }
+    }
+
+    /**
+     * 尝试按顺序查找类，返回第一个找到的。
+     */
+    private fun findClass(vararg classNames: String): Class<*> {
+        for (className in classNames) {
+            try {
+                return Class.forName(className)
+            } catch (_: ClassNotFoundException) {
+                // 继续尝试下一个
+            }
+        }
+        throw ClassNotFoundException("None of the classes found: ${classNames.joinToString()}")
     }
 
     /**
@@ -142,6 +166,10 @@ class NMSPacketHandlerImpl : NMSPacketHandler() {
 
     /**
      * 1.17+ 地图数据包构建。
+     *
+     * Paper (Mojang mappings) 与 Spigot 类名对照：
+     * - MapId: net.minecraft.world.level.saveddata.maps.MapId
+     * - MapPatch: MapItemSavedData$MapPatch (Paper) / WorldMap$b (Spigot)
      */
     private fun createMapPacket117Plus(mapId: Int, colors: ByteArray): Any {
         val packetClass = nmsClass("PacketPlayOutMap")
@@ -152,8 +180,12 @@ class NMSPacketHandlerImpl : NMSPacketHandler() {
         val mapIdObj = mapIdConstructor.newInstance(mapId)
 
         // 创建 MapPatch（更新区域）
-        // MapPatch 是 PacketPlayOutMap 的内部类
-        val mapPatchClass = Class.forName("net.minecraft.world.level.saveddata.maps.WorldMap\$b")
+        // Paper (Mojang): MapItemSavedData$MapPatch
+        // Spigot: WorldMap$b
+        val mapPatchClass = findClass(
+            "net.minecraft.world.level.saveddata.maps.MapItemSavedData\$MapPatch",  // Paper (Mojang mappings)
+            "net.minecraft.world.level.saveddata.maps.WorldMap\$b"                   // Spigot
+        )
         val mapPatchConstructor = mapPatchClass.getConstructor(
             Int::class.javaPrimitiveType,  // startX
             Int::class.javaPrimitiveType,  // startY
@@ -202,6 +234,14 @@ class NMSPacketHandlerImpl : NMSPacketHandler() {
             .filter { it.parameterCount >= 8 }  // 地图包至少需要 8 个参数
             .sortedByDescending { it.parameterCount }
 
+        if (constructors.isEmpty()) {
+            val allConstructors = packetClass.constructors.sortedByDescending { it.parameterCount }
+            throw IllegalStateException(
+                "No PacketPlayOutMap constructor with >= 8 params for ${MinecraftVersion.minecraftVersion}.\n" +
+                "All constructors: ${allConstructors.map { c -> c.parameterTypes.map { it.simpleName } }}"
+            )
+        }
+
         val errors = mutableListOf<String>()
 
         for (constructor in constructors) {
@@ -209,6 +249,8 @@ class NMSPacketHandlerImpl : NMSPacketHandler() {
                 val args = buildArgsHeuristically(constructor.parameterTypes, mapId, colors)
                 if (args != null) {
                     return constructor.newInstance(*args)
+                } else {
+                    errors.add("${constructor.parameterTypes.map { it.simpleName }}: unsupported param type")
                 }
             } catch (e: Exception) {
                 errors.add("${constructor.parameterTypes.map { it.simpleName }}: ${e.message}")

@@ -4,6 +4,15 @@ import online.bingzi.bilibili.video.internal.util.QrCodeGenerator
 import org.bukkit.Bukkit
 import org.bukkit.entity.Player
 import org.bukkit.inventory.ItemStack
+import org.bukkit.map.MapView
+
+/**
+ * 二维码地图创建结果。
+ */
+data class QrMapResult(
+    val item: ItemStack,
+    val mapView: MapView
+)
 
 /**
  * 二维码地图物品创建服务。
@@ -12,7 +21,7 @@ import org.bukkit.inventory.ItemStack
  */
 object QrMapService {
 
-    fun createQrMapItem(player: Player, qrUrl: String): ItemStack {
+    fun createQrMapItem(player: Player, qrUrl: String): QrMapResult {
         val image = QrCodeGenerator.generateQrImage(qrUrl, 128)
 
         val mapView = Bukkit.createMap(player.world).apply {
@@ -57,6 +66,6 @@ object QrMapService {
             }
         }
 
-        return item
+        return QrMapResult(item, mapView)
     }
 }

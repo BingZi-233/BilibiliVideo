@@ -35,9 +35,8 @@ object VirtualItemSession {
         // 1. 生成二维码图像
         val qrImage = QrCodeGenerator.generateQrImage(qrUrl, 128)
 
-        // 2. 创建 MapView 和地图物品
-        val mapItem = QrMapService.createQrMapItem(player, qrUrl)
-        val mapView = extractMapView(mapItem, player)
+        // 2. 创建 MapView 和地图物品（直接返回配对的结果，避免 ID 不匹配）
+        val (mapItem, mapView) = QrMapService.createQrMapItem(player, qrUrl)
 
         // 3. 保存会话
         sessions[player.uniqueId] = Session(mapView)
@@ -97,59 +96,14 @@ object VirtualItemSession {
     }
 
     /**
-     * 从地图物品中提取 MapView。
-     *
-     * 由于 QrMapService.createQrMapItem 内部创建了 MapView，
-     * 这里需要从 ItemMeta 中提取出来以便后续清理。
-     */
-    private fun extractMapView(mapItem: org.bukkit.inventory.ItemStack, player: Player): MapView {
-        val meta = mapItem.itemMeta
-        if (meta is org.bukkit.inventory.meta.MapMeta) {
-            // 1.13+ 可以直接获取 MapView
-            try {
-                val mapView = meta.mapView
-                if (mapView != null) {
-                    return mapView
-                }
-            } catch (_: Throwable) {
-                // 旧版本可能没有 getMapView 方法
-            }
-
-            // 尝试通过 mapId 获取
-            try {
-                val mapId = meta.mapId
-                val mapView = org.bukkit.Bukkit.getMap(mapId)
-                if (mapView != null) {
-                    return mapView
-                }
-            } catch (_: Throwable) {
-                // 忽略
-            }
-        }
-
-        // 兜底：1.12 及以下通过耐久度获取地图 ID
-        try {
-            if (mapItem.type.name == "MAP") {
-                @Suppress("DEPRECATION")
-                val mapId = mapItem.durability.toInt()
-                val mapView = org.bukkit.Bukkit.getMap(mapId)
-                if (mapView != null) {
-                    return mapView
-                }
-            }
-        } catch (_: Throwable) {
-            // 忽略
-        }
-
-        // 最后兜底：创建一个新的空 MapView（不应该走到这里）
-        return org.bukkit.Bukkit.createMap(player.world)
-    }
-
-    /**
      * 将 BufferedImage 转换为 MapPalette 颜色字节数组。
      *
      * 地图数据格式：128x128 字节数组，每个字节是 MapPalette 颜色索引。
-     * 数据按列优先排列：colors[x + y * 128]
+     * 重要：Minecraft 地图数据是**列优先**排列：colors[x * 128 + y]
+     * （从左上角开始，一列一列地写入）
+     *
+     * 注意：不使用 MapPalette.matchColor，因为在某些版本上可能返回不正确的索引。
+     * 二维码只需要黑白两色，使用简单的灰度判断更可靠。
      */
     @Suppress("DEPRECATION")
     private fun imageToMapColors(image: java.awt.image.BufferedImage): ByteArray {
@@ -160,8 +114,10 @@ object VirtualItemSession {
         for (x in 0 until width) {
             for (y in 0 until height) {
                 val rgb = Color(image.getRGB(x, y))
-                // 使用 MapPalette.matchColor 获取最接近的地图颜色索引
-                colors[x + y * 128] = MapPalette.matchColor(rgb)
+                val gray = (rgb.red + rgb.green + rgb.blue) / 3
+                // 使用 MapPalette 预定义常量，比 matchColor 更可靠
+                // 注意：Minecraft 地图数据是列优先排列 (column-major)
+                colors[x * 128 + y] = if (gray < 128) MapPalette.DARK_GRAY else MapPalette.WHITE
             }
         }
         return colors
