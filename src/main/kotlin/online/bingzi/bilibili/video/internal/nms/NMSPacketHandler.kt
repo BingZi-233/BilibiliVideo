@@ -2,6 +2,7 @@ package online.bingzi.bilibili.video.internal.nms
 
 import org.bukkit.entity.Player
 import org.bukkit.inventory.ItemStack
+import org.bukkit.map.MapView
 import taboolib.module.nms.nmsProxy
 
 /**
@@ -24,6 +25,15 @@ abstract class NMSPacketHandler {
      * 刷新玩家整个背包，使虚拟物品消失，恢复真实物品。
      */
     abstract fun refreshInventory(player: Player)
+
+    /**
+     * 发送地图数据到玩家客户端。
+     *
+     * @param player 目标玩家
+     * @param mapView 地图视图
+     * @param colors 128x128 地图颜色数据（MapPalette 颜色字节数组）
+     */
+    abstract fun sendMapData(player: Player, mapView: MapView, colors: ByteArray)
 
     companion object {
         val instance by lazy { nmsProxy<NMSPacketHandler>() }
