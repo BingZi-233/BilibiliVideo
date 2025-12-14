@@ -54,4 +54,8 @@ import taboolib.common.env.RuntimeDependency
     value = "com.google.zxing:core:3.5.2",
     test = "com.google.zxing.qrcode.QRCodeWriter"
 )
+@RuntimeDependency(
+    value = "org.jetbrains.kotlin:kotlin-reflect:2.2.0",
+    test = "kotlin.reflect.full.KClasses"
+)
 object RuntimeEnv

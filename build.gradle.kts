@@ -8,6 +8,7 @@ plugins {
     id("io.izzel.taboolib") version "2.0.27"
     id("org.jetbrains.kotlin.jvm") version "2.2.0"
     `maven-publish`
+    id("idea")
 }
 
 taboolib {
@@ -33,7 +34,7 @@ taboolib {
         }
     }
     version {
-        taboolib = "6.2.4-621517d"
+        taboolib = "6.2.4-65252583"
         skipKotlinRelocate = true
     }
 }
@@ -46,10 +47,6 @@ val okhttpVersion = "4.12.0"
 val okioVersion = "3.6.0"
 val gsonVersion = "2.11.0"
 val zxingVersion = "3.5.2"
-
-repositories {
-    mavenCentral()
-}
 
 dependencies {
     compileOnly("ink.ptms.core:v12004:12004:mapped")
@@ -139,4 +136,11 @@ publishing {
 // 确保发布任务依赖于API构建任务
 tasks.withType<PublishToMavenRepository> {
     dependsOn("taboolibBuildApi")
+}
+
+idea {
+    module {
+        isDownloadJavadoc = true
+        isDownloadSources = true
+    }
 }
