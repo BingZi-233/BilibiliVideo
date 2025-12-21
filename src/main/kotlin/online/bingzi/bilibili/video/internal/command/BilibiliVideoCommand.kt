@@ -13,6 +13,7 @@ import org.bukkit.entity.Player
 import taboolib.common.platform.ProxyCommandSender
 import taboolib.common.platform.command.CommandBody
 import taboolib.common.platform.command.CommandHeader
+import taboolib.common.platform.command.PermissionDefault
 import taboolib.common.platform.command.mainCommand
 import taboolib.common.platform.command.subCommand
 import taboolib.common.platform.function.submit
@@ -29,8 +30,12 @@ import java.util.UUID
  * - /bv status      查看当前绑定状态与凭证信息
  * - /bv reward <bvid>  基于三连记录登记奖励
  * - /bv admin credential ... 管理/查看凭证
+ *
+ * 权限节点：
+ * - bilibili.video.use          玩家基础命令（qrcode/status/triple/reward）
+ * - bilibili.video.admin        管理员命令
  */
-@CommandHeader(name = "bv", aliases = ["bilibili"], permission = "bilibili.video.command")
+@CommandHeader(name = "bv", aliases = ["bilibili"], permission = "bilibili.video.use", permissionDefault = PermissionDefault.TRUE)
 object BilibiliVideoCommand {
 
     @CommandBody
@@ -41,7 +46,7 @@ object BilibiliVideoCommand {
     /**
      * 生成二维码地图，供玩家扫码绑定 B 站账号。
      */
-    @CommandBody
+    @CommandBody(permission = "bilibili.video.use", permissionDefault = PermissionDefault.TRUE)
     val qrcode = subCommand {
         execute<Player> { player, _, _ ->
             submit(async = true) {
@@ -66,7 +71,7 @@ object BilibiliVideoCommand {
     /**
      * 查看当前玩家的绑定状态与凭证信息。
      */
-    @CommandBody
+    @CommandBody(permission = "bilibili.video.use", permissionDefault = PermissionDefault.TRUE)
     val status = subCommand {
         execute<Player> { player, _, _ ->
             submit(async = true) {
@@ -108,7 +113,7 @@ object BilibiliVideoCommand {
      * 参数：
      * - bvid：视频的 BVID，例如 BVxxxxxxxxx
      */
-    @CommandBody
+    @CommandBody(permission = "bilibili.video.use", permissionDefault = PermissionDefault.TRUE)
     val triple = subCommand {
         dynamic("bvid") {
             suggestion<Player> { _, _ ->
@@ -146,7 +151,7 @@ object BilibiliVideoCommand {
     /**
      * 基于三连记录登记奖励。
      */
-    @CommandBody
+    @CommandBody(permission = "bilibili.video.use", permissionDefault = PermissionDefault.TRUE)
     val reward = subCommand {
         dynamic("bvid") {
             suggestion<Player> { _, _ ->
@@ -190,8 +195,10 @@ object BilibiliVideoCommand {
      * - /bv admin credential list
      * - /bv admin credential info <label>
      * - /bv admin credential refresh <label>   （占位，刷新逻辑后续实现）
+     * - /bv admin unbind <target>
+     * - /bv admin reload
      */
-    @CommandBody
+    @CommandBody(permission = "bilibili.video.admin", permissionDefault = PermissionDefault.OP)
     val admin = subCommand {
         literal("unbind") {
             dynamic("target") {
