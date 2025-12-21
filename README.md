@@ -130,24 +130,32 @@
 
 ## 💻 命令系统
 
+### 权限节点
+
+| 权限节点 | 说明 | 默认许可 |
+|----------|------|----------|
+| `bilibili.video.use` | 玩家基础命令（qrcode/status/triple/reward） | 所有人 |
+| `bilibili.video.admin` | 管理员命令（unbind/credential/reload） | 仅 OP |
+
 ### 玩家命令
 
-| 命令 | 别名 | 功能 | 权限节点 |
-|------|------|------|----------|
-| `/bv help` | | 查看帮助信息 | `bilibili.command.help` |
-| `/bv qrcode` | | 生成 B 站登录二维码地图 | `bilibili.command.qrcode` |
-| `/bv status` | | 查看账号绑定状态 | `bilibili.command.status` |
-| `/bv triple <bvid>` | | 检测视频三连状态 | `bilibili.command.triple` |
-| `/bv reward <bvid>` | | 领取三连奖励 | `bilibili.command.reward` |
+| 命令 | 功能 | 权限节点 |
+|------|------|----------|
+| `/bv help` | 查看帮助信息 | `bilibili.video.use` |
+| `/bv qrcode` | 生成 B 站登录二维码地图 | `bilibili.video.use` |
+| `/bv status` | 查看账号绑定状态 | `bilibili.video.use` |
+| `/bv triple <bvid>` | 检测视频三连状态 | `bilibili.video.use` |
+| `/bv reward <bvid>` | 领取三连奖励 | `bilibili.video.use` |
 
 ### 管理员命令
 
 | 命令 | 功能 | 权限节点 |
 |------|------|----------|
-| `/bv admin reload` | 重载配置文件 | `bilibili.admin.reload` |
-| `/bv admin credential list` | 列出所有登录凭证 | `bilibili.admin.credential` |
-| `/bv admin credential info <label>` | 查看凭证详细信息 | `bilibili.admin.credential` |
-| `/bv admin credential refresh <label>` | 刷新指定凭证 | `bilibili.admin.credential` |
+| `/bv admin reload` | 重载配置文件 | `bilibili.video.admin` |
+| `/bv admin unbind <target>` | 解除玩家绑定（支持玩家名/UUID/B站UID） | `bilibili.video.admin` |
+| `/bv admin credential list` | 列出所有登录凭证 | `bilibili.video.admin` |
+| `/bv admin credential info <label>` | 查看凭证详细信息 | `bilibili.video.admin` |
+| `/bv admin credential refresh <label>` | 刷新指定凭证（待实现） | `bilibili.video.admin` |
 
 ### 🎮 使用示例
 
