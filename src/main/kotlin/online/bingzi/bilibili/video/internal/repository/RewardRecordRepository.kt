@@ -1,6 +1,7 @@
 package online.bingzi.bilibili.video.internal.repository
 
 import online.bingzi.bilibili.video.internal.database.DatabaseFactory
+import online.bingzi.bilibili.video.internal.database.SqliteWriteExecutor
 import online.bingzi.bilibili.video.internal.entity.RewardRecord
 import online.bingzi.bilibili.video.internal.entity.RewardRecords
 import org.ktorm.dsl.and
@@ -34,8 +35,8 @@ internal object RewardRecordRepository {
         issuedAt: Long = System.currentTimeMillis(),
         context: String? = null,
         failReason: String? = null
-    ): Int {
-        return db.insert(RewardRecords) {
+    ): Int = SqliteWriteExecutor.executeWrite {
+        db.insert(RewardRecords) {
             set(it.playerUuid, playerUuid)
             set(it.playerName, playerName)
             set(it.targetKey, targetKey)

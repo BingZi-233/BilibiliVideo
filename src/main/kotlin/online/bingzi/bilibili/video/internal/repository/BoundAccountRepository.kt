@@ -1,6 +1,7 @@
 package online.bingzi.bilibili.video.internal.repository
 
 import online.bingzi.bilibili.video.internal.database.DatabaseFactory
+import online.bingzi.bilibili.video.internal.database.SqliteWriteExecutor
 import online.bingzi.bilibili.video.internal.entity.BoundAccount
 import online.bingzi.bilibili.video.internal.entity.BoundAccounts
 import org.ktorm.dsl.and
@@ -53,8 +54,8 @@ internal object BoundAccountRepository {
         status: Int = 1,
         createdAt: Long = System.currentTimeMillis(),
         updatedAt: Long = createdAt
-    ): Int {
-        return db.insert(BoundAccounts) {
+    ): Int = SqliteWriteExecutor.executeWrite {
+        db.insert(BoundAccounts) {
             set(it.playerUuid, playerUuid)
             set(it.playerName, playerName)
             set(it.bilibiliMid, bilibiliMid)
@@ -65,8 +66,8 @@ internal object BoundAccountRepository {
         }
     }
 
-    fun updateStatusByPlayerUuid(playerUuid: String, status: Int): Int {
-        return db.update(BoundAccounts) {
+    fun updateStatusByPlayerUuid(playerUuid: String, status: Int): Int = SqliteWriteExecutor.executeWrite {
+        db.update(BoundAccounts) {
             set(it.status, status)
             set(it.updatedAt, System.currentTimeMillis())
             where {
@@ -81,8 +82,8 @@ internal object BoundAccountRepository {
         bilibiliMid: Long,
         bilibiliName: String,
         status: Int = 1
-    ): Int {
-        return db.update(BoundAccounts) {
+    ): Int = SqliteWriteExecutor.executeWrite {
+        db.update(BoundAccounts) {
             set(it.playerName, playerName)
             set(it.bilibiliMid, bilibiliMid)
             set(it.bilibiliName, bilibiliName)

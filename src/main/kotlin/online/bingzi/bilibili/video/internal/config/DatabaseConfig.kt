@@ -12,7 +12,11 @@ enum class DatabaseType {
 }
 
 data class SqliteSection(
-    val file: String
+    val file: String,
+    val walMode: Boolean = true,
+    val busyTimeout: Long = 5000,
+    val cacheSize: Int = 2000,
+    val synchronous: String = "NORMAL"
 )
 
 data class MysqlSection(
@@ -70,7 +74,11 @@ object DatabaseConfigManager {
         }
 
         val sqlite = SqliteSection(
-            file = file.getString("database.sqlite.file") ?: "bilibili_video.db"
+            file = file.getString("database.sqlite.file") ?: "bilibili_video.db",
+            walMode = file.getBoolean("database.sqlite.wal-mode", true),
+            busyTimeout = file.getLong("database.sqlite.busy-timeout").takeIf { it > 0 } ?: 5000L,
+            cacheSize = file.getInt("database.sqlite.cache-size").takeIf { it > 0 } ?: 2000,
+            synchronous = file.getString("database.sqlite.synchronous") ?: "NORMAL"
         )
 
         val mysql = MysqlSection(
