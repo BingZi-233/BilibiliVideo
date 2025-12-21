@@ -8,6 +8,14 @@ database:
   sqlite:
     # 数据文件名，代码里再拼到插件 data 目录
     file: "bilibili_video.db"
+    # 启用 WAL (Write-Ahead Logging) 模式，大幅提升并发性能
+    wal-mode: true
+    # 锁等待超时时间(ms)，遇到锁时等待而非立即失败
+    busy-timeout: 5000
+    # 缓存大小(KB)，提升查询性能
+    cache-size: 2000
+    # 同步模式: FULL(最安全)/NORMAL(平衡)/OFF(最快但有风险)
+    synchronous: "NORMAL"
 
   # MySQL 配置（type = mysql 时生效）
   mysql:

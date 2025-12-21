@@ -1,6 +1,7 @@
 package online.bingzi.bilibili.video.internal.repository
 
 import online.bingzi.bilibili.video.internal.database.DatabaseFactory
+import online.bingzi.bilibili.video.internal.database.SqliteWriteExecutor
 import online.bingzi.bilibili.video.internal.entity.TripleStatus
 import online.bingzi.bilibili.video.internal.entity.TripleStatuses
 import org.ktorm.dsl.and
@@ -35,8 +36,8 @@ internal object TripleStatusRepository {
         lastCheckTime: Long? = null,
         lastErrorCode: Int? = null,
         lastErrorMessage: String? = null
-    ): Int {
-        return db.insert(TripleStatuses) {
+    ): Int = SqliteWriteExecutor.executeWrite {
+        db.insert(TripleStatuses) {
             set(it.playerUuid, playerUuid)
             set(it.bilibiliMid, bilibiliMid)
             set(it.targetKey, targetKey)
@@ -57,8 +58,8 @@ internal object TripleStatusRepository {
         lastCheckTime: Long,
         lastErrorCode: Int?,
         lastErrorMessage: String?
-    ): Int {
-        return db.update(TripleStatuses) {
+    ): Int = SqliteWriteExecutor.executeWrite {
+        db.update(TripleStatuses) {
             set(it.lastStatus, lastStatus)
             set(it.lastTripleTime, lastTripleTime)
             set(it.lastCheckTime, lastCheckTime)

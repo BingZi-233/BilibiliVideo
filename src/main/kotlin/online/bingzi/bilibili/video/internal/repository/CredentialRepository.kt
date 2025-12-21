@@ -1,6 +1,7 @@
 package online.bingzi.bilibili.video.internal.repository
 
 import online.bingzi.bilibili.video.internal.database.DatabaseFactory
+import online.bingzi.bilibili.video.internal.database.SqliteWriteExecutor
 import online.bingzi.bilibili.video.internal.entity.Credential
 import online.bingzi.bilibili.video.internal.entity.Credentials
 import org.ktorm.dsl.eq
@@ -40,8 +41,8 @@ internal object CredentialRepository {
         updatedAt: Long = createdAt,
         expiredAt: Long? = null,
         lastUsedAt: Long? = null
-    ): Int {
-        return db.insert(Credentials) {
+    ): Int = SqliteWriteExecutor.executeWrite {
+        db.insert(Credentials) {
             set(it.label, label)
             set(it.sessData, sessData)
             set(it.biliJct, biliJct)
@@ -66,8 +67,8 @@ internal object CredentialRepository {
         status: Int,
         expiredAt: Long?,
         lastUsedAt: Long?
-    ): Int {
-        return db.update(Credentials) {
+    ): Int = SqliteWriteExecutor.executeWrite {
+        db.update(Credentials) {
             set(it.status, status)
             set(it.expiredAt, expiredAt)
             set(it.lastUsedAt, lastUsedAt)
@@ -86,8 +87,8 @@ internal object CredentialRepository {
         accessKey: String?,
         refreshToken: String?,
         status: Int = 1
-    ): Int {
-        return db.update(Credentials) {
+    ): Int = SqliteWriteExecutor.executeWrite {
+        db.update(Credentials) {
             set(it.sessData, sessData)
             set(it.biliJct, biliJct)
             set(it.bilibiliMid, bilibiliMid)

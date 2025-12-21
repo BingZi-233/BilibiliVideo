@@ -6,6 +6,7 @@ import online.bingzi.bilibili.video.internal.DATABASE_TABLE_PREFIX
 import online.bingzi.bilibili.video.internal.config.DatabaseConfig
 import online.bingzi.bilibili.video.internal.config.DatabaseConfigManager
 import online.bingzi.bilibili.video.internal.config.DatabaseType
+import online.bingzi.bilibili.video.internal.config.SqliteSection
 import org.ktorm.database.Database
 import taboolib.common.platform.function.getDataFolder
 import taboolib.common.platform.function.info
@@ -56,8 +57,6 @@ internal object DatabaseFactory {
             val hikariConfig = HikariConfig().apply {
                 poolName = config.hikari.poolName
                 jdbcUrl = jdbcUrlValue
-                maximumPoolSize = config.hikari.maximumPoolSize
-                minimumIdle = config.hikari.minimumIdle
                 connectionTimeout = config.hikari.connectionTimeout
                 idleTimeout = config.hikari.idleTimeout
                 maxLifetime = config.hikari.maxLifetime
@@ -67,17 +66,29 @@ internal object DatabaseFactory {
                 when (config.type) {
                     DatabaseType.SQLITE -> {
                         driverClassName = "org.sqlite.JDBC"
+                        // SQLite 强制单连接，避免并发写入导致 SQLITE_BUSY
+                        maximumPoolSize = 1
+                        minimumIdle = 1
                     }
 
                     DatabaseType.MYSQL -> {
                         driverClassName = "com.mysql.cj.jdbc.Driver"
                         username = config.mysql.username
                         password = config.mysql.password
+                        maximumPoolSize = config.hikari.maximumPoolSize
+                        minimumIdle = config.hikari.minimumIdle
                     }
                 }
             }
 
             val ds = HikariDataSource(hikariConfig)
+
+            // SQLite 优化：初始化 PRAGMA 和写操作序列化执行器
+            if (config.type == DatabaseType.SQLITE) {
+                initializeSqlitePragmas(ds, config.sqlite)
+                SqliteWriteExecutor.initialize(config.type)
+            }
+
             val db = Database.connect(ds)
 
             try {
@@ -126,8 +137,31 @@ internal object DatabaseFactory {
      * 关闭连接池。
      */
     fun shutdown() {
+        SqliteWriteExecutor.shutdown()
         database = null
         dataSource?.close()
         dataSource = null
+    }
+
+    /**
+     * 初始化 SQLite PRAGMA 优化参数。
+     *
+     * - WAL 模式：允许读写并发，大幅提升性能
+     * - busy_timeout：遇到锁时等待而非立即失败
+     * - synchronous：平衡安全性和性能
+     * - cache_size：增加内存缓存
+     */
+    private fun initializeSqlitePragmas(dataSource: HikariDataSource, sqliteConfig: SqliteSection) {
+        dataSource.connection.use { connection ->
+            connection.createStatement().use { stmt ->
+                if (sqliteConfig.walMode) {
+                    stmt.execute("PRAGMA journal_mode = WAL")
+                    info("[Database] SQLite WAL 模式已启用")
+                }
+                stmt.execute("PRAGMA busy_timeout = ${sqliteConfig.busyTimeout}")
+                stmt.execute("PRAGMA synchronous = ${sqliteConfig.synchronous}")
+                stmt.execute("PRAGMA cache_size = -${sqliteConfig.cacheSize}")
+            }
+        }
     }
 }
