@@ -21,7 +21,16 @@ internal object DatabaseSchemaInitializer {
             executeStatements(connection, statements, config.options.showSql)
         }
 
-        info("[Database] Schema 校验完成（执行 ${statements.size} 条语句）。")
+        // 执行迁移语句
+        val migrations = when (config.type) {
+            DatabaseType.SQLITE -> buildSqliteMigrations(config.options.tablePrefix)
+            DatabaseType.MYSQL -> buildMysqlMigrations(config.options.tablePrefix)
+        }
+        database.useConnection { connection ->
+            executeMigrations(connection, migrations, config.options.showSql)
+        }
+
+        info("[Database] Schema 校验完成（执行 ${statements.size} 条语句，${migrations.size} 条迁移）。")
     }
 
     private fun executeStatements(connection: Connection, statements: List<String>, showSql: Boolean) {
@@ -32,6 +41,29 @@ internal object DatabaseSchemaInitializer {
                     info("[Database][Schema] $oneLineSql")
                 }
                 statement.execute(sql)
+            }
+        }
+    }
+
+    /**
+     * 执行迁移语句，忽略已存在列等错误。
+     */
+    private fun executeMigrations(connection: Connection, migrations: List<String>, showSql: Boolean) {
+        migrations.forEach { sql ->
+            try {
+                connection.createStatement().use { statement ->
+                    if (showSql) {
+                        val oneLineSql = sql.lines().joinToString(" ") { it.trim() }
+                        info("[Database][Migration] $oneLineSql")
+                    }
+                    statement.execute(sql)
+                }
+            } catch (e: Exception) {
+                // 忽略列已存在等错误（SQLite: duplicate column name, MySQL: Duplicate column name）
+                val msg = e.message?.lowercase() ?: ""
+                if (!msg.contains("duplicate column") && !msg.contains("duplicate column name")) {
+                    throw e
+                }
             }
         }
     }
@@ -189,6 +221,35 @@ internal object DatabaseSchemaInitializer {
                     KEY ${idx("reward_player_target_idx")} (`player_uuid`, `target_key`)
                 ) $tableOptions;
             """.trimIndent()
+        )
+    }
+
+    /**
+     * SQLite 迁移语句：为现有表添加新列。
+     */
+    private fun buildSqliteMigrations(prefix: String): List<String> {
+        val sanitizedPrefix = prefix.ifBlank { "" }
+        val table = { name: String -> sanitizedPrefix + name }
+        return listOf(
+            // 为 reward_record 表添加 bilibili_mid 列
+            "ALTER TABLE ${table("reward_record")} ADD COLUMN bilibili_mid INTEGER NULL;",
+            // 为 reward_record 表添加按 bilibili_mid + target_key 查询的索引
+            "CREATE INDEX IF NOT EXISTS ${table("reward_mid_target_idx")} ON ${table("reward_record")} (bilibili_mid, target_key);"
+        )
+    }
+
+    /**
+     * MySQL 迁移语句：为现有表添加新列。
+     */
+    private fun buildMysqlMigrations(prefix: String): List<String> {
+        val sanitizedPrefix = prefix.ifBlank { "" }
+        val table = { name: String -> "`${sanitizedPrefix + name}`" }
+        val idx = { name: String -> "`${sanitizedPrefix + name}`" }
+        return listOf(
+            // 为 reward_record 表添加 bilibili_mid 列
+            "ALTER TABLE ${table("reward_record")} ADD COLUMN `bilibili_mid` BIGINT UNSIGNED NULL;",
+            // 为 reward_record 表添加按 bilibili_mid + target_key 查询的索引
+            "ALTER TABLE ${table("reward_record")} ADD INDEX ${idx("reward_mid_target_idx")} (`bilibili_mid`, `target_key`);"
         )
     }
 }

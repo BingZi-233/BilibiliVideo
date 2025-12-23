@@ -14,6 +14,7 @@ internal interface RewardRecord : Entity<RewardRecord> {
     var id: Long?
     var playerUuid: String
     var playerName: String
+    var bilibiliMid: Long?
     var targetKey: String
     var rewardKey: String
     var status: Int
@@ -27,6 +28,7 @@ internal object RewardRecords : Table<RewardRecord>(DATABASE_TABLE_PREFIX + "rew
     val id = long("id").primaryKey().bindTo(RewardRecord::id)
     val playerUuid = varchar("player_uuid").bindTo(RewardRecord::playerUuid)
     val playerName = varchar("player_name").bindTo(RewardRecord::playerName)
+    val bilibiliMid = long("bilibili_mid").bindTo(RewardRecord::bilibiliMid)
     val targetKey = varchar("target_key").bindTo(RewardRecord::targetKey)
     val rewardKey = varchar("reward_key").bindTo(RewardRecord::rewardKey)
     val status = int("status").bindTo(RewardRecord::status)

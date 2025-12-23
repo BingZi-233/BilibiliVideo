@@ -26,9 +26,30 @@ internal object RewardRecordRepository {
             .toList()
     }
 
+    fun findAllByBilibiliMidAndTarget(bilibiliMid: Long, targetKey: String): List<RewardRecord> {
+        return rewardRecords
+            .filter { (it.bilibiliMid eq bilibiliMid) and (it.targetKey eq targetKey) }
+            .toList()
+    }
+
+    fun findAllByPlayerAndBilibiliMidAndTarget(
+        playerUuid: String,
+        bilibiliMid: Long,
+        targetKey: String
+    ): List<RewardRecord> {
+        return rewardRecords
+            .filter {
+                (it.playerUuid eq playerUuid) and
+                        (it.bilibiliMid eq bilibiliMid) and
+                        (it.targetKey eq targetKey)
+            }
+            .toList()
+    }
+
     fun insert(
         playerUuid: String,
         playerName: String,
+        bilibiliMid: Long?,
         targetKey: String,
         rewardKey: String,
         status: Int,
@@ -39,6 +60,7 @@ internal object RewardRecordRepository {
         db.insert(RewardRecords) {
             set(it.playerUuid, playerUuid)
             set(it.playerName, playerName)
+            set(it.bilibiliMid, bilibiliMid)
             set(it.targetKey, targetKey)
             set(it.rewardKey, rewardKey)
             set(it.status, status)

@@ -5,6 +5,29 @@ import taboolib.module.configuration.Config
 import taboolib.module.configuration.ConfigFile
 
 /**
+ * 奖励判重策略枚举。
+ */
+enum class DedupStrategy {
+    /**
+     * 玩家和 B 站账户同时记录（最严格）。
+     * 同一玩家 + 同一 B 站号只能领一次。
+     */
+    PLAYER_AND_BILIBILI,
+
+    /**
+     * 仅记录 B 站账户。
+     * 同一 B 站号只能领一次，玩家换号可重新领。
+     */
+    BILIBILI_ONLY,
+
+    /**
+     * 仅记录玩家。
+     * 同一玩家只能领一次，换号无法重新领。
+     */
+    PLAYER_ONLY
+}
+
+/**
  * 奖励模板配置。
  *
  * 从 config.yml 中读取 reward.templates 节点，并转换为 RewardTemplate。
@@ -92,5 +115,20 @@ object RewardConfigManager {
         }
         val videosSection = file.getConfigurationSection("reward.videos") ?: return false
         return videosSection.getKeys(false).any { it.equals(bvid, ignoreCase = false) }
+    }
+
+    /**
+     * 获取奖励判重策略。
+     *
+     * 从 config.yml 中读取 reward.dedup-strategy 节点，默认为 PLAYER_ONLY（兼容旧行为）。
+     */
+    fun getDedupStrategy(): DedupStrategy {
+        val strategyName = file.getString("reward.dedup-strategy")?.uppercase() ?: return DedupStrategy.PLAYER_ONLY
+        return try {
+            DedupStrategy.valueOf(strategyName.replace("-", "_"))
+        } catch (e: IllegalArgumentException) {
+            warning("无效的 reward.dedup-strategy 配置值: $strategyName，使用默认值 PLAYER_ONLY")
+            DedupStrategy.PLAYER_ONLY
+        }
     }
 }
