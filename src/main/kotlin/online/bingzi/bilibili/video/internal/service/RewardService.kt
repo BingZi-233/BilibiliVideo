@@ -1,7 +1,9 @@
 package online.bingzi.bilibili.video.internal.service
 
+import online.bingzi.bilibili.video.internal.config.DedupStrategy
 import online.bingzi.bilibili.video.internal.config.RewardConfigManager
 import online.bingzi.bilibili.video.internal.config.RewardTemplate
+import online.bingzi.bilibili.video.internal.repository.BoundAccountRepository
 import online.bingzi.bilibili.video.internal.repository.RewardRecordRepository
 import org.bukkit.entity.Player
 
@@ -44,6 +46,12 @@ object RewardService {
             )
         }
 
+        // 获取玩家绑定的 B 站账号信息
+        val playerUuid = player.uniqueId.toString()
+        val boundAccount = BoundAccountRepository.findByPlayerUuid(playerUuid)
+        val bilibiliMid = boundAccount?.bilibiliMid
+
+        // 检查三连状态
         val tripleResult = CredentialService.checkTripleByPlayer(player, bvid)
         if (!tripleResult.success || tripleResult.tripleStatus == null) {
             return RewardResult(
@@ -60,26 +68,40 @@ object RewardService {
             )
         }
 
-        val playerUuid = player.uniqueId.toString()
-        val existing = RewardRecordRepository.findAllByPlayerAndTarget(playerUuid, targetKey)
-        // 先解析本次应当使用的奖励模板 key，便于做幂等判断
+        // 解析奖励模板
         val resolve = RewardConfigManager.resolveForBvid(bvid, defaultKey = rewardKey)
         val resolvedRewardKey = resolve.rewardKey
 
-        if (existing.any { it.rewardKey == resolvedRewardKey && it.status == 1 }) {
+        // 根据配置的判重策略检查是否已领取
+        val dedupStrategy = RewardConfigManager.getDedupStrategy()
+        val alreadyClaimed = checkAlreadyClaimed(
+            strategy = dedupStrategy,
+            playerUuid = playerUuid,
+            bilibiliMid = bilibiliMid,
+            targetKey = targetKey,
+            rewardKey = resolvedRewardKey
+        )
+
+        if (alreadyClaimed) {
+            val strategyHint = when (dedupStrategy) {
+                DedupStrategy.PLAYER_AND_BILIBILI -> "（当前玩家 + 当前 B 站账号）"
+                DedupStrategy.BILIBILI_ONLY -> "（当前 B 站账号）"
+                DedupStrategy.PLAYER_ONLY -> "（当前玩家）"
+            }
             return RewardResult(
                 success = false,
-                message = "你已经领取过该任务的奖励，无法重复领取。"
+                message = "你已经领取过该任务的奖励$strategyHint，无法重复领取。"
             )
         }
 
         val inserted = RewardRecordRepository.insert(
             playerUuid = playerUuid,
             playerName = player.name,
+            bilibiliMid = bilibiliMid,
             targetKey = targetKey,
             rewardKey = resolvedRewardKey,
             status = 1,
-            context = "bvid=$bvid; triple=true",
+            context = "bvid=$bvid; triple=true; bilibiliMid=$bilibiliMid",
             failReason = null
         )
 
@@ -104,5 +126,48 @@ object RewardService {
             bvid = bvid,
             targetKey = targetKey
         )
+    }
+
+    /**
+     * 根据判重策略检查是否已领取奖励。
+     */
+    private fun checkAlreadyClaimed(
+        strategy: DedupStrategy,
+        playerUuid: String,
+        bilibiliMid: Long?,
+        targetKey: String,
+        rewardKey: String
+    ): Boolean {
+        return when (strategy) {
+            DedupStrategy.PLAYER_ONLY -> {
+                val existing = RewardRecordRepository.findAllByPlayerAndTarget(playerUuid, targetKey)
+                existing.any { it.rewardKey == rewardKey && it.status == 1 }
+            }
+
+            DedupStrategy.BILIBILI_ONLY -> {
+                if (bilibiliMid == null) {
+                    // 没有绑定 B 站账号，理论上不应该走到这里，但保险起见返回 false
+                    false
+                } else {
+                    val existing = RewardRecordRepository.findAllByBilibiliMidAndTarget(bilibiliMid, targetKey)
+                    existing.any { it.rewardKey == rewardKey && it.status == 1 }
+                }
+            }
+
+            DedupStrategy.PLAYER_AND_BILIBILI -> {
+                if (bilibiliMid == null) {
+                    // 没有绑定 B 站账号，回退到仅检查玩家
+                    val existing = RewardRecordRepository.findAllByPlayerAndTarget(playerUuid, targetKey)
+                    existing.any { it.rewardKey == rewardKey && it.status == 1 }
+                } else {
+                    val existing = RewardRecordRepository.findAllByPlayerAndBilibiliMidAndTarget(
+                        playerUuid,
+                        bilibiliMid,
+                        targetKey
+                    )
+                    existing.any { it.rewardKey == rewardKey && it.status == 1 }
+                }
+            }
+        }
     }
 }

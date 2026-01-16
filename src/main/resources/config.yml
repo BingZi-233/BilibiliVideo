@@ -1,4 +1,10 @@
 reward:
+  # 奖励判重策略
+  # PLAYER_AND_BILIBILI - 玩家和 B 站账户同时记录（最严格：同一玩家 + 同一 B 站号只能领一次）
+  # BILIBILI_ONLY       - 仅记录 B 站账户（同一 B 站号只能领一次，玩家换号可重新领）
+  # PLAYER_ONLY         - 仅记录玩家（同一玩家只能领一次，换号无法重新领，默认值，兼容旧版本行为）
+  dedup-strategy: "PLAYER_ONLY"
+
   templates:
     default:
       description: "完成三连时发放的默认奖励示例"

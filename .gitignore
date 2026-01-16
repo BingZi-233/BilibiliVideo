@@ -26,3 +26,7 @@ Thumbs.db
 
 combined.log
 error.log
+openspec/
+AGENTS.md
+CLAUDE.md
+.kotlin
