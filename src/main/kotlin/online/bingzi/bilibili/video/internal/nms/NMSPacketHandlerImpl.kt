@@ -1,5 +1,6 @@
 package online.bingzi.bilibili.video.internal.nms
 
+import org.bukkit.Bukkit
 import org.bukkit.entity.Player
 import org.bukkit.inventory.ItemStack
 import org.bukkit.map.MapView
@@ -93,13 +94,13 @@ class NMSPacketHandlerImpl : NMSPacketHandler() {
                     "net.minecraft.network.protocol.game.ClientboundMapItemDataPacket",       // Paper (Mojang mappings)
                     "net.minecraft.network.protocol.game.PacketPlayOutMap"                    // Spigot
                 )
-                "ItemStack" -> Class.forName("net.minecraft.world.item.ItemStack")
+                "ItemStack" -> loadClass("net.minecraft.world.item.ItemStack")
                 else -> throw IllegalArgumentException("Unknown NMS class: $name")
             }
         } else {
             // 1.12 - 1.16.5
             val version = MinecraftVersion.minecraftVersion
-            Class.forName("net.minecraft.server.$version.$name")
+            loadClass("net.minecraft.server.$version.$name")
         }
     }
 
@@ -109,7 +110,7 @@ class NMSPacketHandlerImpl : NMSPacketHandler() {
     private fun findClass(vararg classNames: String): Class<*> {
         for (className in classNames) {
             try {
-                return Class.forName(className)
+                return loadClass(className)
             } catch (_: ClassNotFoundException) {
                 // 继续尝试下一个
             }
@@ -127,9 +128,9 @@ class NMSPacketHandlerImpl : NMSPacketHandler() {
         val version = MinecraftVersion.minecraftVersion
         // 1.20.5+ 和 Folia 服务器返回 "UNKNOWN"，此时 CraftBukkit 不再使用版本化包路径
         return if (version == "UNKNOWN") {
-            Class.forName("org.bukkit.craftbukkit.$name")
+            loadClass("org.bukkit.craftbukkit.$name")
         } else {
-            Class.forName("org.bukkit.craftbukkit.$version.$name")
+            loadClass("org.bukkit.craftbukkit.$version.$name")
         }
     }
 
@@ -173,44 +174,109 @@ class NMSPacketHandlerImpl : NMSPacketHandler() {
      */
     private fun createMapPacket117Plus(mapId: Int, colors: ByteArray): Any {
         val packetClass = nmsClass("PacketPlayOutMap")
-        val mapIdClass = Class.forName("net.minecraft.world.level.saveddata.maps.MapId")
+        val mapIdClass = loadClassOrNull("net.minecraft.world.level.saveddata.maps.MapId")
+        val mapIdObj = mapIdClass?.let {
+            val mapIdConstructor = it.getConstructor(Int::class.javaPrimitiveType)
+            mapIdConstructor.newInstance(mapId)
+        }
 
-        // 创建 MapId 对象
-        val mapIdConstructor = mapIdClass.getConstructor(Int::class.javaPrimitiveType)
-        val mapIdObj = mapIdConstructor.newInstance(mapId)
+        val mapPatch = createMapPatchOrNull(colors)
 
-        // 创建 MapPatch（更新区域）
-        // Paper (Mojang): MapItemSavedData$MapPatch
-        // Spigot: WorldMap$b
-        val mapPatchClass = findClass(
-            "net.minecraft.world.level.saveddata.maps.MapItemSavedData\$MapPatch",  // Paper (Mojang mappings)
-            "net.minecraft.world.level.saveddata.maps.WorldMap\$b"                   // Spigot
-        )
-        val mapPatchConstructor = mapPatchClass.getConstructor(
-            Int::class.javaPrimitiveType,  // startX
-            Int::class.javaPrimitiveType,  // startY
-            Int::class.javaPrimitiveType,  // width
-            Int::class.javaPrimitiveType,  // height
-            ByteArray::class.java          // colors
-        )
-        val mapPatch = mapPatchConstructor.newInstance(0, 0, 128, 128, colors)
+        val constructors = packetClass.constructors.sortedByDescending { it.parameterCount }
+        val errors = mutableListOf<String>()
 
-        // 构建数据包
-        // PacketPlayOutMap(MapId, byte scale, boolean locked, Optional<List<MapDecoration>> icons, Optional<MapPatch> updateData)
-        val constructor = packetClass.getConstructor(
-            mapIdClass,
-            Byte::class.javaPrimitiveType,
-            Boolean::class.javaPrimitiveType,
-            java.util.Optional::class.java,
-            java.util.Optional::class.java
+        for (constructor in constructors) {
+            try {
+                val args = buildArgsForMapPacket117Plus(
+                    constructor.parameterTypes,
+                    mapId,
+                    mapIdClass,
+                    mapIdObj,
+                    mapPatch
+                )
+                if (args != null) {
+                    return constructor.newInstance(*args)
+                } else {
+                    errors.add("${constructor.parameterTypes.map { it.simpleName }}: unsupported param type")
+                }
+            } catch (e: Exception) {
+                errors.add("${constructor.parameterTypes.map { it.simpleName }}: ${e.message}")
+            }
+        }
+
+        throw IllegalStateException(
+            "No suitable PacketPlayOutMap constructor found for ${MinecraftVersion.minecraftVersion}.\n" +
+            "Available: ${constructors.map { it.parameterTypes.map { p -> p.simpleName } }}\n" +
+            "Errors: $errors"
         )
-        return constructor.newInstance(
-            mapIdObj,
-            0.toByte(),  // scale
-            false,       // locked
-            java.util.Optional.empty<Any>(),  // no icons
-            java.util.Optional.of(mapPatch)   // map data
-        )
+    }
+
+    private fun loadClass(name: String): Class<*> {
+        // 在 TabooLib/隔离类加载器环境下，优先使用服务端类加载器以访问 NMS/OBC
+        val serverLoader = Bukkit.getServer().javaClass.classLoader
+        return Class.forName(name, false, serverLoader)
+    }
+
+    private fun loadClassOrNull(name: String): Class<*>? {
+        return try {
+            loadClass(name)
+        } catch (_: ClassNotFoundException) {
+            null
+        }
+    }
+
+    private fun createMapPatchOrNull(colors: ByteArray): Any? {
+        return try {
+            val mapPatchClass = findClass(
+                "net.minecraft.world.level.saveddata.maps.MapItemSavedData\$MapPatch",  // Paper (Mojang mappings)
+                "net.minecraft.world.level.saveddata.maps.WorldMap\$b"                   // Spigot
+            )
+            val mapPatchConstructor = mapPatchClass.getConstructor(
+                Int::class.javaPrimitiveType,  // startX
+                Int::class.javaPrimitiveType,  // startY
+                Int::class.javaPrimitiveType,  // width
+                Int::class.javaPrimitiveType,  // height
+                ByteArray::class.java          // colors
+            )
+            mapPatchConstructor.newInstance(0, 0, 128, 128, colors)
+        } catch (_: Throwable) {
+            null
+        }
+    }
+
+    private fun buildArgsForMapPacket117Plus(
+        paramTypes: Array<Class<*>>,
+        mapId: Int,
+        mapIdClass: Class<*>?,
+        mapIdObj: Any?,
+        mapPatch: Any?
+    ): Array<Any>? {
+        val args = mutableListOf<Any>()
+        var optionalIndex = 0
+
+        for (paramType in paramTypes) {
+            val arg = when {
+                mapIdClass != null && paramType == mapIdClass -> mapIdObj ?: return null
+                paramType == Int::class.javaPrimitiveType || paramType == Int::class.java -> mapId
+                paramType == Byte::class.javaPrimitiveType || paramType == Byte::class.java -> 0.toByte()
+                paramType == Boolean::class.javaPrimitiveType || paramType == Boolean::class.java -> false
+                java.util.Optional::class.java == paramType -> {
+                    val value = if (optionalIndex == 0) {
+                        java.util.Optional.empty<Any>()
+                    } else {
+                        if (mapPatch != null) java.util.Optional.of(mapPatch) else java.util.Optional.empty<Any>()
+                    }
+                    optionalIndex++
+                    value
+                }
+                Collection::class.java.isAssignableFrom(paramType) -> emptyList<Any>()
+                paramType.name.endsWith("MapPatch") || paramType.name.endsWith("WorldMap\$b") -> mapPatch ?: return null
+                else -> return null
+            }
+            args.add(arg)
+        }
+
+        return args.toTypedArray()
     }
 
     /**
