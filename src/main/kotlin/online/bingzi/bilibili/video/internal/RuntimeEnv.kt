@@ -1,5 +1,6 @@
 package online.bingzi.bilibili.video.internal
 
+import taboolib.common.env.RuntimeDependencies
 import taboolib.common.env.RuntimeDependency
 
 /**
@@ -10,52 +11,54 @@ import taboolib.common.env.RuntimeDependency
  * - Ktorm / HikariCP:数据库访问与连接池
  * - SQLite / MySQL JDBC 驱动
  * - ZXing:二维码生成
- *
- * 注意:不再显式声明 kotlin-reflect 依赖,依赖 TabooLib 内置的 Kotlin 运行时,
- * 以避免与其他插件的类加载器冲突。
+ * - kotlin-reflect:Kotlin 反射支持（Ktorm 需要）
  */
-@RuntimeDependency(
-    value = "com.squareup.okhttp3:okhttp:4.12.0",
-    test = "okhttp3.OkHttpClient"
-)
-@RuntimeDependency(
-    value = "com.squareup.okio:okio-jvm:3.6.0",
-    test = "okio.Buffer"
-)
-@RuntimeDependency(
-    value = "com.google.code.gson:gson:2.11.0",
-    test = "com.google.gson.Gson"
-)
-@RuntimeDependency(
-    value = "org.ktorm:ktorm-core:3.6.0",
-    test = "org.ktorm.database.Database"
-)
-@RuntimeDependency(
-    value = "org.ktorm:ktorm-support-mysql:3.6.0",
-    test = "org.ktorm.support.mysql.MySqlDialect"
-)
-@RuntimeDependency(
-    value = "org.ktorm:ktorm-support-sqlite:3.6.0",
-    test = "org.ktorm.support.sqlite.SQLiteDialect"
-)
-@RuntimeDependency(
-    value = "com.zaxxer:HikariCP:4.0.3",
-    test = "com.zaxxer.hikari.HikariDataSource"
-)
-@RuntimeDependency(
-    value = "org.xerial:sqlite-jdbc:3.45.1.0",
-    test = "org.sqlite.JDBC"
-)
-@RuntimeDependency(
-    value = "com.mysql:mysql-connector-j:8.3.0",
-    test = "com.mysql.cj.jdbc.Driver"
-)
-@RuntimeDependency(
-    value = "com.google.zxing:core:3.5.2",
-    test = "com.google.zxing.qrcode.QRCodeWriter"
-)
-@RuntimeDependency(
-    value = "org.jetbrains.kotlin:kotlin-reflect:2.2.0",
-    test = "kotlin.reflect.full.KClasses"
+@RuntimeDependencies(
+    RuntimeDependency(
+        value = "!com.squareup.okhttp3:okhttp:4.12.0",
+        test = "!okhttp3.OkHttpClient"
+    ),
+    RuntimeDependency(
+        value = "!com.squareup.okio:okio-jvm:3.6.0",
+        test = "!okio.Buffer"
+    ),
+    RuntimeDependency(
+        value = "!com.google.code.gson:gson:2.11.0",
+        test = "!com.google.gson.Gson"
+    ),
+    RuntimeDependency(
+        value = "!org.ktorm:ktorm-core:3.6.0",
+        test = "!org.ktorm.database.Database"
+    ),
+    RuntimeDependency(
+        value = "!org.ktorm:ktorm-support-mysql:3.6.0",
+        test = "!org.ktorm.support.mysql.MySqlDialect"
+    ),
+    RuntimeDependency(
+        value = "!org.ktorm:ktorm-support-sqlite:3.6.0",
+        test = "!org.ktorm.support.sqlite.SQLiteDialect"
+    ),
+    RuntimeDependency(
+        value = "!com.zaxxer:HikariCP:4.0.3",
+        test = "!com.zaxxer.hikari.HikariDataSource"
+    ),
+    RuntimeDependency(
+        value = "!org.xerial:sqlite-jdbc:3.45.1.0",
+        test = "!org.sqlite.JDBC",
+        transitive = false
+    ),
+    RuntimeDependency(
+        value = "!com.mysql:mysql-connector-j:8.3.0",
+        test = "!com.mysql.cj.jdbc.Driver",
+        transitive = false
+    ),
+    RuntimeDependency(
+        value = "!com.google.zxing:core:3.5.2",
+        test = "!com.google.zxing.qrcode.QRCodeWriter"
+    ),
+    RuntimeDependency(
+        value = "!org.jetbrains.kotlin:kotlin-reflect:2.2.0",
+        test = "!kotlin.reflect.full.KClasses"
+    )
 )
 object RuntimeEnv
