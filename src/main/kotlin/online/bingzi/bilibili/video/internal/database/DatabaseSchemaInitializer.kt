@@ -59,9 +59,9 @@ internal object DatabaseSchemaInitializer {
                     statement.execute(sql)
                 }
             } catch (e: Exception) {
-                // 忽略列已存在等错误（SQLite: duplicate column name, MySQL: Duplicate column name）
+                // 忽略列/索引已存在等错误（SQLite: duplicate column name, MySQL: Duplicate column name / Duplicate key name）
                 val msg = e.message?.lowercase() ?: ""
-                if (!msg.contains("duplicate column") && !msg.contains("duplicate column name")) {
+                if (!msg.contains("duplicate column") && !msg.contains("duplicate column name") && !msg.contains("duplicate key name")) {
                     throw e
                 }
             }
