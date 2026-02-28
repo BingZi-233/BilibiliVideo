@@ -5,7 +5,7 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
     java
-    id("io.izzel.taboolib") version "2.0.28"
+    id("io.izzel.taboolib") version "2.0.31"
     id("org.jetbrains.kotlin.jvm") version "2.2.0"
     `maven-publish`
     id("idea")
@@ -34,7 +34,7 @@ taboolib {
         }
     }
     version {
-        taboolib = "6.2.4-1645904"
+        taboolib = "6.2.4-99fb800"
         skipKotlinRelocate = true
     }
 }
@@ -49,8 +49,8 @@ val gsonVersion = "2.11.0"
 val zxingVersion = "3.5.2"
 
 dependencies {
-    compileOnly("ink.ptms.core:v12004:12004:mapped")
-    compileOnly("ink.ptms.core:v12004:12004:universal")
+    compileOnly("ink.ptms.core:v12111:12111:mapped")
+    compileOnly("ink.ptms.core:v12111:12111:universal")
     compileOnly(kotlin("stdlib"))
     compileOnly(kotlin("reflect"))
     compileOnly(fileTree("libs"))
