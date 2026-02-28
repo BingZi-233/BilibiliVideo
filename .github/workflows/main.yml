@@ -207,68 +207,22 @@ jobs:
 
       - name: 📝 生成更新日志
         id: changelog
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # 获取最新的标签
           LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
-          
-          echo "## 📝 更新内容" > CHANGELOG.md
-          echo "" >> CHANGELOG.md
-          
           if [ -n "$LATEST_TAG" ]; then
-            echo "### 自 ${LATEST_TAG} 以来的变更：" >> CHANGELOG.md
-            echo "" >> CHANGELOG.md
-          
-            # 按类型分组提交记录
-            echo "#### ✨ 新功能" >> CHANGELOG.md
-            FEAT_COMMITS=$(git log ${LATEST_TAG}..HEAD --pretty=format:"- %s (%h)" --grep="^feat" 2>/dev/null || echo "")
-            echo "${FEAT_COMMITS:-  - 暂无新功能}" >> CHANGELOG.md
-            echo -e "\n" >> CHANGELOG.md
-          
-            echo "#### 🐛 修复" >> CHANGELOG.md
-            FIX_COMMITS=$(git log ${LATEST_TAG}..HEAD --pretty=format:"- %s (%h)" --grep="^fix" 2>/dev/null || echo "")
-            echo "${FIX_COMMITS:-  - 暂无修复}" >> CHANGELOG.md
-            echo -e "\n" >> CHANGELOG.md
-          
-            echo "#### 📚 文档" >> CHANGELOG.md
-            DOCS_COMMITS=$(git log ${LATEST_TAG}..HEAD --pretty=format:"- %s (%h)" --grep="^docs" 2>/dev/null || echo "")
-            echo "${DOCS_COMMITS:-  - 暂无文档更新}" >> CHANGELOG.md
-            echo -e "\n" >> CHANGELOG.md
-          
-            echo "#### 🔧 其他变更" >> CHANGELOG.md
-            git log ${LATEST_TAG}..HEAD --pretty=format:"- %s (%h)" --grep -v "^feat\|^fix\|^docs" | head -20 >> CHANGELOG.md
-            echo -e "\n" >> CHANGELOG.md
+            NOTES=$(gh api repos/${{ github.repository }}/releases/generate-notes \
+              -f tag_name="${{ needs.build.outputs.version }}" \
+              -f previous_tag_name="${LATEST_TAG}" \
+              --jq '.body')
           else
-            echo "### 所有变更：" >> CHANGELOG.md
-            echo "" >> CHANGELOG.md
-            git log --pretty=format:"- %s (%h)" | head -50 >> CHANGELOG.md
-            echo -e "\n" >> CHANGELOG.md
+            NOTES=$(gh api repos/${{ github.repository }}/releases/generate-notes \
+              -f tag_name="${{ needs.build.outputs.version }}" \
+              --jq '.body')
           fi
-          
-          echo "### 📊 统计" >> CHANGELOG.md
-          echo "" >> CHANGELOG.md
-          if [ -n "$LATEST_TAG" ]; then
-            COMMITS=$(git rev-list ${LATEST_TAG}..HEAD --count)
-            FILES_CHANGED=$(git diff --stat ${LATEST_TAG}..HEAD | tail -1)
-          else
-            COMMITS=$(git rev-list HEAD --count)
-            FILES_CHANGED=$(git diff --stat $(git rev-list --max-parents=0 HEAD)..HEAD | tail -1)
-          fi
-          echo "- 📊 提交次数: ${COMMITS}" >> CHANGELOG.md
-          echo "- 📂 ${FILES_CHANGED}" >> CHANGELOG.md
-          echo "" >> CHANGELOG.md
-          
-          # 贡献者
-          echo "### 👥 贡献者" >> CHANGELOG.md
-          echo "" >> CHANGELOG.md
-          if [ -n "$LATEST_TAG" ]; then
-            git log ${LATEST_TAG}..HEAD --pretty=format:"%an" | sort -u | sed 's/^/- @/' >> CHANGELOG.md
-          else
-            git log --pretty=format:"%an" | sort -u | sed 's/^/- @/' | head -10 >> CHANGELOG.md
-          fi
-          
-          # 保存到输出
           echo "changelog<<EOF" >> $GITHUB_OUTPUT
-          cat CHANGELOG.md >> $GITHUB_OUTPUT
+          echo "$NOTES" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
       - name: 🚀 发布新版本
@@ -278,88 +232,62 @@ jobs:
           name: BilibiliVideo ${{ needs.build.outputs.version }}
           body: |
             <div align="center">
-            
-            ![TabooLib](https://img.shields.io/badge/TabooLib-6.2.3+-green) ｜![Minecraft](https://img.shields.io/badge/Minecraft-1.8--1.21+-orange) ｜![Java](https://img.shields.io/badge/Java-8+-red) ｜![Build Status](https://img.shields.io/github/actions/workflow/status/BingZi-233/BilibiliVideo/build.yml) ｜![Downloads](https://img.shields.io/github/downloads/BingZi-233/BilibiliVideo/total)
-            
+
+            ![TabooLib](https://img.shields.io/badge/TabooLib-6.2.4+-green) ｜![Minecraft](https://img.shields.io/badge/Minecraft-1.12+-orange) ｜![Java](https://img.shields.io/badge/Java-8+-red) ｜![Build Status](https://img.shields.io/github/actions/workflow/status/BingZi-233/BilibiliVideo/main.yml) ｜![Downloads](https://img.shields.io/github/downloads/BingZi-233/BilibiliVideo/total)
+
             </div>
-            
+
             ---
-            
+
             ${{ steps.changelog.outputs.changelog }}
-            
+
             ---
-            
+
             ## 🚀 快速开始
-            
+
             ### 安装步骤
-            
-            1. **下载插件**
-               ```
-               BilibiliVideo-${{ needs.build.outputs.short_version }}.jar
-               ```
-            
-            2. **放置文件**
-               将 JAR 文件放入服务器的 `plugins` 目录
-            
-            3. **重启服务器**
-               ```bash
-               /reload 或重启服务器
-               ```
-            
-            4. **配置连接**
-               ```bash
-               /bilibili preset list         # 查看可用预设
-               /bilibili preset apply        # 应用预设配置
-               /bilibili connect             # 连接到 Bilibili 服务器
-               /bilibili status              # 查看连接状态
-               ```
-            
+
+            1. **下载插件** — 从本页面下载 `BilibiliVideo-${{ needs.build.outputs.short_version }}.jar`
+            2. **放置文件** — 将 JAR 文件放入服务器的 `plugins` 目录
+            3. **重启服务器** — 插件会自动生成配置文件和数据库
+
+            ### 基本使用
+
+            ```bash
+            /bv qrcode              # 生成 B 站登录二维码，扫码绑定账号
+            /bv status              # 查看账号绑定状态
+            /bv triple <bvid>       # 检测视频三连状态（点赞、投币、收藏）
+            /bv reward <bvid>       # 领取三连奖励
+            ```
+
             ## 📋 系统要求
-            
+
             - **Java**: 8 或更高版本
-            - **服务器**: Bukkit/Spigot/Paper 1.8-1.21+
-            - **内存**: 建议至少 2GB
-            - **Bilibili API**: 支持 Bilibili Open API
-            
+            - **服务端**: Bukkit/Spigot/Paper 1.12+
+            - **数据库**: SQLite（默认，开箱即用）或 MySQL 5.7+
+
             ## 🔗 相关链接
-            
+
             | 资源 | 链接 |
             |------|------|
-            | 📚 文档 | [Wiki](https://github.com/BingZi-233/BilibiliVideo/wiki) |
             | 🐛 问题反馈 | [Issues](https://github.com/BingZi-233/BilibiliVideo/issues) |
             | 💬 讨论交流 | [Discussions](https://github.com/BingZi-233/BilibiliVideo/discussions) |
-            | 📖 配置指南 | [配置文档](https://github.com/BingZi-233/BilibiliVideo/wiki/Configuration) |
-            | 🎯 路线图 | [Roadmap](https://github.com/BingZi-233/BilibiliVideo/projects) |
-            
-            ## ⚠️ 重要提示
-            
-            - 首次使用请仔细阅读 [配置指南](https://github.com/BingZi-233/BilibiliVideo/wiki/Configuration)
-            - 遇到问题请先查看 [FAQ](https://github.com/BingZi-233/BilibiliVideo/wiki/FAQ)
-            - 升级前请备份配置文件
-            
-            ## 💖 支持项目
-            
-            如果这个插件对您有帮助，请考虑：
-            - ⭐ 给项目点个 Star
-            - 🐛 报告问题和建议
-            - 🤝 贡献代码
-            - 📢 向朋友推荐
-            
+
             ---
-            
+
             <div align="center">
-            
-            **感谢使用 BilibiliVideo！** 🎮
-            
+
+            **如果这个插件对你有帮助，请给个 ⭐ Star 支持一下！**
+
             [报告问题](https://github.com/BingZi-233/BilibiliVideo/issues/new/choose) | [请求功能](https://github.com/BingZi-233/BilibiliVideo/issues/new?labels=enhancement) | [加入讨论](https://github.com/BingZi-233/BilibiliVideo/discussions)
-            
+
             </div>
           draft: false
           files: |
             build/libs/*.jar
             !build/libs/*-sources.jar
             !build/libs/*-javadoc.jar
-          generate_release_notes: true
+          generate_release_notes: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
