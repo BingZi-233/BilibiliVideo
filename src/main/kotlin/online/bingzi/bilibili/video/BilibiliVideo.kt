@@ -5,6 +5,7 @@ import online.bingzi.bilibili.video.internal.database.DatabaseFactory
 import taboolib.common.platform.Platform
 import taboolib.common.platform.Plugin
 import taboolib.common.platform.function.info
+import taboolib.common.platform.function.warning
 import taboolib.module.metrics.Metrics
 import taboolib.platform.util.bukkitPlugin
 
@@ -29,8 +30,16 @@ object BilibiliVideo : Plugin() {
 
     override fun onDisable() {
         info("正在禁用 BilibiliVideo 插件...")
-        QrLoginService.shutdown()
-        DatabaseFactory.shutdown()
+        try {
+            QrLoginService.shutdown()
+        } catch (e: Throwable) {
+            warning("[BilibiliVideo] QrLoginService 关闭异常: ${e.message}")
+        }
+        try {
+            DatabaseFactory.shutdown()
+        } catch (e: Throwable) {
+            warning("[BilibiliVideo] DatabaseFactory 关闭异常: ${e.message}")
+        }
         info("BilibiliVideo 插件禁用完成！")
     }
 }

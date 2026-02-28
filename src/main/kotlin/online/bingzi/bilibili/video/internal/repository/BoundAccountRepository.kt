@@ -4,12 +4,8 @@ import online.bingzi.bilibili.video.internal.database.DatabaseFactory
 import online.bingzi.bilibili.video.internal.database.SqliteWriteExecutor
 import online.bingzi.bilibili.video.internal.entity.BoundAccount
 import online.bingzi.bilibili.video.internal.entity.BoundAccounts
-import org.ktorm.dsl.and
-import org.ktorm.dsl.eq
-import org.ktorm.dsl.insert
-import org.ktorm.dsl.update
-import org.ktorm.entity.find
-import org.ktorm.entity.sequenceOf
+import online.bingzi.bilibili.video.internal.entity.toBoundAccount
+import org.ktorm.dsl.*
 
 /**
  * 玩家与 B 站账号绑定仓储。
@@ -20,30 +16,52 @@ internal object BoundAccountRepository {
 
     private val db get() = DatabaseFactory.database()
 
-    private val boundAccounts get() = db.sequenceOf(BoundAccounts)
-
     fun findByPlayerUuid(playerUuid: String, includeInactive: Boolean = false): BoundAccount? {
-        val active = boundAccounts.find { (it.playerUuid eq playerUuid) and (it.status eq 1) }
+        val active = db.from(BoundAccounts)
+            .select()
+            .where { (BoundAccounts.playerUuid eq playerUuid) and (BoundAccounts.status eq 1) }
+            .map { it.toBoundAccount() }
+            .firstOrNull()
         if (active != null || !includeInactive) {
             return active
         }
-        return boundAccounts.find { it.playerUuid eq playerUuid }
+        return db.from(BoundAccounts)
+            .select()
+            .where { BoundAccounts.playerUuid eq playerUuid }
+            .map { it.toBoundAccount() }
+            .firstOrNull()
     }
 
     fun findByBilibiliMid(bilibiliMid: Long, includeInactive: Boolean = false): BoundAccount? {
-        val active = boundAccounts.find { (it.bilibiliMid eq bilibiliMid) and (it.status eq 1) }
+        val active = db.from(BoundAccounts)
+            .select()
+            .where { (BoundAccounts.bilibiliMid eq bilibiliMid) and (BoundAccounts.status eq 1) }
+            .map { it.toBoundAccount() }
+            .firstOrNull()
         if (active != null || !includeInactive) {
             return active
         }
-        return boundAccounts.find { it.bilibiliMid eq bilibiliMid }
+        return db.from(BoundAccounts)
+            .select()
+            .where { BoundAccounts.bilibiliMid eq bilibiliMid }
+            .map { it.toBoundAccount() }
+            .firstOrNull()
     }
 
     fun findByPlayerName(playerName: String, includeInactive: Boolean = false): BoundAccount? {
-        val active = boundAccounts.find { (it.playerName eq playerName) and (it.status eq 1) }
+        val active = db.from(BoundAccounts)
+            .select()
+            .where { (BoundAccounts.playerName eq playerName) and (BoundAccounts.status eq 1) }
+            .map { it.toBoundAccount() }
+            .firstOrNull()
         if (active != null || !includeInactive) {
             return active
         }
-        return boundAccounts.find { it.playerName eq playerName }
+        return db.from(BoundAccounts)
+            .select()
+            .where { BoundAccounts.playerName eq playerName }
+            .map { it.toBoundAccount() }
+            .firstOrNull()
     }
 
     fun insert(
