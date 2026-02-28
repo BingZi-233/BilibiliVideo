@@ -49,8 +49,8 @@ val gsonVersion = "2.11.0"
 val zxingVersion = "3.5.2"
 
 dependencies {
-    compileOnly("ink.ptms.core:v12004:12004:mapped")
-    compileOnly("ink.ptms.core:v12004:12004:universal")
+    compileOnly("ink.ptms.core:v12111:12111:mapped")
+    compileOnly("ink.ptms.core:v12111:12111:universal")
     compileOnly(kotlin("stdlib"))
     compileOnly(kotlin("reflect"))
     compileOnly(fileTree("libs"))
