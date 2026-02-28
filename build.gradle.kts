@@ -52,7 +52,6 @@ dependencies {
     compileOnly("ink.ptms.core:v12111:12111:mapped")
     compileOnly("ink.ptms.core:v12111:12111:universal")
     compileOnly(kotlin("stdlib"))
-    compileOnly(kotlin("reflect"))
     compileOnly(fileTree("libs"))
     compileOnly("org.ktorm:ktorm-core:$ktormVersion")
     compileOnly("org.ktorm:ktorm-support-mysql:$ktormVersion")

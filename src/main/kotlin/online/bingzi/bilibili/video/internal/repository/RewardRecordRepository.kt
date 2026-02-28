@@ -4,12 +4,8 @@ import online.bingzi.bilibili.video.internal.database.DatabaseFactory
 import online.bingzi.bilibili.video.internal.database.SqliteWriteExecutor
 import online.bingzi.bilibili.video.internal.entity.RewardRecord
 import online.bingzi.bilibili.video.internal.entity.RewardRecords
-import org.ktorm.dsl.and
-import org.ktorm.dsl.eq
-import org.ktorm.dsl.insert
-import org.ktorm.entity.filter
-import org.ktorm.entity.sequenceOf
-import org.ktorm.entity.toList
+import online.bingzi.bilibili.video.internal.entity.toRewardRecord
+import org.ktorm.dsl.*
 
 /**
  * 奖励记录仓储。
@@ -18,18 +14,18 @@ internal object RewardRecordRepository {
 
     private val db get() = DatabaseFactory.database()
 
-    private val rewardRecords get() = db.sequenceOf(RewardRecords)
-
     fun findAllByPlayerAndTarget(playerUuid: String, targetKey: String): List<RewardRecord> {
-        return rewardRecords
-            .filter { (it.playerUuid eq playerUuid) and (it.targetKey eq targetKey) }
-            .toList()
+        return db.from(RewardRecords)
+            .select()
+            .where { (RewardRecords.playerUuid eq playerUuid) and (RewardRecords.targetKey eq targetKey) }
+            .map { it.toRewardRecord() }
     }
 
     fun findAllByBilibiliMidAndTarget(bilibiliMid: Long, targetKey: String): List<RewardRecord> {
-        return rewardRecords
-            .filter { (it.bilibiliMid eq bilibiliMid) and (it.targetKey eq targetKey) }
-            .toList()
+        return db.from(RewardRecords)
+            .select()
+            .where { (RewardRecords.bilibiliMid eq bilibiliMid) and (RewardRecords.targetKey eq targetKey) }
+            .map { it.toRewardRecord() }
     }
 
     fun findAllByPlayerAndBilibiliMidAndTarget(
@@ -37,13 +33,14 @@ internal object RewardRecordRepository {
         bilibiliMid: Long,
         targetKey: String
     ): List<RewardRecord> {
-        return rewardRecords
-            .filter {
-                (it.playerUuid eq playerUuid) and
-                        (it.bilibiliMid eq bilibiliMid) and
-                        (it.targetKey eq targetKey)
+        return db.from(RewardRecords)
+            .select()
+            .where {
+                (RewardRecords.playerUuid eq playerUuid) and
+                        (RewardRecords.bilibiliMid eq bilibiliMid) and
+                        (RewardRecords.targetKey eq targetKey)
             }
-            .toList()
+            .map { it.toRewardRecord() }
     }
 
     fun insert(

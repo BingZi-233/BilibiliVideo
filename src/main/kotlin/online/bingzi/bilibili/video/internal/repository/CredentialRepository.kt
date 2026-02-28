@@ -4,12 +4,8 @@ import online.bingzi.bilibili.video.internal.database.DatabaseFactory
 import online.bingzi.bilibili.video.internal.database.SqliteWriteExecutor
 import online.bingzi.bilibili.video.internal.entity.Credential
 import online.bingzi.bilibili.video.internal.entity.Credentials
-import org.ktorm.dsl.eq
-import org.ktorm.dsl.insert
-import org.ktorm.dsl.update
-import org.ktorm.entity.find
-import org.ktorm.entity.sequenceOf
-import org.ktorm.entity.toList
+import online.bingzi.bilibili.video.internal.entity.toCredential
+import org.ktorm.dsl.*
 
 /**
  * B 站凭证仓储。
@@ -18,14 +14,18 @@ internal object CredentialRepository {
 
     private val db get() = DatabaseFactory.database()
 
-    private val credentials get() = db.sequenceOf(Credentials)
-
     fun findByLabel(label: String): Credential? {
-        return credentials.find { it.label eq label }
+        return db.from(Credentials)
+            .select()
+            .where { Credentials.label eq label }
+            .map { it.toCredential() }
+            .firstOrNull()
     }
 
     fun findAll(): List<Credential> {
-        return credentials.toList()
+        return db.from(Credentials)
+            .select()
+            .map { it.toCredential() }
     }
 
     fun insert(
@@ -59,7 +59,11 @@ internal object CredentialRepository {
     }
 
     fun findByBilibiliMid(mid: Long): Credential? {
-        return credentials.find { it.bilibiliMid eq mid }
+        return db.from(Credentials)
+            .select()
+            .where { Credentials.bilibiliMid eq mid }
+            .map { it.toCredential() }
+            .firstOrNull()
     }
 
     fun updateStatusAndUsage(
