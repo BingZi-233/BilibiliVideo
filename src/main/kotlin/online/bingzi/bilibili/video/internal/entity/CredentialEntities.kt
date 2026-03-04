@@ -26,7 +26,10 @@ internal data class Credential(
     val lastUsedAt: Long? = null
 )
 
-internal object Credentials : Table<Nothing>(DATABASE_TABLE_PREFIX + "credential") {
+internal object Credentials : Table<NoEntity>(
+    DATABASE_TABLE_PREFIX + "credential",
+    entityClass = NoEntity::class
+) {
 
     val id = long("id").primaryKey()
     val label = varchar("label")
