@@ -20,7 +20,10 @@ internal data class RewardRecord(
     val failReason: String? = null
 )
 
-internal object RewardRecords : Table<Nothing>(DATABASE_TABLE_PREFIX + "reward_record") {
+internal object RewardRecords : Table<NoEntity>(
+    DATABASE_TABLE_PREFIX + "reward_record",
+    entityClass = NoEntity::class
+) {
 
     val id = long("id").primaryKey()
     val playerUuid = varchar("player_uuid")

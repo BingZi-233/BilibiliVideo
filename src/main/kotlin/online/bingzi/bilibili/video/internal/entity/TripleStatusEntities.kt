@@ -23,7 +23,10 @@ internal data class TripleStatus(
     val lastErrorMessage: String? = null
 )
 
-internal object TripleStatuses : Table<Nothing>(DATABASE_TABLE_PREFIX + "triple_status") {
+internal object TripleStatuses : Table<NoEntity>(
+    DATABASE_TABLE_PREFIX + "triple_status",
+    entityClass = NoEntity::class
+) {
 
     val id = long("id").primaryKey()
     val playerUuid = varchar("player_uuid")

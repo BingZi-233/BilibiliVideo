@@ -27,15 +27,18 @@ import taboolib.common.env.RuntimeDependency
     ),
     RuntimeDependency(
         value = "!org.ktorm:ktorm-core:3.6.0",
-        test = "!org.ktorm.database.Database"
+        test = "!org.ktorm.database.Database",
+        transitive = false
     ),
     RuntimeDependency(
         value = "!org.ktorm:ktorm-support-mysql:3.6.0",
-        test = "!org.ktorm.support.mysql.MySqlDialect"
+        test = "!org.ktorm.support.mysql.MySqlDialect",
+        transitive = false
     ),
     RuntimeDependency(
         value = "!org.ktorm:ktorm-support-sqlite:3.6.0",
-        test = "!org.ktorm.support.sqlite.SQLiteDialect"
+        test = "!org.ktorm.support.sqlite.SQLiteDialect",
+        transitive = false
     ),
     RuntimeDependency(
         value = "!com.zaxxer:HikariCP:4.0.3",

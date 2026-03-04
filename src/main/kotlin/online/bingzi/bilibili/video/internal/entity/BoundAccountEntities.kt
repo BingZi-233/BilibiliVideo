@@ -21,7 +21,10 @@ internal data class BoundAccount(
     val updatedAt: Long
 )
 
-internal object BoundAccounts : Table<Nothing>(DATABASE_TABLE_PREFIX + "bound_account") {
+internal object BoundAccounts : Table<NoEntity>(
+    DATABASE_TABLE_PREFIX + "bound_account",
+    entityClass = NoEntity::class
+) {
 
     val id = long("id").primaryKey()
     val playerUuid = varchar("player_uuid")
