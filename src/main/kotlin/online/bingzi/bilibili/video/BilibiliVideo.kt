@@ -20,7 +20,7 @@ object BilibiliVideo : Plugin() {
     override fun onEnable() {
         info("正在启动 BilibiliVideo 插件...")
         DatabaseFactory.initFromConfig()
-        // 注册 PlaceholderAPI 的 BiliBiliVideoExpansion 类
+        // 注册 PlaceholderAPI 的 PlaceholderExpansion 类
         if (Bukkit.getPluginManager().getPlugin("PlaceholderAPI") != null) {
             PlaceholderRegistry.init()
         }
