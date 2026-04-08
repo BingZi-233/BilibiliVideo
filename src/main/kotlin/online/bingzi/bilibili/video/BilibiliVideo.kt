@@ -2,6 +2,8 @@ package online.bingzi.bilibili.video
 
 import online.bingzi.bilibili.video.internal.credential.QrLoginService
 import online.bingzi.bilibili.video.internal.database.DatabaseFactory
+import online.bingzi.bilibili.video.internal.placeholder.PlaceholderRegistry
+import org.bukkit.Bukkit
 import taboolib.common.platform.Platform
 import taboolib.common.platform.Plugin
 import taboolib.common.platform.function.info
@@ -18,6 +20,10 @@ object BilibiliVideo : Plugin() {
     override fun onEnable() {
         info("正在启动 BilibiliVideo 插件...")
         DatabaseFactory.initFromConfig()
+        // 注册 PlaceholderAPI 的 BiliBiliVideoExpansion 类
+        if (Bukkit.getPluginManager().getPlugin("PlaceholderAPI") != null) {
+            PlaceholderRegistry.init()
+        }
         info("BilibiliVideo 插件启动完成！")
     }
 

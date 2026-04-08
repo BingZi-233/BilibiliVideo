@@ -11,6 +11,14 @@ plugins {
     id("idea")
 }
 
+repositories {
+    mavenCentral()
+    maven {
+        name = "placeholderapi"
+        url = uri("https://repo.extendedclip.com/content/repositories/placeholderapi/")
+    }
+}
+
 taboolib {
     env {
         install(Basic)
@@ -47,6 +55,7 @@ val okhttpVersion = "4.12.0"
 val okioVersion = "3.6.0"
 val gsonVersion = "2.11.0"
 val zxingVersion = "3.5.2"
+val placeholderapi = "2.11.5"
 
 dependencies {
     compileOnly("ink.ptms.core:v12111:12111:mapped")
@@ -63,6 +72,7 @@ dependencies {
     compileOnly("com.squareup.okio:okio-jvm:$okioVersion")
     compileOnly("com.google.code.gson:gson:$gsonVersion")
     compileOnly("com.google.zxing:core:$zxingVersion")
+    compileOnly("me.clip:placeholderapi:$placeholderapi")
 }
 
 tasks.withType<JavaCompile> {
