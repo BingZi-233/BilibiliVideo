@@ -14,6 +14,11 @@ import taboolib.common.env.RuntimeDependency
  */
 @RuntimeDependencies(
     RuntimeDependency(
+        value = "!org.jetbrains.kotlin:kotlin-reflect:2.2.0",
+        test = "!kotlin.reflect.full.KClasses",
+        transitive = false
+    ),
+    RuntimeDependency(
         value = "!com.squareup.okhttp3:okhttp:4.12.0",
         test = "!okhttp3.OkHttpClient"
     ),
