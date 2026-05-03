@@ -1,11 +1,13 @@
 package online.bingzi.bilibili.video.internal.nms
 
+import online.bingzi.bilibili.video.internal.nms.NMSReflectionToolkit.ArgRole
 import org.bukkit.Bukkit
 import org.bukkit.entity.Player
 import org.bukkit.inventory.ItemStack
 import org.bukkit.map.MapView
 import taboolib.module.nms.MinecraftVersion
 import taboolib.module.nms.sendPacket
+import java.lang.reflect.Constructor
 import java.util.Optional
 import java.util.concurrent.ConcurrentHashMap
 
@@ -14,11 +16,12 @@ import java.util.concurrent.ConcurrentHashMap
  *
  * 通过启发式反射跨版本兼容（1.12 - 当前 + 前瞻 26.X.X）。
  *
- * 核心策略：
- * - 类查找走多候选注册表，覆盖 Mojang / Spigot / 历史命名 + 26.X 重定位猜测。
- * - 构造函数走启发式参数填充，自动适配新增 / 变更字段。
- * - 版本判定独立于 [MinecraftVersion.isUniversal]，按运行时类存在性探测。
- * - 关键失败点 warn-once，便于用户上报真实签名。
+ * 分层执行链：
+ * - L0：ResolvedCtor 缓存（按 packetClass:role 命中即跳过反射）
+ * - L2：语义启发式（Record component name → 参数名字典 → 泛型类型）
+ * - L3：纯类型启发式（兼容老版本 + 名字不可读时的 safety net）
+ * - L4：构造后字段校验（advisory，warn-once；strict 模式抛出回退下一 ctor）
+ * - L5：全部失败 → 完整诊断信息
  */
 @Suppress("unused")
 class NMSPacketHandlerImpl : NMSPacketHandler() {
@@ -44,9 +47,6 @@ class NMSPacketHandlerImpl : NMSPacketHandler() {
         player.sendPacket(packet)
     }
 
-    /**
-     * 将 Bukkit ItemStack 转换为 NMS ItemStack。
-     */
     private fun asNMSCopy(item: ItemStack): Any {
         val craftItemStackClass = obcClass("inventory.CraftItemStack")
         val method = craftItemStackClass.getMethod("asNMSCopy", ItemStack::class.java)
@@ -54,37 +54,38 @@ class NMSPacketHandlerImpl : NMSPacketHandler() {
     }
 
     /**
-     * 创建 PacketPlayOutSetSlot 包（启发式构造发现）。
+     * 创建 PacketPlayOutSetSlot 包。
      *
      * 历史签名：
      * - 1.12 - 1.16.5：(int windowId, int slot, ItemStack)
      * - 1.17 - 1.21.X：(int windowId, int stateId, int slot, ItemStack)
-     * - 26.X.X：未知，可能在前述基础上插入 ContainerId 值类等。
+     * - 26.X.X：未知，可能引入 ContainerId 值类等。
      */
     private fun createSetSlotPacket(windowId: Int, slot: Int, nmsItem: Any): Any {
         val packetClass = nmsClass("PacketPlayOutSetSlot")
         val itemStackClass = nmsClassOrNull("ItemStack")
+        val cacheKey = "${packetClass.name}:setSlot"
+
+        resolvedCtorCache[cacheKey]?.let { resolved ->
+            val args = resolved.argBuilder(
+                mapOf(
+                    ArgRole.WINDOW_ID to windowId,
+                    ArgRole.STATE_ID to 0,
+                    ArgRole.SLOT to slot,
+                    ArgRole.ITEM_STACK to nmsItem
+                )
+            )
+            return resolved.ctor.newInstance(*args)
+        }
 
         val constructors = packetClass.constructors.sortedByDescending { it.parameterCount }
         val errors = mutableListOf<String>()
 
         for (constructor in constructors) {
-            try {
-                val args = buildArgsForSetSlot(
-                    constructor.parameterTypes,
-                    windowId = windowId,
-                    stateId = 0,
-                    slot = slot,
-                    nmsItem = nmsItem,
-                    itemStackClass = itemStackClass
-                )
-                if (args != null) {
-                    return constructor.newInstance(*args)
-                } else {
-                    errors.add("${constructor.parameterTypes.map { it.simpleName }}: unsupported param type")
-                }
-            } catch (e: Exception) {
-                errors.add("${constructor.parameterTypes.map { it.simpleName }}: ${e.message}")
+            val attempt = tryConstructSetSlot(constructor, windowId, slot, nmsItem, itemStackClass, errors)
+            if (attempt != null) {
+                cacheSetSlotCtor(cacheKey, constructor, itemStackClass)
+                return attempt
             }
         }
 
@@ -92,52 +93,138 @@ class NMSPacketHandlerImpl : NMSPacketHandler() {
         warnOnce(
             "setSlot:${packetClass.name}",
             "[BilibiliVideo NMS] PacketPlayOutSetSlot 构造发现失败 mc=${MinecraftVersion.minecraftVersion} " +
-                "signatures=$signatures errors=$errors"
+                    "isRecord=${NMSReflectionToolkit.isRecord(packetClass)} " +
+                    "signatures=$signatures errors=$errors"
         )
         throw IllegalStateException(
             "No suitable PacketPlayOutSetSlot constructor for ${MinecraftVersion.minecraftVersion}.\n" +
-                "Available: $signatures\nErrors: $errors"
+                    "Available: $signatures\nErrors: $errors"
+        )
+    }
+
+    private fun tryConstructSetSlot(
+        constructor: Constructor<*>,
+        windowId: Int,
+        slot: Int,
+        nmsItem: Any,
+        itemStackClass: Class<*>?,
+        errors: MutableList<String>
+    ): Any? {
+        return try {
+            val args = buildArgsForSetSlot(
+                constructor,
+                windowId = windowId,
+                stateId = 0,
+                slot = slot,
+                nmsItem = nmsItem,
+                itemStackClass = itemStackClass
+            ) ?: run {
+                errors.add("${constructor.parameterTypes.map { it.simpleName }}: unsupported param type")
+                return null
+            }
+            val packet = constructor.newInstance(*args)
+            verifySetSlot(packet, windowId, slot, constructor, errors)?.let { return it }
+            packet
+        } catch (e: Exception) {
+            errors.add("${constructor.parameterTypes.map { it.simpleName }}: ${e.message}")
+            null
+        }
+    }
+
+    private fun verifySetSlot(packet: Any, windowId: Int, slot: Int, ctor: Constructor<*>, errors: MutableList<String>): Any? {
+        val expected = mapOf(
+            "slot" to slot,
+            "slotId" to slot,
+            "i" to slot,
+            "windowId" to windowId,
+            "containerId" to windowId
+        )
+        val mismatches = NMSReflectionToolkit.verifyPacketFields(packet, expected)
+        if (mismatches.isEmpty()) return null
+        val key = "verifySetSlot:${ctor.parameterTypes.map { it.simpleName }}"
+        warnOnce(
+            key,
+            "[BilibiliVideo NMS] SetSlot 构造校验告警 ctor=${ctor.parameterTypes.map { it.simpleName }} " +
+                    "mismatches=$mismatches (advisory; 设置 -Dbilibilivideo.nms.strict=true 切换到严格模式)"
+        )
+        if (strictMode) {
+            errors.add("${ctor.parameterTypes.map { it.simpleName }}: verify failed $mismatches")
+            return null
+        }
+        return packet
+    }
+
+    private fun cacheSetSlotCtor(key: String, ctor: Constructor<*>, itemStackClass: Class<*>?) {
+        resolvedCtorCache[key] = NMSReflectionToolkit.ResolvedCtor(
+            ctor = ctor,
+            argBuilder = { inputs ->
+                val windowId = inputs[ArgRole.WINDOW_ID] as Int
+                val stateId = inputs[ArgRole.STATE_ID] as Int
+                val slot = inputs[ArgRole.SLOT] as Int
+                val nmsItem = inputs[ArgRole.ITEM_STACK]!!
+                buildArgsForSetSlot(ctor, windowId, stateId, slot, nmsItem, itemStackClass)!!
+            }
         )
     }
 
     /**
      * 启发式构建 SetSlot 构造参数。
      *
-     * int 队列：[windowId, stateId, slot]，溢出补 0。
-     * 单 int 构造的非原生非 ItemStack 类视为 ContainerId-style 值类，传 windowId。
+     * 顺序：
+     * 1. 参数名 / Record component name → ArgRole 字典
+     * 2. 类型 + Optional 泛型识别
+     * 3. int 队列 [windowId, stateId, slot] 兜底
      */
     private fun buildArgsForSetSlot(
-        paramTypes: Array<Class<*>>,
+        ctor: Constructor<*>,
         windowId: Int,
         stateId: Int,
         slot: Int,
         nmsItem: Any,
         itemStackClass: Class<*>?
     ): Array<Any>? {
+        val paramTypes = ctor.parameterTypes
+        val parameters = ctor.parameters
+        val recordRoles = recordRolesFor(ctor.declaringClass, paramTypes.size)
         val intQueue = ArrayDeque(listOf(windowId, stateId, slot))
         val args = mutableListOf<Any>()
 
-        for (paramType in paramTypes) {
-            val arg: Any = when {
-                paramType == Int::class.javaPrimitiveType || paramType == Int::class.java -> {
-                    if (intQueue.isNotEmpty()) intQueue.removeFirst() else 0
-                }
-                paramType == Boolean::class.javaPrimitiveType || paramType == Boolean::class.java -> false
-                paramType == Byte::class.javaPrimitiveType || paramType == Byte::class.java -> 0.toByte()
-                Optional::class.java == paramType -> Optional.empty<Any>()
-                Collection::class.java.isAssignableFrom(paramType) -> emptyList<Any>()
-                itemStackClass != null && paramType.isAssignableFrom(itemStackClass) -> nmsItem
-                paramType.simpleName == "ItemStack" -> nmsItem
-                else -> {
-                    // 尝试将非原生类视为 int 值类（ContainerId 等）
-                    val viaInt = tryConstructFromInt(paramType, windowId)
-                    viaInt ?: return null
-                }
+        for (i in paramTypes.indices) {
+            val paramType = paramTypes[i]
+            val role = resolveRole(parameters.getOrNull(i)?.let { if (it.isNamePresent) it.name else null }, recordRoles, i)
+            val arg: Any? = when (role) {
+                ArgRole.WINDOW_ID -> windowId
+                ArgRole.STATE_ID -> stateId
+                ArgRole.SLOT -> slot
+                ArgRole.ITEM_STACK -> nmsItem
+                else -> resolveSetSlotByType(paramType, intQueue, nmsItem, itemStackClass, windowId)
             }
+            if (arg == null) return null
             args.add(arg)
         }
-
         return args.toTypedArray()
+    }
+
+    private fun resolveSetSlotByType(
+        paramType: Class<*>,
+        intQueue: ArrayDeque<Int>,
+        nmsItem: Any,
+        itemStackClass: Class<*>?,
+        windowId: Int
+    ): Any? {
+        return when {
+            paramType == Int::class.javaPrimitiveType || paramType == Int::class.java -> {
+                if (intQueue.isNotEmpty()) intQueue.removeFirst() else 0
+            }
+            paramType == Boolean::class.javaPrimitiveType || paramType == Boolean::class.java -> false
+            paramType == Byte::class.javaPrimitiveType || paramType == Byte::class.java -> 0.toByte()
+            Optional::class.java == paramType -> Optional.empty<Any>()
+            Collection::class.java.isAssignableFrom(paramType) -> emptyList<Any>()
+            itemStackClass != null && paramType.isAssignableFrom(itemStackClass) -> nmsItem
+            paramType.simpleName == "ItemStack" -> nmsItem
+            NMSReflectionToolkit.isLikelyIntWrapper(paramType) -> tryConstructFromInt(paramType, windowId)
+            else -> null
+        }
     }
 
     private fun tryConstructFromInt(type: Class<*>, value: Int): Any? {
@@ -152,9 +239,6 @@ class NMSPacketHandlerImpl : NMSPacketHandler() {
 
     /**
      * 解析 NMS 类（多候选 + 缓存）。
-     *
-     * 1.17+ 走候选注册表，自动覆盖 Mojang / Spigot 命名。
-     * 1.16.5 - 走 net.minecraft.server.$version.$name。
      */
     private fun nmsClass(name: String): Class<*> {
         nmsClassCache[name]?.let { return it }
@@ -172,7 +256,7 @@ class NMSPacketHandlerImpl : NMSPacketHandler() {
             warnOnce(
                 "nmsClass:$name",
                 "[BilibiliVideo NMS] $name 全候选未命中 mc=${MinecraftVersion.minecraftVersion} " +
-                    "candidates=$candidates loader=${Bukkit.getServer().javaClass.classLoader}"
+                        "candidates=$candidates loader=${Bukkit.getServer().javaClass.classLoader}"
             )
             throw ClassNotFoundException("None of the classes found for '$name': ${candidates.joinToString()}")
         } else {
@@ -191,14 +275,6 @@ class NMSPacketHandlerImpl : NMSPacketHandler() {
         }
     }
 
-    /**
-     * 获取 OBC (org.bukkit.craftbukkit) 类。
-     *
-     * 1.20.5+ / Folia / 26.X：org.bukkit.craftbukkit.xxx（无版本字符串）
-     * 1.20.4-：org.bukkit.craftbukkit.v1_XX_RX.xxx
-     *
-     * 即使 minecraftVersion 报非 UNKNOWN，也会兜底尝试无版本路径，防 26.X 报 "26.X.X" 但实际无版本化包。
-     */
     private fun obcClass(name: String): Class<*> {
         val version = MinecraftVersion.minecraftVersion
         if (version == "UNKNOWN") {
@@ -213,26 +289,19 @@ class NMSPacketHandlerImpl : NMSPacketHandler() {
 
     /**
      * 从 MapView 获取地图 ID。
+     *
+     * 多名探测：getId / getMapId / id 方法 → int 字段名 id / mapId。
      */
     private fun resolveMapId(mapView: MapView): Int {
-        return try {
-            val method = mapView.javaClass.getMethod("getId")
-            val result = method.invoke(mapView)
-            when (result) {
-                is Number -> result.toInt()
-                else -> 0
-            }
-        } catch (_: Throwable) {
-            0
-        }
+        NMSReflectionToolkit.probeIntMethod(mapView, listOf("getId", "getMapId", "id"))?.let { return it }
+        NMSReflectionToolkit.probeIntField(mapView, listOf("id", "mapId"))?.let { return it }
+        warnOnce(
+            "resolveMapId:${mapView.javaClass.name}",
+            "[BilibiliVideo NMS] resolveMapId 未命中任何已知方法/字段 cls=${mapView.javaClass.name}"
+        )
+        return 0
     }
 
-    /**
-     * 创建 PacketPlayOutMap 包。
-     *
-     * 1.17+：PacketPlayOutMap(MapId, scale, locked, icons, MapPatch)
-     * 1.12-1.16.5：PacketPlayOutMap(mapId, scale, trackingPosition, locked, icons, startX, startY, width, height, data)
-     */
     private fun createMapPacket(mapId: Int, colors: ByteArray): Any {
         return if (isModernNms) {
             createMapPacket117Plus(mapId, colors)
@@ -243,40 +312,36 @@ class NMSPacketHandlerImpl : NMSPacketHandler() {
 
     /**
      * 1.17+ 地图数据包构建。
+     *
+     * 走泛型解析 Optional<MapPatch> 精准定位 mapPatch 槽位（不再依赖 optionalIndex 顺位假设）。
+     * trackingPosition 等命名 boolean 修正为语义正确值（true）。
      */
     private fun createMapPacket117Plus(mapId: Int, colors: ByteArray): Any {
         val packetClass = nmsClass("PacketPlayOutMap")
         val mapIdClass = nmsClassOrNull("MapId")
-        val mapIdObj = mapIdClass?.let {
-            try {
-                val mapIdConstructor = it.getConstructor(Int::class.javaPrimitiveType)
-                mapIdConstructor.newInstance(mapId)
-            } catch (_: Throwable) {
-                null
-            }
-        }
+        val mapPatchClass = nmsClassOrNull("MapPatch")
+        val mapIdObj = mapIdClass?.let { tryConstructFromInt(it, mapId) }
+        val mapPatch = createMapPatchOrNull(mapPatchClass, colors)
 
-        val mapPatch = createMapPatchOrNull(colors)
+        val cacheKey = "${packetClass.name}:map117"
+        resolvedCtorCache[cacheKey]?.let { resolved ->
+            val args = resolved.argBuilder(
+                mapOf(
+                    ArgRole.MAP_ID to (mapIdObj ?: mapId),
+                    ArgRole.MAP_PATCH to mapPatch
+                )
+            )
+            return resolved.ctor.newInstance(*args)
+        }
 
         val constructors = packetClass.constructors.sortedByDescending { it.parameterCount }
         val errors = mutableListOf<String>()
 
         for (constructor in constructors) {
-            try {
-                val args = buildArgsForMapPacket117Plus(
-                    constructor.parameterTypes,
-                    mapId,
-                    mapIdClass,
-                    mapIdObj,
-                    mapPatch
-                )
-                if (args != null) {
-                    return constructor.newInstance(*args)
-                } else {
-                    errors.add("${constructor.parameterTypes.map { it.simpleName }}: unsupported param type")
-                }
-            } catch (e: Exception) {
-                errors.add("${constructor.parameterTypes.map { it.simpleName }}: ${e.message}")
+            val attempt = tryConstructMap117(constructor, mapId, mapIdClass, mapIdObj, mapPatchClass, mapPatch, errors)
+            if (attempt != null) {
+                cacheMap117Ctor(cacheKey, constructor, mapId, mapIdClass, mapPatchClass)
+                return attempt
             }
         }
 
@@ -284,11 +349,83 @@ class NMSPacketHandlerImpl : NMSPacketHandler() {
         warnOnce(
             "mapPacket117:${packetClass.name}",
             "[BilibiliVideo NMS] PacketPlayOutMap(modern) 构造发现失败 mc=${MinecraftVersion.minecraftVersion} " +
-                "signatures=$signatures errors=$errors"
+                    "isRecord=${NMSReflectionToolkit.isRecord(packetClass)} " +
+                    "signatures=$signatures errors=$errors"
         )
         throw IllegalStateException(
             "No suitable PacketPlayOutMap constructor found for ${MinecraftVersion.minecraftVersion}.\n" +
-                "Available: $signatures\nErrors: $errors"
+                    "Available: $signatures\nErrors: $errors"
+        )
+    }
+
+    private fun tryConstructMap117(
+        constructor: Constructor<*>,
+        mapId: Int,
+        mapIdClass: Class<*>?,
+        mapIdObj: Any?,
+        mapPatchClass: Class<*>?,
+        mapPatch: Any?,
+        errors: MutableList<String>
+    ): Any? {
+        return try {
+            val args = buildArgsForMapPacket117Plus(
+                constructor,
+                mapId = mapId,
+                mapIdClass = mapIdClass,
+                mapIdObj = mapIdObj,
+                mapPatchClass = mapPatchClass,
+                mapPatch = mapPatch
+            ) ?: run {
+                errors.add("${constructor.parameterTypes.map { it.simpleName }}: unsupported param type")
+                return null
+            }
+            val packet = constructor.newInstance(*args)
+            verifyMapPacket(packet, mapId, constructor, errors)?.let { return it }
+            packet
+        } catch (e: Exception) {
+            errors.add("${constructor.parameterTypes.map { it.simpleName }}: ${e.message}")
+            null
+        }
+    }
+
+    private fun verifyMapPacket(packet: Any, mapId: Int, ctor: Constructor<*>, errors: MutableList<String>): Any? {
+        val expected = mapOf("mapId" to mapId, "id" to mapId)
+        val mismatches = NMSReflectionToolkit.verifyPacketFields(packet, expected)
+        if (mismatches.isEmpty()) return null
+        val key = "verifyMap:${ctor.parameterTypes.map { it.simpleName }}"
+        warnOnce(
+            key,
+            "[BilibiliVideo NMS] Map 构造校验告警 ctor=${ctor.parameterTypes.map { it.simpleName }} " +
+                    "mismatches=$mismatches (advisory; 设置 -Dbilibilivideo.nms.strict=true 切换到严格模式)"
+        )
+        if (strictMode) {
+            errors.add("${ctor.parameterTypes.map { it.simpleName }}: verify failed $mismatches")
+            return null
+        }
+        return packet
+    }
+
+    private fun cacheMap117Ctor(
+        key: String,
+        ctor: Constructor<*>,
+        mapId: Int,
+        mapIdClass: Class<*>?,
+        mapPatchClass: Class<*>?
+    ) {
+        resolvedCtorCache[key] = NMSReflectionToolkit.ResolvedCtor(
+            ctor = ctor,
+            argBuilder = { inputs ->
+                val mapIdValue = inputs[ArgRole.MAP_ID]
+                val mapPatch = inputs[ArgRole.MAP_PATCH]
+                buildArgsForMapPacket117Plus(
+                    ctor,
+                    mapId = (mapIdValue as? Int) ?: mapId,
+                    mapIdClass = mapIdClass,
+                    mapIdObj = if (mapIdValue != null && mapIdValue !is Int) mapIdValue else null,
+                    mapPatchClass = mapPatchClass,
+                    mapPatch = mapPatch
+                )!!
+            }
         )
     }
 
@@ -305,66 +442,79 @@ class NMSPacketHandlerImpl : NMSPacketHandler() {
         }
     }
 
-    private fun createMapPatchOrNull(colors: ByteArray): Any? {
-        val mapPatchClass = nmsClassOrNull("MapPatch") ?: return null
+    /**
+     * 通过形状扫描定位 MapPatch 构造函数（4×int + byte[]）。
+     */
+    private fun createMapPatchOrNull(mapPatchClass: Class<*>?, colors: ByteArray): Any? {
+        if (mapPatchClass == null) return null
+        val descriptor = NMSReflectionToolkit.findMapPatchCtor(mapPatchClass) ?: return null
         return try {
-            val mapPatchConstructor = mapPatchClass.getConstructor(
-                Int::class.javaPrimitiveType,
-                Int::class.javaPrimitiveType,
-                Int::class.javaPrimitiveType,
-                Int::class.javaPrimitiveType,
-                ByteArray::class.java
+            val args = NMSReflectionToolkit.buildMapPatchArgs(descriptor, 0, 0, 128, 128, colors)
+            descriptor.ctor.newInstance(*args)
+        } catch (e: Throwable) {
+            warnOnce(
+                "mapPatchCtor:${mapPatchClass.name}",
+                "[BilibiliVideo NMS] MapPatch 构造失败 cls=${mapPatchClass.name} " +
+                        "ctor=${descriptor.ctor.parameterTypes.map { it.simpleName }} order=${descriptor.argOrder} err=${e.message}"
             )
-            mapPatchConstructor.newInstance(0, 0, 128, 128, colors)
-        } catch (_: Throwable) {
             null
         }
     }
 
+    /**
+     * 1.17+ Map packet 参数构建。
+     *
+     * 关键改进：
+     * - Optional<MapPatch>：用泛型签名解析；元素类型匹配 MapPatch → Optional.of(mapPatch)，否则 Optional.empty()
+     * - 参数名识别 trackingPosition / locked → 语义正确填值（trackingPosition 默认 true）
+     */
     private fun buildArgsForMapPacket117Plus(
-        paramTypes: Array<Class<*>>,
+        ctor: Constructor<*>,
         mapId: Int,
         mapIdClass: Class<*>?,
         mapIdObj: Any?,
+        mapPatchClass: Class<*>?,
         mapPatch: Any?
     ): Array<Any>? {
+        val paramTypes = ctor.parameterTypes
+        val parameters = ctor.parameters
+        val genericTypes = ctor.genericParameterTypes
+        val recordRoles = recordRolesFor(ctor.declaringClass, paramTypes.size)
         val args = mutableListOf<Any>()
-        var optionalIndex = 0
 
-        for (paramType in paramTypes) {
-            val arg = when {
-                mapIdClass != null && paramType == mapIdClass -> mapIdObj ?: return null
+        for (i in paramTypes.indices) {
+            val paramType = paramTypes[i]
+            val role = resolveRole(parameters.getOrNull(i)?.let { if (it.isNamePresent) it.name else null }, recordRoles, i)
+            val arg: Any? = when {
+                mapIdClass != null && paramType == mapIdClass -> mapIdObj
+                role == ArgRole.MAP_ID && (paramType == Int::class.javaPrimitiveType || paramType == Int::class.java) -> mapId
+                role == ArgRole.LOCKED -> false
+                role == ArgRole.TRACKING_POSITION -> true
+                role == ArgRole.SCALE -> 0.toByte()
+                role == ArgRole.DECORATIONS -> emptyList<Any>()
+                role == ArgRole.MAP_PATCH -> mapPatch
+                paramType == Optional::class.java -> resolveOptionalArg(genericTypes[i], mapPatchClass, mapPatch)
                 paramType == Int::class.javaPrimitiveType || paramType == Int::class.java -> mapId
                 paramType == Byte::class.javaPrimitiveType || paramType == Byte::class.java -> 0.toByte()
                 paramType == Boolean::class.javaPrimitiveType || paramType == Boolean::class.java -> false
-                Optional::class.java == paramType -> {
-                    val value = if (optionalIndex == 0) {
-                        Optional.empty<Any>()
-                    } else {
-                        if (mapPatch != null) Optional.of(mapPatch) else Optional.empty<Any>()
-                    }
-                    optionalIndex++
-                    value
-                }
                 Collection::class.java.isAssignableFrom(paramType) -> emptyList<Any>()
-                paramType.name.endsWith("MapPatch") || paramType.name.endsWith("WorldMap\$b") || paramType.name.endsWith("Patch") -> mapPatch ?: return null
-                else -> return null
+                paramType.name.endsWith("MapPatch") || paramType.name.endsWith("WorldMap\$b") || paramType.name.endsWith("Patch") -> mapPatch
+                else -> null
             }
+            if (arg == null) return null
             args.add(arg)
         }
-
         return args.toTypedArray()
     }
 
-    /**
-     * 1.12-1.16.5 地图数据包构建（启发式自动兼容）。
-     *
-     * - int 队列：[mapId, startX(0), startY(0), width(128), height(128)]
-     * - byte: scale = 0
-     * - boolean: trackingPosition / locked = false
-     * - Collection: icons = emptyList
-     * - byte[]: colors
-     */
+    private fun resolveOptionalArg(genericType: java.lang.reflect.Type, mapPatchClass: Class<*>?, mapPatch: Any?): Any {
+        val element = NMSReflectionToolkit.optionalElementType(genericType)
+        if (mapPatchClass != null && element != null && mapPatchClass.isAssignableFrom(element) && mapPatch != null) {
+            return Optional.of(mapPatch)
+        }
+        return Optional.empty<Any>()
+    }
+
     private fun createMapPacketLegacy(mapId: Int, colors: ByteArray): Any {
         val packetClass = nmsClass("PacketPlayOutMap")
 
@@ -378,11 +528,11 @@ class NMSPacketHandlerImpl : NMSPacketHandler() {
             warnOnce(
                 "mapPacketLegacy:${packetClass.name}",
                 "[BilibiliVideo NMS] PacketPlayOutMap(legacy) 无可用构造 mc=${MinecraftVersion.minecraftVersion} " +
-                    "signatures=$signatures"
+                        "signatures=$signatures"
             )
             throw IllegalStateException(
                 "No PacketPlayOutMap constructor with >= 8 params for ${MinecraftVersion.minecraftVersion}.\n" +
-                    "All constructors: $signatures"
+                        "All constructors: $signatures"
             )
         }
 
@@ -405,18 +555,16 @@ class NMSPacketHandlerImpl : NMSPacketHandler() {
         warnOnce(
             "mapPacketLegacy:${packetClass.name}",
             "[BilibiliVideo NMS] PacketPlayOutMap(legacy) 构造发现失败 mc=${MinecraftVersion.minecraftVersion} " +
-                "signatures=$signatures errors=$errors"
+                    "signatures=$signatures errors=$errors"
         )
         throw IllegalStateException(
             "No suitable PacketPlayOutMap constructor found for ${MinecraftVersion.minecraftVersion}.\n" +
-                "Available: $signatures\nErrors: $errors"
+                    "Available: $signatures\nErrors: $errors"
         )
     }
 
     /**
-     * 启发式构建参数数组。
-     *
-     * 根据参数类型自动推断填充值，无需硬编码版本签名。
+     * 老版本（1.12 - 1.16.5）类型启发式参数构建。
      */
     private fun buildArgsHeuristically(paramTypes: Array<Class<*>>, mapId: Int, colors: ByteArray): Array<Any>? {
         val args = mutableListOf<Any>()
@@ -435,19 +583,33 @@ class NMSPacketHandlerImpl : NMSPacketHandler() {
             }
             args.add(arg)
         }
-
         return args.toTypedArray()
     }
 
     /**
-     * 启动一次性诊断探针，便于 Issue 上报复现环境。
+     * 读取 [ctorOwner] 的 Record component 名映射到 ArgRole（如果是 Record）。
+     *
+     * 仅当 component 数量与构造参数数量一致时使用，避免合成 ctor 错位。
      */
+    private fun recordRolesFor(ctorOwner: Class<*>, paramCount: Int): List<ArgRole>? {
+        val comps = NMSReflectionToolkit.recordComponents(ctorOwner) ?: return null
+        if (comps.size != paramCount) return null
+        return comps.map { NMSReflectionToolkit.roleOf(it.name) }
+    }
+
+    private fun resolveRole(paramName: String?, recordRoles: List<ArgRole>?, index: Int): ArgRole {
+        val byName = NMSReflectionToolkit.roleOf(paramName)
+        if (byName != ArgRole.UNKNOWN) return byName
+        return recordRoles?.getOrNull(index) ?: ArgRole.UNKNOWN
+    }
+
     private fun logStartupProbe() {
         if (!startupProbeLogged.compareAndSet(false, true)) return
         val mc = try { MinecraftVersion.minecraftVersion } catch (_: Throwable) { "?" }
         val universal = try { MinecraftVersion.isUniversal } catch (_: Throwable) { false }
         Bukkit.getLogger().info(
-            "[BilibiliVideo NMS] modern=$isModernNms mcVersion=$mc isUniversal=$universal obcUnknown=${mc == "UNKNOWN"}"
+            "[BilibiliVideo NMS] modern=$isModernNms mcVersion=$mc isUniversal=$universal " +
+                    "obcUnknown=${mc == "UNKNOWN"} strict=$strictMode"
         )
     }
 
@@ -459,16 +621,19 @@ class NMSPacketHandlerImpl : NMSPacketHandler() {
 
     /**
      * 运行时探测是否处于 1.17+ NMS 包结构（含 26.X.X）。
-     *
-     * 不依赖 [MinecraftVersion.isUniversal]，避免 26.X.X 命名跳跃导致误判。
      */
     private val isModernNms: Boolean by lazy {
         loadClassOrNull("net.minecraft.network.protocol.game.PacketPlayOutSetSlot") != null ||
-            loadClassOrNull("net.minecraft.network.protocol.game.ClientboundContainerSetSlotPacket") != null
+                loadClassOrNull("net.minecraft.network.protocol.game.ClientboundContainerSetSlotPacket") != null
+    }
+
+    private val strictMode: Boolean by lazy {
+        System.getProperty("bilibilivideo.nms.strict") == "true"
     }
 
     private val nmsClassCache = ConcurrentHashMap<String, Class<*>>()
     private val warnedKeys = ConcurrentHashMap.newKeySet<String>()
+    private val resolvedCtorCache = ConcurrentHashMap<String, NMSReflectionToolkit.ResolvedCtor>()
     private val startupProbeLogged = java.util.concurrent.atomic.AtomicBoolean(false)
 
     companion object {
