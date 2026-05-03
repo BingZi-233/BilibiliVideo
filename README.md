@@ -1,7 +1,6 @@
 <div align="center">
 
-# 🎬 BilibiliVideo
-
+![b55448b2819aee143bb2b9cd5aa4dd98.jpg](images/b55448b2819aee143bb2b9cd5aa4dd98.jpg)
 **一个让 Minecraft 与哔哩哔哩无缝对接的全功能插件**
 
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
