@@ -22,7 +22,6 @@ Thumbs.db
 # Environment & local config
 .env
 .env.*
-.mcp.json
 
 combined.log
 error.log
@@ -30,3 +29,4 @@ openspec/
 AGENTS.md
 CLAUDE.md
 .kotlin
+.code-review-graph
