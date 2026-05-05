@@ -262,7 +262,7 @@ reward:
 
 #### 🎨 Kether 脚本语法示例
 
-[Kether Explorer](https://taboo.8aka.org/kether-list/)
+[Kether Explorer](https://taboolib.hhhhhy.kim/kether-list/)
 
 ---
 
